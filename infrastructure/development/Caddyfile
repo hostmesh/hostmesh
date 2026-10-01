@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Reverse proxy for local development, on the hostname layout of spec
+# section 28. Certificates come from Caddy's internal CA. Each hostname
+# serves a placeholder until its application exists; that site block then
+# changes from `respond` to `reverse_proxy`.
+
+{
+	local_certs
+	skip_install_trust
+}
+
+app.hostmesh.test {
+	respond "Hostmesh development placeholder: customer portal"
+}
+
+admin.hostmesh.test {
+	respond "Hostmesh development placeholder: admin app"
+}
+
+api.hostmesh.test {
+	respond "Hostmesh development placeholder: API"
+}
+
+agent.hostmesh.test {
+	respond "Hostmesh development placeholder: agent endpoint"
+}

@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Local development stack. See README.md in this directory.
+
+name: hostmesh-development
+
+services:
+  postgres:
+    image: postgres:18.6-trixie
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      # Over TCP: the server used during first-time initialisation listens
+      # on the Unix socket only, so this cannot report ready too early.
+      test: ["CMD-SHELL", "pg_isready --host 127.0.0.1 --username \"$$POSTGRES_USER\" --dbname \"$$POSTGRES_DB\""]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:8.10.2-trixie
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      # Healthy once Caddy is running and has issued all four certificates
+      test:
+        - CMD-SHELL
+        - >-
+          wget -q -O /dev/null http://127.0.0.1:2019/config/ &&
+          for name in app admin api agent; do
+          test -f "/data/caddy/certificates/local/$$name.hostmesh.test/$$name.hostmesh.test.crt" || exit 1;
+          done
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

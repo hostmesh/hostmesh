@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Development environment
+
+on:
+  pull_request:
+    paths:
+      - "infrastructure/development/**"
+      - ".github/workflows/dev-environment.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infrastructure/development
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Smoke test fails while the stack is down
+        run: |
+          if ./smoke.sh; then
+            echo "smoke.sh passed although the stack is down" >&2
+            exit 1
+          fi
+      - name: Start the stack
+        run: make up
+      - name: Resolve the hostnames
+        run: make hosts
+      - name: Trust the local CA
+        run: make trust
+      - name: Smoke test
+        run: make smoke
+      - name: Show service logs
+        if: failure()
+        run: docker compose logs --no-color
