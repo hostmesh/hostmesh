@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+/.github explort-ignore
+CHANGELOG.md export-ignore
