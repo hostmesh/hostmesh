@@ -31,3 +31,6 @@ dist/
 playwright-report/
 test-results/
 coverage/
+
+# AI
+CLAUDE.md
