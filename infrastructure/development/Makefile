@@ -3,7 +3,7 @@
 # Local development stack. Run from the repository root with
 # `make -C infrastructure/development <target>`.
 
-.PHONY: up down reset smoke
+.PHONY: up down reset smoke hosts trust
 
 up: .env
 		docker compose up --detach --wait
@@ -16,6 +16,12 @@ reset: .env
 
 smoke:
 		./smoke.sh
+
+hosts:
+		./hosts.sh --apply
+
+trust:
+		./trust.sh --apply
 
 .env:
 		cp .env.example .env
