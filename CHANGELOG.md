@@ -16,3 +16,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Setup and troubleshooting guide for the local development environment (`infrastructure/development/README.md`).
 - Decision record 0003: development runtimes (PHP, Node) run in containers.
 - CI workflow that starts the development stack and runs its smoke test on pull requests that touch `infrastructure/development/`.
+- `php` service in the development stack: PHP-FPM 8.5.11 with the PostgreSQL, Redis, `intl`, `pcntl` and code-coverage extensions and Composer 2.10.3. It runs as the host user and mounts `control-plane/`.
+- `hostmesh_test` database, created with the PostgreSQL volume, for the control plane's test suite.

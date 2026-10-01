@@ -5,6 +5,10 @@
 
 .PHONY: up down reset smoke hosts trust
 
+# The php service runs as the host user (see compose.yaml).
+export HOST_UID := $(shell id -u)
+export HOST_GID := $(shell id -g)
+
 up: .env
 		docker compose up --detach --wait
 
