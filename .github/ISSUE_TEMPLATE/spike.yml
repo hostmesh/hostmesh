@@ -1,0 +1,19 @@
+name: Spike or decision
+description: A time-boxed investigation or a decision to record
+labels: ["type:spike", "needs-decision"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options to compare
+  - type: input
+    id: timebox
+    attributes:
+      label: Time box
+      placeholder: "for example 2 days"

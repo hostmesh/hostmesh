@@ -1,0 +1,21 @@
+name: Spec change
+description: The specification is wrong, unclear or incomplete
+labels: ["spec-change"]
+body:
+  - type: input
+    id: section
+    attributes:
+      label: Spec section
+      placeholder: "for example section 8"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change

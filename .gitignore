@@ -1,0 +1,33 @@
+# OS end editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# PHP
+/control-plane/vendor/
+/control-plane/storage/*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+
+# Node
+node_modules/
+dist/
+.vite/
+playwright-report/
+test-results/
+coverage/

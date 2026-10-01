@@ -1,0 +1,23 @@
+name: Task
+description: A unit of engineering work
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this is needed. Link the spec section.
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests first
+      description: Which failing tests will be written before the implementation.
