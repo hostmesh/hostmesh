@@ -40,4 +40,4 @@ Milestones, issues and the project board are on GitHub under this organization.
 
 ## License
 
-Not yet decided. See the open license issue.
+Licensed under the [Apache License, Version 2.0](LICENSE). Contributions are accepted under the Developer Certificate of Origin (sign off your commits with `git commit -s`). The Hostmesh name and logos are not covered by the license; see the trademark policy once published.

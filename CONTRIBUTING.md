@@ -4,7 +4,7 @@
 
 1. Pick an issue from the current milestone on the project board. Slices are worked in order, and a slice's scope is frozen once it starts.
 2. Create a branch named `<issue-number>-<short-slug>` from `main`.
-3. **Write the failing test first** (see below), then the implementation, then refactor.
+3. **Write the failing test first** (see below), then the implementation, then refactor. Sign off every commit (`git commit -s`).
 4. Open a pull request that links the issue (`Closes #123`). Squash merge is the only merge method.
 
 ## Test-driven development
@@ -30,6 +30,13 @@ Significant decisions are recorded as short documents in `docs/decisions/` (copy
 
 - Conventional Commits style for the pull request title (`feat:`, `fix:`, `test:`, `docs:`, `chore:`), since squash merges use it.
 - The pull request template lists what must be true before merging.
+
+## License and sign-off
+
+- Hostmesh is licensed under Apache-2.0. By contributing, you agree your contribution is licensed under it.
+- Every commit must carry a `Signed-off-by: Name <email>` line (use `git commit -s`). It certifies the [Developer Certificate of Origin 1.1](https://developercertificate.org/). A check on pull requests enforces it.
+- New source files start with an SPDX identifier, for example `// SPDX-License-Identifier: Apache-2.0` (use the comment style of the language).
+- The name "Hostmesh" and its logos are not licensed by Apache-2.0.
 
 ## Security
 

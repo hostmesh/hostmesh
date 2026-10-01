@@ -1,7 +1,7 @@
 # Hostmesh - v0.1 Architecture & MVP Specification
 
-**Status:** Frozen baseline (revision 8)  
-**Version:** v0.1  
+**Status:** Frozen baseline (revision 9)
+**Version:** v0.1
 **Purpose:** Open-source hosting infrastructure, control-plane, and billing platform
 
 ## Revision history
@@ -17,6 +17,7 @@
 | 6    | 2026-09-30 | Scheduler settled: hosting account as the unit of placement (plan limits per account); reserved-versus-used capacity model with per-node overcommit; transactional reservation in PostgreSQL; filter-then-score with spread and binpack; node states; Redis no longer used for scheduler correctness                                                                               |
 | 7    | 2026-09-30 | PowerDNS topology settled: dedicated DNS nodes (at least two in production) reconciled by the agent into local PowerDNS (SQLite backend), no zone transfers, DNS-01 waits for convergence on all active DNS nodes; DNS-node work moved into Slice 2                                                                                                                                |
 | 8    | 2026-09-30 | Hosting essentials settled: sandbox baseline (account slice, one PHP-FPM master per account and PHP version, unit sandboxing, quotas, egress rule); key-only SFTP with an optional SSH shell; cron as systemd timers; root-owned logs with a read-only bind mount and portal viewer; typed per-site PHP settings; PHP versions from a pinned Sury repository. No open items remain |
+| 9    | 2026-10-01 | Licensing decided: Apache-2.0, DCO sign-off, trademark policy; business model recorded; add-on mechanism added to the v0.2 backlog                                                                                                                                                                                                                                                 |
 
 ---
 
@@ -1990,6 +1991,16 @@ It is:
 
 The durable value is the automation and unified infrastructure model rather than the UI itself.
 
+### Licensing and contributions
+
+- **License:** Apache-2.0 for the whole repository. The name and logos are not licensed by it (see the trademark policy below).
+- **Contributions:** accepted under the Developer Certificate of Origin (DCO) with `Signed-off-by` on every commit. No CLA for now. This decision is revisited before the first outside contribution is merged, because a DCO does not grant relicensing rights.
+- **Trademark policy:** the Hostmesh name and logos are covered by a published trademark policy, since the license grants no trademark rights and anyone may fork. Package names (Packagist, npm, PyPI, container registries) are reserved.
+- **Hygiene:** SPDX identifiers (`SPDX-License-Identifier: Apache-2.0`) in source files, a `NOTICE` file, and a license scan of dependencies in CI.
+- **Business model, for now:** revenue from support, custom work and add-ons on an openly licensed core. This is a decision for the current stage and may be revisited. Releases already published stay under Apache-2.0.
+
+Add-ons are only practical if the platform has documented extension points for backend modules. v0.1 defines theming extension points only (§29). A module mechanism is in the v0.2 backlog (§38) so the architecture does not close it off.
+
 ---
 
 # 37. Development Methodology: Test-Driven Development
@@ -2075,6 +2086,7 @@ Ideas recorded here do not enter v0.1 scope (non-negotiable 10).
 - Remote database access
 - Egress connection limits
 - WAF and malware scanning
+- Add-on mechanism: documented extension points for backend modules, so proprietary or third-party add-ons can be built without forking
 
 ---
 
