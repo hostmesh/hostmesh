@@ -15,3 +15,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `make hosts` and `make trust` (`hosts.sh`, `trust.sh`) to add the `hostmesh.test` names to `/etc/hosts` and to trust Caddy's local CA system-wide on Fedora/RHEL and Debian/Ubuntu.
 - Setup and troubleshooting guide for the local development environment (`infrastructure/development/README.md`).
 - Decision record 0003: development runtimes (PHP, Node) run in containers.
+- CI workflow that starts the development stack and runs its smoke test on pull requests that touch `infrastructure/development/`.
