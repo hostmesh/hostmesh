@@ -59,6 +59,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - ESLint rule for the apps and `@hostmesh/ui`: `fetch`, `XMLHttpRequest` and a direct `openapi-fetch` import are errors, so the API is reached only through the generated client.
 - `web/README.md` with the layout, commands and rules, and the web commands in the development environment guide.
 - Customer portal skeleton in `web/apps/portal`, with the same stack as the admin app, a placeholder page and a smoke test that mounts the root component. It builds to static output in `dist/`.
+- `@hostmesh/api-client` in `web/packages/api-client`: TypeScript types generated from `contracts/api/openapi.json` by openapi-typescript, and `createApiClient`, a thin openapi-fetch client typed by them. `pnpm generate:api` regenerates the types. The generated directory is never edited by hand.
+- Type-level test for the API client: it fails when the client and the OpenAPI specification disagree, checked on the health endpoint and on a path the specification does not have. A runtime test types its mock response from the generated schema, so a contract change breaks the typecheck.
+- Decision record 0008: the typed client is generated with openapi-typescript and openapi-fetch.
 
 ---
 
@@ -73,6 +76,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The smoke test of the development stack also checks that the `node` service runs the Node and pnpm versions the web workspace pins.
 - The development-environment CI workflow also runs on pull requests that change `web/.nvmrc` or `web/package.json`.
 - `make install` for the development stack also installs the web workspace's dependencies from its lockfile.
+- `.editorconfig` exempts the generated API client types from the TypeScript indent rule, so saving the file in an editor cannot make it differ from the generator's output.
 
 ---
 

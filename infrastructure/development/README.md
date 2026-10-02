@@ -109,6 +109,7 @@ docker compose exec node pnpm check                      # ESLint, vue-tsc, Vite
 docker compose exec node pnpm lint:fix                   # fix what ESLint can fix
 docker compose exec node pnpm install                    # after changing a dependency
 docker compose exec node pnpm vitest run --project admin
+docker compose exec node pnpm generate:api               # regenerate the typed API client
 ```
 
 See [`web/README.md`](../../web/README.md).

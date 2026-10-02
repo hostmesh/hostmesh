@@ -4,12 +4,13 @@ The two Vue 3 single-page applications and the packages they share. Both apps ar
 
 ## Layout
 
-| Path           | Package            | Contents                                                              |
-|----------------|--------------------|-----------------------------------------------------------------------|
-| `apps/admin/`  | `@hostmesh/admin`  | The admin app. A placeholder page for now.                            |
-| `apps/portal/` | `@hostmesh/portal` | The customer portal. A placeholder page for now.                      |
-| `packages/ui/` | `@hostmesh/ui`     | Shared components and design tokens. An empty skeleton until #22.     |
-| `themes/`      |                    | Optional operator themes, selected at build time with `THEME=<name>`. |
+| Path                   | Package                | Contents                                                                               |
+|------------------------|------------------------|----------------------------------------------------------------------------------------|
+| `apps/admin/`          | `@hostmesh/admin`      | The admin app. A placeholder page for now.                                             |
+| `apps/portal/`         | `@hostmesh/portal`     | The customer portal. A placeholder page for now.                                       |
+| `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens. An empty skeleton until #22.                      |
+| `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`. |
+| `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                  |
 
 Shared packages export their TypeScript source, so they have no build step.
 
@@ -22,16 +23,37 @@ make -C infrastructure/development up install
 docker compose -f infrastructure/development/compose.yaml exec node pnpm check
 ```
 
-| pnpm script | What it does                                                       |
-|-------------|--------------------------------------------------------------------|
-| `check`     | `lint`, `typecheck`, `test` and `build`. Run it before every push. |
-| `lint`      | ESLint (flat config) over the whole workspace, warnings fail.      |
-| `lint:fix`  | ESLint with `--fix`.                                               |
-| `typecheck` | `vue-tsc --noEmit` in every package, TypeScript strict.            |
-| `test`      | Vitest, every project.                                             |
-| `build`     | Builds each app to `apps/<name>/dist/`.                            |
+| pnpm script    | What it does                                                                                   |
+|----------------|------------------------------------------------------------------------------------------------|
+| `check`        | `lint`, `typecheck`, `test` and `build`. Run it before every push.                             |
+| `lint`         | ESLint (flat config) over the whole workspace, warnings fail.                                  |
+| `lint:fix`     | ESLint with `--fix`.                                                                           |
+| `typecheck`    | `vue-tsc --noEmit` in every package, TypeScript strict.                                        |
+| `test`         | Vitest, every project.                                                                         |
+| `build`        | Builds each app to `apps/<name>/dist/`.                                                        |
+| `generate:api` | Regenerates `packages/api-client/src/generated/schema.d.ts` from `contracts/api/openapi.json`. |
 
-One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`).
+One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`, or `api-client`).
+
+## API client
+
+The apps reach the API only through `@hostmesh/api-client` (decision 0008):
+
+```ts
+import { createApiClient } from '@hostmesh/api-client'
+
+const api = createApiClient({ baseUrl: 'https://api.example.com/api/v1' })
+const { data, error } = await api.GET('/health')
+```
+
+After any API change, regenerate the specification and then the client, and commit both:
+
+```bash
+docker compose -f infrastructure/development/compose.yaml exec php composer openapi
+docker compose -f infrastructure/development/compose.yaml exec node pnpm generate:api
+```
+
+Never edit `packages/api-client/src/generated/` by hand. CI regenerates it and fails on any difference. `src/health.test-d.ts` is a type-level test: it fails when the client and the specification disagree. In tests, type mock responses from the generated `paths` (see `src/client.test.ts`), so that a contract change breaks the typecheck.
 
 ## Rules
 

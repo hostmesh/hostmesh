@@ -15,6 +15,8 @@ catalog:
   eslint-plugin-vue: ^10.11.1
   globals: ^17.12.0
   jsdom: ^30.1.1
+  openapi-fetch: ^0.17.0
+  openapi-typescript: ^7.13.0
   pinia: ^4.0.3
   tailwindcss: ^4.3.3
   # 6.0.x only: typescript-eslint accepts <6.1.0 and vue-tsc fails on 7.
@@ -26,3 +28,9 @@ catalog:
   vue-eslint-parser: ^10.4.0
   vue-router: ^5.3.1
   vue-tsc: ^3.3.11
+# openapi-typescript 7.13.0 declares typescript ^5.x and has no release for
+# TypeScript 6 yet. It generates the same output on 6.0 (decision 0007).
+# Remove this when it declares TypeScript 6.
+peerDependencyRules:
+  allowedVersions:
+    "openapi-typescript>typescript": "6"
