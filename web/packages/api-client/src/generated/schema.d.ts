@@ -65,4 +65,3 @@ export interface operations {
         };
     };
 }
-// hand edit, to check that CI fails
