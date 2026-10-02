@@ -47,3 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `api.hostmesh.test` now serves the control plane through PHP-FPM instead of a placeholder, and the smoke test checks `https://api.hostmesh.test/api/v1/health`.
 - The development-environment CI workflow installs the control plane before running the smoke test.
+
+### Fixed
+
+- `UserSpec` in the agent now rejects paths that start with `//` (the same directory as `/` on Linux, which slipped past the root check), `/` as a shell, `:` and control characters in the name, home and shell, an empty name, and a name starting with `-`.
