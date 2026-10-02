@@ -35,6 +35,8 @@ docker compose -f infrastructure/development/compose.yaml exec node pnpm check
 
 One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`, or `api-client`).
 
+CI (`.github/workflows/web.yml`) runs the same scripts on every pull request that touches `web/` or `contracts/api/`, on the Node and pnpm versions pinned here, and regenerates the API client, failing on any difference.
+
 ## API client
 
 The apps reach the API only through `@hostmesh/api-client` (decision 0008):
