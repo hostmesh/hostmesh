@@ -20,6 +20,11 @@ describe('the client agrees with contracts/api/openapi.json', () => {
     expectTypeOf(data).exclude<undefined>().toHaveProperty('status').toEqualTypeOf<'ok'>()
   })
 
+  it('requires the base URL', () => {
+    // @ts-expect-error -- baseUrl is required: the paths are relative to the API root.
+    createApiClient({})
+  })
+
   it('rejects a path the spec does not have', () => {
     const client = createApiClient({ baseUrl })
 

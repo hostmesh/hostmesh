@@ -59,7 +59,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - ESLint rule for the apps and `@hostmesh/ui`: `fetch`, `XMLHttpRequest` and a direct `openapi-fetch` import are errors, so the API is reached only through the generated client.
 - `web/README.md` with the layout, commands and rules, and the web commands in the development environment guide.
 - Customer portal skeleton in `web/apps/portal`, with the same stack as the admin app, a placeholder page and a smoke test that mounts the root component. It builds to static output in `dist/`.
-- `@hostmesh/api-client` in `web/packages/api-client`: TypeScript types generated from `contracts/api/openapi.json` by openapi-typescript, and `createApiClient`, a thin openapi-fetch client typed by them. `pnpm generate:api` regenerates the types. The generated directory is never edited by hand.
+- `@hostmesh/api-client` in `web/packages/api-client`: TypeScript types generated from `contracts/api/openapi.json` by openapi-typescript, and `createApiClient`, a thin openapi-fetch client typed by them that requires the base URL. `pnpm generate:api` regenerates the types. The generated directory is never edited by hand.
 - Type-level test for the API client: it fails when the client and the OpenAPI specification disagree, checked on the health endpoint and on a path the specification does not have. A runtime test types its mock response from the generated schema, so a contract change breaks the typecheck.
 - Decision record 0008: the typed client is generated with openapi-typescript and openapi-fetch.
 - Both apps depend on `@hostmesh/ui` and `@hostmesh/api-client` as workspace packages, with a test in each app that they resolve.
