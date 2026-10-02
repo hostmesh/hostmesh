@@ -47,6 +47,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The OpenAPI specification is identical on every machine: its server URL is the relative `/api/v1` instead of one built from `APP_URL`, its title and version are fixed in `control-plane/config/scramble.php`, and its paths are in alphabetical order whatever the order of the routes.
 - Tests that the control plane serves no API documentation: Scramble's `/docs/api` page, its `/docs/api.json` route and its browser dev tools are switched off, so the package only generates the committed specification.
 - The `Control plane` CI workflow regenerates the OpenAPI specification and fails on any difference from the committed `contracts/api/openapi.json`, including when the file is missing. The workflow also runs on pull requests that touch `contracts/api/`.
+- "API contract" section in `control-plane/README.md`: how to regenerate the OpenAPI specification and how the test and CI enforce it.
+- Decision record 0006: the OpenAPI specification is generated with Scramble, a runtime dependency with its documentation routes disabled.
 
 ---
 
