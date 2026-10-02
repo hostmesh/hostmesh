@@ -38,10 +38,14 @@
             "@php artisan config:clear --ansi",
             "pest --parallel"
         ],
+        "test:coverage": [
+            "@php artisan config:clear --ansi",
+            "pest --parallel --coverage --min=85"
+        ],
         "check": [
             "@lint",
             "@analyse",
-            "@test"
+            "@test:coverage"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

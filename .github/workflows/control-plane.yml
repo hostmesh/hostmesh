@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Control plane
+
+on:
+  pull_request:
+    paths:
+      - "control-plane/**"
+      - ".github/workflows/control-plane.yml"
+  # Runs on main too, so pull requests can restore the Composer cache.
+  push:
+    branches:
+      - main
+    paths:
+      - "control-plane/**"
+      - ".github/workflows/control-plane.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: control-plane-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Pint, Larastan and Pest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: control-plane
+    services:
+      # The versions of infrastructure/development/compose.yaml.
+      postgres:
+        image: postgres:18.6-trixie
+        env:
+          POSTGRES_DB: hostmesh_test
+          POSTGRES_USER: hostmesh
+          POSTGRES_PASSWORD: hostmesh
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --host 127.0.0.1 --username hostmesh --dbname hostmesh_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+      redis:
+        image: redis:8.10.2-trixie
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DB_HOST: 127.0.0.1
+      REDIS_HOST: 127.0.0.1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.5"
+          extensions: pdo_pgsql, redis, intl, pcntl
+          coverage: pcov
+          tools: composer:v2
+      - name: Find the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dire)" >> "$GITHUB_OUTPUT"
+      - name: Cache Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # 6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.5-${{ hashFiles('control-plane/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.5-
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Prepare the environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+      - name: Pint
+        run: composer lint
+      - name: Larastan
+        run: composer analyse
+      - name: Pest, in parallel, with the 85% coverage gate
+        run: composer test:coverage
