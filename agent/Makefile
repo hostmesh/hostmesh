@@ -15,8 +15,8 @@ lint:
 		$(UV_RUN) ruff format --check .
 
 lint-fix:
-		$(UV_RUN) ruff check --fix .
 		$(UV_RUN) ruff format .
+		$(UV_RUN) ruff check --fix .
 
 typecheck:
 		$(UV_RUN) mypy

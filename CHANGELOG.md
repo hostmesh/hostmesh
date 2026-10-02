@@ -35,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `agent/README.md` with the layout, commands and requirements.
 - Stub run loop for the agent (`agent.runner.run`), which idles until it is asked to stop.
 - No-inbound-listener test for the agent: starting the run loop must leave the process without a listening TCP socket or a bound UDP socket, on IPv4 or IPv6. The detector behind it is tested against real loopback sockets.
+- Agent service interfaces `Users` and `Filesystem` (`agent/services/users`, `agent/services/filesystem`): typed, synchronous Protocols whose methods never take a command.
+- In-memory fakes `FakeUsers` and `FakeFilesystem`, sharing a mutation `Journal` that records every state-changing call and can inject a fault before any of them.
+- Reusable contract test classes for both interfaces in `agent/tests/support/`, run against the fakes now and against the real implementations later.
 
 ### Changed
 
