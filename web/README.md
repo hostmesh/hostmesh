@@ -60,5 +60,5 @@ Never edit `packages/api-client/src/generated/` by hand. CI regenerates it and f
 ## Rules
 
 - Versions live in the `catalog` of `pnpm-workspace.yaml`; packages refer to them with `catalog:`. `pnpm-lock.yaml` is committed.
-- The apps and `@hostmesh/ui` never call the network themselves. ESLint rejects `fetch`, `XMLHttpRequest` and a direct `openapi-fetch` import there.
+- The apps and `@hostmesh/ui` never call the network themselves. ESLint rejects the direct ways to do it there: `fetch` and `XMLHttpRequest` (also through `window`, `globalThis` and `self`), `navigator.sendBeacon`, and imports of `openapi-fetch` and other HTTP clients. It cannot catch every indirection, so review still applies.
 - Tests come first (spec section 37). A test file sits next to the code it tests, as `*.test.ts`.
