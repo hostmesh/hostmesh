@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+//
+// Type-level tests. They are compiled by `pnpm typecheck` and never run: a
+// failure is a type error.
 import { describe, expectTypeOf, it } from 'vitest'
 
 import { createApiClient, type paths } from './index'

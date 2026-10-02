@@ -55,7 +55,7 @@ docker compose -f infrastructure/development/compose.yaml exec php composer open
 docker compose -f infrastructure/development/compose.yaml exec node pnpm generate:api
 ```
 
-Never edit `packages/api-client/src/generated/` by hand. CI regenerates it and fails on any difference. `src/health.test-d.ts` is a type-level test: it fails when the client and the specification disagree. In tests, type mock responses from the generated `paths` (see `src/client.test.ts`), so that a contract change breaks the typecheck.
+Never edit `packages/api-client/src/generated/` by hand. CI regenerates it and fails on any difference. `src/health.test-d.ts` holds the type-level tests: `pnpm typecheck` compiles them, and they fail when the client and the specification disagree. In tests, type mock responses from the generated `paths` (see `src/client.test.ts`), so that a contract change breaks the typecheck.
 
 ## Rules
 

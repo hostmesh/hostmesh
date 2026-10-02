@@ -5,13 +5,8 @@ export default defineConfig({
   test: {
     name: 'api-client',
     environment: 'node',
+    // Runtime tests only. The type-level tests (*.test-d.ts) are checked by
+    // `pnpm typecheck`, which compiles everything in tsconfig.json once.
     include: ['src/**/*.test.ts'],
-    // Type-level tests: Vitest runs tsc over them and reports each type
-    // error as a failed test.
-    typecheck: {
-      enabled: true,
-      include: ['src/**/*.test-d.ts'],
-      tsconfig: './tsconfig.json',
-    },
   },
 })
