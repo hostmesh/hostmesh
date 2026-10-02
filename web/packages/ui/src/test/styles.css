@@ -1,0 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* The stylesheet of the component tests: what an app's style.css does. */
+@import "tailwindcss";

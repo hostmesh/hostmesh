@@ -64,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0008: the typed client is generated with openapi-typescript and openapi-fetch.
 - Both apps depend on `@hostmesh/ui` and `@hostmesh/api-client` as workspace packages, with a test in each app that they resolve.
 - CI workflow `Web`: ESLint, vue-tsc, Vitest and the builds of both apps, on the Node and pnpm versions the workspace pins, with a pnpm store cache. It regenerates the typed API client and fails on any difference from the committed files, including a committed file that the generator does not write. Runs on pull requests that touch `web/` or `contracts/api/`.
+- Decision record 0009: shadcn-vue in the shared component package, design tokens, and component tests in a browser.
 
 ---
 
@@ -83,6 +84,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `node` service of the development stack holds Chromium's headless shell (Playwright 1.63.0) for browser-mode component tests, and gets 1 GB of shared memory. Run `make -C infrastructure/development up` once to rebuild the image.
 - The smoke test of the development stack also checks that the `node` service has the Chromium build of the Playwright version pinned in the web workspace's catalog.
 - The development-environment CI workflow also runs on pull requests that change `web/pnpm-workspace.yaml`.
+- The tests of `@hostmesh/ui` run in headless Chromium (Vitest browser mode with Playwright) instead of jsdom, with Tailwind compiled, so they can assert computed styles.
+- CI workflow `Web` installs Chromium before running Vitest.
 
 ---
 
