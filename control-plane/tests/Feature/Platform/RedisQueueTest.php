@@ -12,7 +12,7 @@ it('round-trips a job through the redis queue connection', function (): void {
     $queue = 'test-'.Str::uuid();
     $connection = Queue::connection('redis');
 
-    $connection->push(new NoopJob(), '', $queue);
+    $connection->push(new NoopJob, '', $queue);
 
     expect($connection->size($queue))->toBe(1);
 

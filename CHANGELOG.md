@@ -20,3 +20,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `hostmesh_test` database, created with the PostgreSQL volume, for the control plane's test suite.
 - Control plane application in `control-plane/`: Laravel 13 on PHP 8.5, API-only (no frontend tooling, views or user model yet), tested with Pest 5.
 - Control plane configuration through env: PostgreSQL as the only database connection, Redis (phpredis) for the queue and cache, with `control-plane/.env.example` matching the development stack. Tests run against a real PostgreSQL database (`hostmesh_test`) and real Redis.
+- `composer check` in the control plane: Pint, Larastan at level 10 and Pest in parallel, also available as `composer lint`, `lint:fix`, `analyse` and `test`.
