@@ -33,6 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Agent tooling: ruff (lint and format, with shell-invoking APIs banned), mypy in strict mode, and pytest with pytest-asyncio, respx and Hypothesis. `make -C agent check` runs them all, also available as `install`, `lint`, `lint-fix`, `typecheck`, `test` and `test-coverage`.
 - Coverage gate for the agent: `make -C agent test-coverage` fails below 85% branch coverage.
 - `agent/README.md` with the layout, commands and requirements.
+- Stub run loop for the agent (`agent.runner.run`), which idles until it is asked to stop.
+- No-inbound-listener test for the agent: starting the run loop must leave the process without a listening TCP socket or a bound UDP socket, on IPv4 or IPv6. The detector behind it is tested against real loopback sockets.
 
 ### Changed
 

@@ -25,6 +25,6 @@ test:
 		$(UV_RUN) pytest
 
 test-coverage:
-		$(UV_RUN): pytest --cov
+		$(UV_RUN) pytest --cov
 
 check: lint typecheck test-coverage

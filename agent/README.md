@@ -39,3 +39,7 @@ One test: `uv run --directory agent pytest -k <name>`.
 ## Requirements
 
 uv 0.12. Python 3.13 is the minimum, because it is what Debian 13 ships. See [decision 0005](../docs/decisions/0005-python-3-13-and-uv-for-the-agent.md).
+
+## Rules
+
+- **No inbound listener, ever.** `tests/unit/test_no_listener.py` starts the run loop and fails if the process holds a listening TCP socket or a bound UDP socket, on IPv4 or IPv6. Unix sockets and outbound connections are allowed. The detector in `tests/support/listeners.py` has its own tests, which open loopback sockets inside the test process; that is the only place unit tests touch real sockets.
