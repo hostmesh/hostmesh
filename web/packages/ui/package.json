@@ -6,13 +6,18 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit && tsc --noEmit --project tsconfig.node.json"
   },
   "dependencies": {
     "vue": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "jsdom": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
     "vue-tsc": "catalog:"
   }
 }

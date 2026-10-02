@@ -23,17 +23,17 @@ make -C infrastructure/development up install
 docker compose -f infrastructure/development/compose.yaml exec node pnpm check
 ```
 
-| pnpm script    | What it does                                                                                   |
-|----------------|------------------------------------------------------------------------------------------------|
-| `check`        | `lint`, `typecheck`, `test` and `build`. Run it before every push.                             |
-| `lint`         | ESLint (flat config) over the whole workspace, warnings fail.                                  |
-| `lint:fix`     | ESLint with `--fix`.                                                                           |
-| `typecheck`    | `vue-tsc --noEmit` in every package, TypeScript strict.                                        |
-| `test`         | Vitest, every project.                                                                         |
-| `build`        | Builds each app to `apps/<name>/dist/`.                                                        |
-| `generate:api` | Regenerates `packages/api-client/src/generated/schema.d.ts` from `contracts/api/openapi.json`. |
+| pnpm script    | What it does                                                                                                                                                                  |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `check`        | `lint`, `typecheck`, `test` and `build`. Run it before every push.                                                                                                            |
+| `lint`         | ESLint (flat config) over the whole workspace, warnings fail.                                                                                                                 |
+| `lint:fix`     | ESLint with `--fix`.                                                                                                                                                          |
+| `typecheck`    | TypeScript strict in every package: `vue-tsc` for browser code (no Node types), `tsc` for the Vite and Vitest configuration and for the API client with its type-level tests. |
+| `test`         | Vitest, every project: each app and each package.                                                                                                                             |
+| `build`        | Builds each app to `apps/<name>/dist/`.                                                                                                                                       |
+| `generate:api` | Empties `packages/api-client/src/generated/` and regenerates `schema.d.ts` from `contracts/api/openapi.json`.                                                                 |
 
-One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`, or `api-client`).
+One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`, `ui`, `api-client`).
 
 CI (`.github/workflows/web.yml`) runs the same scripts on every pull request that touches `web/` or `contracts/api/`, on the Node and pnpm versions pinned here, and regenerates the API client, failing on any difference.
 

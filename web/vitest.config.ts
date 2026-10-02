@@ -4,6 +4,6 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     // Each project is configured by the Vite or Vitest config in its directory.
-    projects: ['apps/*', 'packages/api-client'],
+    projects: ['apps/*', 'packages/*'],
   },
 })

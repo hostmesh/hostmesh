@@ -55,7 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Web workspace in `web/`: a pnpm workspace (`apps/*`, `packages/*`) with one catalog of dependency versions and a committed lockfile.
 - Web tooling: TypeScript 6 in strict mode with `noUncheckedIndexedAccess`, ESLint 10 with a flat config, vue-tsc and Vitest 5. Each app typechecks its browser code without Node types, and its Vite configuration separately. `pnpm check` runs lint, typecheck, tests and builds, also available as `lint`, `lint:fix`, `typecheck`, `test` and `build`.
 - Admin app skeleton in `web/apps/admin`: Vue 3, Vite 8, Tailwind 4, Pinia and Vue Router, with a placeholder page and a smoke test that mounts the root component. It builds to static output in `dist/`.
-- `@hostmesh/ui` in `web/packages/ui`: an empty skeleton for the shared components.
+- `@hostmesh/ui` in `web/packages/ui`: an empty skeleton for the shared components. It is already a Vitest project, so the tests of its first components run without further setup.
 - ESLint rules for the apps and `@hostmesh/ui` that reject the direct ways around the generated client: `fetch` and `XMLHttpRequest` (also through `window`, `globalThis` and `self`), `navigator.sendBeacon`, and imports of `openapi-fetch` and other HTTP clients.
 - `web/README.md` with the layout, commands and rules, and the web commands in the development environment guide.
 - Customer portal skeleton in `web/apps/portal`, with the same stack as the admin app, a placeholder page and a smoke test that mounts the root component. It builds to static output in `dist/`.
