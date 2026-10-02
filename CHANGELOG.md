@@ -28,6 +28,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `make install` for the development stack: installs the control plane's dependencies, creates its `.env` and key, and runs its migrations.
 - `control-plane/README.md` with the layout, commands and testing rules, and a control plane section in the development environment guide.
 - Decision record 0004: PHP 8.5 for the control plane.
+- Decision record 0005: Python 3.13 and uv for the agent.
+- Agent project in `agent/`: Python 3.13 managed by uv, with the package layout of spec section 26. Every service and top-level package other than the ones below is an empty stub.
+- Agent tooling: ruff (lint and format, with shell-invoking APIs banned), mypy in strict mode, and pytest with pytest-asyncio, respx and Hypothesis. `make -C agent check` runs them all, also available as `install`, `lint`, `lint-fix`, `typecheck`, `test` and `test-coverage`.
+- Coverage gate for the agent: `make -C agent test-coverage` fails below 85% branch coverage.
+- `agent/README.md` with the layout, commands and requirements.
+- Stub run loop for the agent (`agent.runner.run`), which idles until it is asked to stop.
+- No-inbound-listener test for the agent: starting the run loop must leave the process without a listening TCP socket or a bound UDP socket, on IPv4 or IPv6. The detector behind it is tested against real loopback sockets.
+- Agent service interfaces `Users` and `Filesystem` (`agent/services/users`, `agent/services/filesystem`): typed, synchronous Protocols whose methods never take a command.
+- In-memory fakes `FakeUsers` and `FakeFilesystem`, sharing a mutation `Journal` that records every state-changing call and can inject a fault before any of them.
+- Reusable contract test classes for both interfaces in `agent/tests/support/`, run against the fakes now and against the real implementations later.
+- `ensure_user` in the agent (`agent/reconciliation/user.py`): the first idempotent operation, built on the `Users` and `Filesystem` interfaces. It creates or corrects a user and its home directory, reports the changes it made, refuses a home path that is not a directory, and rejects relative paths, `..` components, `/` as home and out-of-range modes.
+- Tests for `ensure_user` covering create, no-op when converged, drift repair, apply twice and resume after an interruption at every step, with a Hypothesis property over arbitrary starting states and interruption points.
+- `hostmesh-agent` command-line entry point with a `version` command.
+- CI workflow `Agent`: ruff, mypy and pytest (unit and contract tests) with the coverage gate, on Python 3.13 with a uv dependency cache. Runs on pull requests that touch `agent/` or `contracts/agent-protocol/`.
 
 ### Changed
 
