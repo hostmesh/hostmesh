@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Spec section 35, non-negotiable 6: controllers contain no business logic
+# and do not write to the database. Classes under app\Http may not call
+# Eloquent or query-builder write methods. They call an Application command.
+
+parameters:
+    disallowedMethodCalls:
+        -
+            method:
+                - 'Illuminate\Database\Eloquent\Model::save*()'
+                - 'Illuminate\Database\Eloquent\Model::push*()'
+                - 'Illuminate\Database\Eloquent\Model::update*()'
+                - 'Illuminate\Database\Eloquent\Model::delete*()'
+                - 'Illuminate\Database\Eloquent\Model::forceDelete*()'
+                - 'Illuminate\Database\Eloquent\Model::increment*()'
+                - 'Illuminate\Database\Eloquent\Model::decrement*()'
+                - 'Illuminate\Database\Eloquent\Model::touch()'
+                - 'Illuminate\Database\Eloquent\Model::touchQuietly()'
+                - 'Illuminate\Database\Eloquent\Builder::create*()'
+                - 'Illuminate\Database\Eloquent\Builder::forceCreate*()'
+                - 'Illuminate\Database\Eloquent\Builder::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::incrementOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::update*()'
+                - 'Illuminate\Database\Eloquent\Builder::upsert()'
+                - 'Illuminate\Database\Eloquent\Builder::insert*()'
+                - 'Illuminate\Database\Eloquent\Builder::increment*()'
+                - 'Illuminate\Database\Eloquent\Builder::decrement*()'
+                - 'Illuminate\Database\Eloquent\Builder::delete()'
+                - 'Illuminate\Database\Eloquent\Builder::forceDelete()'
+                - 'Illuminate\Database\Eloquent\Builder::touch()'
+                - 'Illuminate\Database\Query\Builder::insert*()'
+                - 'Illuminate\Database\Query\Builder::update*()'
+                - 'Illuminate\Database\Query\Builder::upsert()'
+                - 'Illuminate\Database\Query\Builder::increment*()'
+                - 'Illuminate\Database\Query\Builder::decrement*()'
+                - 'Illuminate\Database\Query\Builder::delete()'
+                - 'Illuminate\Database\Query\Builder::truncate()'
+                - 'Illuminate\Database\Eloquent\Relations\*::save*()'
+                - 'Illuminate\Database\Eloquent\Relations\*::create*()'
+                - 'Illuminate\Database\Eloquent\Relations\*::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Relations\*::update*()'
+                - 'Illuminate\Database\Eloquent\Relations\*::attach()'
+                - 'Illuminate\Database\Eloquent\Relations\*::detach()'
+                - 'Illuminate\Database\Eloquent\Relations\*::sync*()'
+                - 'Illuminate\Database\Eloquent\Relations\*::toggle()'
+                - 'Illuminate\Database\Eloquent\Relations\*::associate()'
+                - 'Illuminate\Database\Eloquent\Relations\*::dissociate()'
+            message: 'controllers do not write to the database; call an Application command (spec section 35, non-negotiable 6)'
+            allowExceptIn:
+                - app/Http/*
+
+    disallowedStaticCalls:
+        -
+            method:
+                - 'Illuminate\Database\Eloquent\Model::destroy()'
+                - 'Illuminate\Database\Eloquent\Model::create*()'
+                - 'Illuminate\Database\Eloquent\Model::forceCreate*()'
+                - 'Illuminate\Database\Eloquent\Model::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Model::update*()'
+                - 'Illuminate\Database\Eloquent\Model::upsert()'
+                - 'Illuminate\Database\Eloquent\Model::insert*()'
+                - 'Illuminate\Database\Eloquent\Model::truncate()'
+                - 'Illuminate\Database\Eloquent\Builder::create*()'
+                - 'Illuminate\Database\Eloquent\Builder::forceCreate*()'
+                - 'Illuminate\Database\Eloquent\Builder::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::incrementOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::update*()'
+                - 'Illuminate\Database\Eloquent\Builder::upsert()'
+                - 'Illuminate\Database\Eloquent\Builder::insert*()'
+                - 'Illuminate\Database\Eloquent\Builder::delete()'
+                - 'Illuminate\Database\Eloquent\Builder::forceDelete()'
+                - 'Illuminate\Database\Query\Builder::insert*()'
+                - 'Illuminate\Database\Query\Builder::update*()'
+                - 'Illuminate\Database\Query\Builder::upsert()'
+                - 'Illuminate\Database\Query\Builder::delete()'
+                - 'Illuminate\Database\Query\Builder::truncate()'
+            message: 'controllers do not write to the database; call an Application command (spec section 35, non-negotiable 6)'
+            allowExceptIn:
+                - app/Http/*
