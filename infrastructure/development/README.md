@@ -2,14 +2,14 @@
 
 One command starts the services Hostmesh needs for local development, on the hostname layout used in production (spec section 28).
 
-| Hostname              | Production role     | Serves locally today   |
-|-----------------------|---------------------|------------------------|
-| `app.hostmesh.test`   | Customer portal     | Placeholder            |
-| `admin.hostmesh.test` | Admin app           | Placeholder            |
-| `api.hostmesh.test`   | Laravel API         | Placeholder            |
-| `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder            |
+| Hostname              | Production role     | Serves locally today |
+|-----------------------|---------------------|----------------------|
+| `app.hostmesh.test`   | Customer portal     | Placeholder          |
+| `admin.hostmesh.test` | Admin app           | Placeholder          |
+| `api.hostmesh.test`   | Laravel API         | The control plane    |
+| `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder          |
 
-The stack is a Docker Compose project with PostgreSQL 18, Redis 8 and Caddy 2. Caddy terminates HTTPS with certificates from its own local certificate authority (CA). PHP and Node will also run as Compose services; they are added together with the control plane and the web workspace (see [decision 0003](../../docs/decisions/0003-development-runtimes-in-containers.md)).
+The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2 and a PHP 8.5 service for the control plane. Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM. Node will also run as a Compose service; it is added together with the web workspace (see [decision 0003](../../docs/decisions/0003-development-runtimes-in-containers.md)).
 
 ## Requirements
 
@@ -26,26 +26,28 @@ Developed with Docker 29.8.2 and Docker Compose 5.5.1 on Fedora 44. CI runs it o
 From the repository root:
 
 ```bash
-make -C infrastructure/development up      # start the stack
-make -C infrastructure/development hosts   # add the hostnames to /etc/hosts (sudo)
-make -C infrastructure/development trust   # trust the local CA system-wide (sudo)
-make -C infrastructure/development smoke   # check everything
+make -C infrastructure/development up        # build and start the stack
+make -C infrastructure/development install   # install the control plane and migrate its database
+make -C infrastructure/development hosts     # add the hostnames to /etc/hosts (sudo)
+make -C infrastructure/development trust     # trust the local CA system-wide (sudo)
+make -C infrastructure/development smoke     # check everything
 ```
 
-The smoke test must end with `All checks passed`. Then open <https://app.hostmesh.test/>.
+The smoke test must end with `All checks passed`. Then open <https://app.hostmesh.test/> and <https://api.hostmesh.test/api/v1/health>.
 
 ## Commands
 
 Run them as `make -C infrastructure/development <target>`, or as `make <target>` from this directory.
 
-| Target  | What it does                                                                                                                    |
-|---------|---------------------------------------------------------------------------------------------------------------------------------|
-| `up`    | Creates `.env` from `.env.example` if it is missing, starts the stack and waits until every service is healthy.                 |
-| `down`  | Stops the stack. The database, Redis data and the local CA are kept.                                                            |
-| `reset` | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again. |
-| `smoke` | Checks PostgreSQL, Redis and each hostname over HTTPS. Exits non-zero if anything fails.                                        |
-| `hosts` | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                |
-| `trust` | Installs the local CA's root certificate in the system trust store.                                                             |
+| Target    | What it does                                                                                                                                             |
+|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `up`      | Creates `.env` from `.env.example` if it is missing, starts the stack and waits until every service is healthy.                                          |
+| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                     |
+| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                          |
+| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, and runs its migrations. Safe to repeat. |
+| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS and the API's health endpoint. Exits non-zero if anything fails.                          |
+| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                         |
+| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                      |
 
 ## What `hosts` and `trust` change on your machine
 
@@ -82,6 +84,19 @@ Browsers can keep their own certificate stores. If a browser still warns after `
 
 After a `reset`, remove the old entry first (`certutil -d <database> -D -n "Hostmesh development CA"`, or delete it in the Firefox dialog) and import the new one.
 
+## Control plane
+
+PHP runs in the `php` service as your user, with `control-plane/` mounted at `/var/www/html`. Run commands from this directory:
+
+```bash
+docker compose exec php composer check          # Pint, Larastan, Pest with the coverage gate
+docker compose exec php composer lint:fix       # fix code style
+docker compose exec php vendor/bin/pest --filter=health
+docker compose exec php php artisan route:list
+```
+
+Tests use the `hostmesh_test` database and Redis database 15, never the development data. See [`control-plane/README.md`](../../control-plane/README.md).
+
 ## PostgreSQL and Redis
 
 Neither is published to the host. Containers in this Compose project reach them as `postgres:5432` and `redis:6379`. The database name, user and password are in `.env`.
@@ -110,6 +125,10 @@ docker compose exec redis redis-cli
 **PostgreSQL rejects the password after you edited `.env`.** PostgreSQL applies `.env` only when its volume is first created. Run `make reset` and `make up`. This deletes the database.
 
 **Caddy cannot read its `Caddyfile` ("permission denied") on a host with SELinux enforcing.** Not tested: the machine this was developed on has SELinux disabled. The usual fix is to change the mount in `compose.yaml` to `./Caddyfile:/etc/caddy/Caddyfile:ro,z`.
+
+**Tests fail with `database "hostmesh_test" does not exist`.** The database is created with the PostgreSQL volume. A volume from before the control plane existed does not have it. Create it without losing data: `docker compose exec postgres createdb -U hostmesh hostmesh_test`.
+
+**Files in `control-plane/` are owned by root.** The `php` service was started without the Makefile, which sets your user and group id. Run `make down`, fix the ownership with `sudo chown -R "$(id -u):$(id -g)" ../../control-plane`, and start with `make up`.
 
 ## Undo
 

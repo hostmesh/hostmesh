@@ -25,3 +25,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `GET /api/v1/health` in the control plane: a public liveness endpoint that returns `{"status":"ok"}` through an application-layer query. The API is served under `/api/v1`; the framework's `/up` page and the welcome page are removed.
 - Coverage gate for the control plane: `composer test:coverage` fails below 85% overall, with service providers excluded as framework boilerplate. `composer check` now includes it.
 - CI workflow `Control plane`: Pint, Larastan and Pest in parallel with the coverage gate, against PostgreSQL 18.6 and Redis 8.10.2 service containers, with a Composer cache. Runs on pull requests that touch `control-plane/`.
+- `make install` for the development stack: installs the control plane's dependencies, creates its `.env` and key, and runs its migrations.
+- `control-plane/README.md` with the layout, commands and testing rules, and a control plane section in the development environment guide.
+- Decision record 0004: PHP 8.5 for the control plane.
+
+### Changed
+
+- `api.hostmesh.test` now serves the control plane through PHP-FPM instead of a placeholder, and the smoke test checks `https://api.hostmesh.test/api/v1/health`.
+- The development-environment CI workflow installs the control plane before running the smoke test.
