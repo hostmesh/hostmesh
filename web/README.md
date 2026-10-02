@@ -4,11 +4,12 @@ The two Vue 3 single-page applications and the packages they share. Both apps ar
 
 ## Layout
 
-| Path           | Package           | Contents                                                              |
-|----------------|-------------------|-----------------------------------------------------------------------|
-| `apps/admin/`  | `@hostmesh/admin` | The admin app. A placeholder page for now.                            |
-| `packages/ui/` | `@hostmesh/ui`    | Shared components and design tokens. An empty skeleton until #22.     |
-| `themes/`      |                   | Optional operator themes, selected at build time with `THEME=<name>`. |
+| Path           | Package            | Contents                                                              |
+|----------------|--------------------|-----------------------------------------------------------------------|
+| `apps/admin/`  | `@hostmesh/admin`  | The admin app. A placeholder page for now.                            |
+| `apps/portal/` | `@hostmesh/portal` | The customer portal. A placeholder page for now.                      |
+| `packages/ui/` | `@hostmesh/ui`     | Shared components and design tokens. An empty skeleton until #22.     |
+| `themes/`      |                    | Optional operator themes, selected at build time with `THEME=<name>`. |
 
 Shared packages export their TypeScript source, so they have no build step.
 
@@ -30,7 +31,7 @@ docker compose -f infrastructure/development/compose.yaml exec node pnpm check
 | `test`      | Vitest, every project.                                             |
 | `build`     | Builds each app to `apps/<name>/dist/`.                            |
 
-One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin`.
+One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`).
 
 ## Rules
 

@@ -58,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `@hostmesh/ui` in `web/packages/ui`: an empty skeleton for the shared components.
 - ESLint rule for the apps and `@hostmesh/ui`: `fetch`, `XMLHttpRequest` and a direct `openapi-fetch` import are errors, so the API is reached only through the generated client.
 - `web/README.md` with the layout, commands and rules, and the web commands in the development environment guide.
+- Customer portal skeleton in `web/apps/portal`, with the same stack as the admin app, a placeholder page and a smoke test that mounts the root component. It builds to static output in `dist/`.
 
 ---
 
