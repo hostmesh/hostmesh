@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/nesbot/carbon/extension.neon
+    - vendor/spaze/phpstan-disallowed-calls/extension.neon
+    - phpstan/http-no-database-writes.neon
+
+parameters:
+    # 10 is the highest level PHPStan has. Do not lower it.
+    level: 10
+
+    # config/ is stock Laravel code that reads untyped env() values;
+    # tests/ are Pest closures. Neither is analysed.
+    paths:
+        - app
+        - bootstrap/app.php
+        - database
+        - routes

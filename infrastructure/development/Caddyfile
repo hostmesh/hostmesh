@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Reverse proxy for local development, on the hostname layout of spec
-# section 28. Certificates come from Caddy's internal CA. Each hostname
-# serves a placeholder until its application exists; that site block then
-# changes from `respond` to `reverse_proxy`.
-
+# section 28. Certificates come from Caddy's internal CA. The API hostname
+# proxies to the control plane. The other hostnames serve a placeholder
+# until their application exists; each site block then changes from
+# `respond` to `reverse_proxy`.
 {
 	local_certs
 	skip_install_trust
@@ -19,7 +19,15 @@ admin.hostmesh.test {
 }
 
 api.hostmesh.test {
-	respond "Hostmesh development placeholder: API"
+	# Every request goes to Laravel's front controller. Caddy does not see
+	# the application's files, so `root` is the path inside the php service.
+	rewrite * /index.php
+	reverse_proxy php:9000 {
+		transport fastcgi {
+			root /var/www/html/public
+			split .php
+		}
+	}
 }
 
 agent.hostmesh.test {

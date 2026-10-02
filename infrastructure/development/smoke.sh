@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 #
-# Smoke test for the local development stack. Checks PostgreSQL, Redis and
-# each hostname over HTTPS, using the system resolver and trust store.
-# Runs every check and exits non-zero if any of them failed.
+# Smoke test for the local development stack. Checks PostgreSQL, Redis, each
+# placeholder hostname over HTTPS and the API's health endpoint, using the
+# system resolver and trust store. Runs every check and exits non-zero if
+# any of them failed.
 
 set -u
 
@@ -12,7 +13,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 HOSTNAMES=(
     app.hostmesh.test
     admin.hostmesh.test
-    api.hostmesh.test
     agent.hostmesh.test
 )
 
@@ -66,11 +66,23 @@ check_https() {
     esac
 }
 
+check_api_health() {
+    local name="https://api.hostmesh.test/api/v1/health reports ok"
+    local out
+    if out=$(curl --silent --fail --max-time 10 "https://api.hostmesh.test/api/v1/health" 2>&1) \
+        && [ "$out" = '{"status":"ok"}' ]; then
+        pass "$name"
+    else
+        fail "$name" "Is the control plane installed? Run: make install"
+    fi
+}
+
 check_postgres
 check_redis
 for host in "${HOSTNAMES[@]}"; do
     check_https "$host"
 done
+check_api_health
 
 if [ "$failures" -gt 0 ]; then
     printf '\n%d check(s) failed\n' "$failures"
