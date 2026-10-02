@@ -52,6 +52,29 @@ services:
       timeout: 3s
       retries: 30
 
+  node:
+    build:
+      context: ./node
+    # Runs as the host user, like php, so files written to the bind mount
+    # are not owned by root. The Makefile exports HOST_UID and HOST_GID.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    init: true
+    # Serves nothing yet: it exists so that pnpm commands can be run with
+    # `docker compose exec node`.
+    command: ["sleep", "infinity"]
+    volumes:
+      - ../../web:/workspace/web
+      # The typed client is generated from contracts/api/openapi.json.
+      # Mounted so that ../contracts resolves in the container as it does
+      # on the host and in CI.
+      - ../../contracts:/workspace/contracts:ro
+      - pnpm_home:/pnpm
+    healthcheck:
+      test: ["CMD", "node", "--version"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   caddy:
     image: caddy:2.11.4-alpine
     ports:
@@ -79,3 +102,4 @@ volumes:
   redis_data:
   caddy_data:
   caddy_config:
+  pnpm_home:

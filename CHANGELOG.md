@@ -41,7 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `ensure_user` in the agent (`agent/reconciliation/user.py`): the first idempotent operation, built on the `Users` and `Filesystem` interfaces. It creates or corrects a user and its home directory, reports the changes it made, refuses a home path that is not a directory, and rejects relative paths, `..` components, `/` as home and out-of-range modes.
 - Tests for `ensure_user` covering create, no-op when converged, drift repair, apply twice and resume after an interruption at every step, with a Hypothesis property over arbitrary starting states and interruption points.
 - `hostmesh-agent` command-line entry point with a `version` command.
-- CI workflow `Agent`: ruff, mypy and pytest (unit and contract tests) with the coverage gate, on Python 3.13 with a uv dependency cache. Runs on pull requests that touch `agent/` or `contracts/agent-protocol/`.
+- CI workflow `Agent`: ruff, mypy and pytest (unit and contract tests) with the coverage gate, on Python 3.13 with an uv dependency cache. Runs on pull requests that touch `agent/` or `contracts/agent-protocol/`.
 - OpenAPI specification of the control plane's API in `contracts/api/openapi.json`, generated from the Laravel code by Scramble (`dedoc/scramble` 0.13). `composer openapi` in the control plane regenerates it. It is never edited by hand.
 - Contract test for the OpenAPI specification: the control plane's test suite fails when `contracts/api/openapi.json` is missing or differs from the freshly generated document.
 - The OpenAPI specification is identical on every machine: its server URL is the relative `/api/v1` instead of one built from `APP_URL`, its title and version are fixed in `control-plane/config/scramble.php`, and its paths are in alphabetical order whatever the order of the routes.
@@ -49,6 +49,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `Control plane` CI workflow regenerates the OpenAPI specification and fails on any difference from the committed `contracts/api/openapi.json`, including when the file is missing. The workflow also runs on pull requests that touch `contracts/api/`.
 - "API contract" section in `control-plane/README.md`: how to regenerate the OpenAPI specification and how the test and CI enforce it.
 - Decision record 0006: the OpenAPI specification is generated with Scramble, a runtime dependency with its documentation routes disabled.
+- `node` service in the development stack: Node 24.21.0 with pnpm 12.8.1, for the web workspace. It runs as the host user, mounts `web/` and (read-only) `contracts/`, and keeps the pnpm store in a volume. Run `make -C infrastructure/development up` once to build it.
+- `web/.nvmrc` and the `packageManager` field of `web/package.json`, which pin Node and pnpm for the web workspace.
+- Decision record 0007: Node 24, pnpm and TypeScript 6 for the web workspace.
 
 ---
 
@@ -60,10 +63,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `php` service of the development stack also mounts `contracts/` (at `/var/www/contracts`), so the control plane can read and write the committed API contract. Run `make -C infrastructure/development up` once to recreate the container.
 - `GET /api/v1/health` is documented in the OpenAPI specification: a summary and description, public access, and a `200` response whose `status` is the `HealthStatus` enum (`ok`). The response body is unchanged.
 - `.editorconfig` exempts the generated `contracts/api/openapi.json` from the JSON indent and final-newline rules, so saving it in an editor cannot make it differ from the generator's output.
+- The smoke test of the development stack also checks that the `node` service runs the Node and pnpm versions the web workspace pins.
+- The development-environment CI workflow also runs on pull requests that change `web/.nvmrc` or `web/package.json`.
 
 ---
 
 ### Fixed
 
 - `UserSpec` in the agent now rejects paths that start with `//` (the same directory as `/` on Linux, which slipped past the root check), `/` as a shell, `:` and control characters in the name, home and shell, an empty name, and a name starting with `-`.
-- `ensure_user` now refuses a home whose parent is missing or is not a directory before changing anything. It used to create the user first and fail afterwards, leaving the account behind on every run.
+- `ensure_user` now refuses a home whose parent is missing or is not a directory before changing anything. It used to create the user first and fail afterward, leaving the account behind on every run.

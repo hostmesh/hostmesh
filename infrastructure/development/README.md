@@ -9,7 +9,7 @@ One command starts the services Hostmesh needs for local development, on the hos
 | `api.hostmesh.test`   | Laravel API         | The control plane    |
 | `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder          |
 
-The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2 and a PHP 8.5 service for the control plane. Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM. Node will also run as a Compose service; it is added together with the web workspace (see [decision 0003](../../docs/decisions/0003-development-runtimes-in-containers.md)).
+The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane and a Node 24 service for the web workspace. Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM. A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)). The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet.
 
 ## Requirements
 
@@ -39,15 +39,15 @@ The smoke test must end with `All checks passed`. Then open <https://app.hostmes
 
 Run them as `make -C infrastructure/development <target>`, or as `make <target>` from this directory.
 
-| Target    | What it does                                                                                                                                             |
-|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `up`      | Creates `.env` from `.env.example` if it is missing, starts the stack and waits until every service is healthy.                                          |
-| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                     |
-| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                          |
-| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, and runs its migrations. Safe to repeat. |
-| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS and the API's health endpoint. Exits non-zero if anything fails.                          |
-| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                         |
-| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                      |
+| Target    | What it does                                                                                                                                                                 |
+|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `up`      | Creates `.env` from `.env.example` if it is missing, starts the stack and waits until every service is healthy.                                                              |
+| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                         |
+| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data, the pnpm store and the local CA. After the next `up`, run `trust` again.                              |
+| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, and runs its migrations. Safe to repeat.                     |
+| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint and the `node` service's Node and pnpm versions. Exits non-zero if anything fails. |
+| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                             |
+| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                          |
 
 ## What `hosts` and `trust` change on your machine
 
@@ -97,6 +97,19 @@ docker compose exec php php artisan route:list
 ```
 
 Tests use the `hostmesh_test` database and Redis database 15, never the development data. See [`control-plane/README.md`](../../control-plane/README.md).
+
+## Web workspace
+
+Node runs in the `node` service as your user, with `web/` mounted at `/workspace/web` and `contracts/` mounted read-only at `/workspace/contracts`. pnpm keeps its store in the `pnpm_home` volume. The service runs commands only; it serves nothing.
+
+The image pins Node and pnpm to the versions in `web/.nvmrc` and the `packageManager` field of `web/package.json`. The smoke test fails when they differ; change all three together and run `make up` to rebuild.
+
+```bash
+docker compose exec node node --version
+docker compose exec node pnpm --version
+```
+
+See [`web/README.md`](../../web/README.md).
 
 ## PostgreSQL and Redis
 
