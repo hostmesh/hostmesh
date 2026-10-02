@@ -36,6 +36,8 @@ make -C agent check
 
 One test: `uv run --directory agent pytest -k <name>`.
 
+The agent's own command line has one command so far: `uv run --directory agent hostmesh-agent version`.
+
 ## Requirements
 
 uv 0.12. Python 3.13 is the minimum, because it is what Debian 13 ships. See [decision 0005](../docs/decisions/0005-python-3-13-and-uv-for-the-agent.md).

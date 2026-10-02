@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Reusable contract test classes for both interfaces in `agent/tests/support/`, run against the fakes now and against the real implementations later.
 - `ensure_user` in the agent (`agent/reconciliation/user.py`): the first idempotent operation, built on the `Users` and `Filesystem` interfaces. It creates or corrects a user and its home directory, reports the changes it made, refuses a home path that is not a directory, and rejects relative paths, `..` components, `/` as home and out-of-range modes.
 - Tests for `ensure_user` covering create, no-op when converged, drift repair, apply twice and resume after an interruption at every step, with a Hypothesis property over arbitrary starting states and interruption points.
+- `hostmesh-agent` command-line entry point with a `version` command.
 
 ### Changed
 

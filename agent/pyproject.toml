@@ -11,7 +11,7 @@ dependencies = [
     "httpx>=0.28.1,<1",
 ]
 
-[project-scripts]
+[project.scripts]
 hostmesh-agent = "agent.cli:main"
 
 [dependency-groups]
