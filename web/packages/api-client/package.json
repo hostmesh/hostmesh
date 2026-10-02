@@ -6,7 +6,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate": "openapi-typescript ../../../contracts/api/openapi.json --output src/generated/schema.d.ts",
+    "generate": "rm -rf src/generated && openapi-typescript ../../../contracts/api/openapi.json --output src/generated/schema.d.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

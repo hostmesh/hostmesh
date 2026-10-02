@@ -48,14 +48,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       # web/packages/api-client/src/generated is generated, never edited
-      # (spec sections 28 and 37). --intent-to-add makes a file that was
-      # generated but never committed show up as a diff; git diff ignores
-      # untracked files.
+      # (spec sections 28 and 37). The command empties the directory first,
+      # so a committed file the generator does not write shows up as deleted.
+      # --intent-to-add makes a file that was generated but never committed
+      # show up as a diff; git diff ignores untracked files. The comparison
+      # is with HEAD, not the index: git add also records the deletions.
       - name: Typed client is up to date
         run: |
           pnpm generate:api
           git add --intent-to-add packages/api-client/src/generated
-          git diff --exit-code -- packages/api-client/src/generated
+          git diff --exit-code HEAD -- packages/api-client/src/generated
       - name: ESLint
         run: pnpm lint
       - name: vue-tsc
