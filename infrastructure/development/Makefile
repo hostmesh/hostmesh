@@ -10,7 +10,7 @@ export HOST_UID := $(shell id -u)
 export HOST_GID := $(shell id -g)
 
 up: .env
-		docker compose up --detach --wait
+		docker compose up --detach --wait --build
 
 down: .env
 		docker compose down

@@ -49,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `Control plane` CI workflow regenerates the OpenAPI specification and fails on any difference from the committed `contracts/api/openapi.json`, including when the file is missing. The workflow also runs on pull requests that touch `contracts/api/`.
 - "API contract" section in `control-plane/README.md`: how to regenerate the OpenAPI specification and how the test and CI enforce it.
 - Decision record 0006: the OpenAPI specification is generated with Scramble, a runtime dependency with its documentation routes disabled.
-- `node` service in the development stack: Node 24.21.0 with pnpm 12.8.1, for the web workspace. It runs as the host user, mounts `web/` and (read-only) `contracts/`, and keeps the pnpm store in a volume. Run `make -C infrastructure/development up` once to build it.
+- `node` service in the development stack: Node 24.21.0 with pnpm 12.8.1, for the web workspace. It runs as the host user and mounts `web/` and (read-only) `contracts/`. pnpm keeps its store in `web/node_modules/.pnpm-store`. Run `make -C infrastructure/development up` once to build it.
 - `web/.nvmrc` and the `packageManager` field of `web/package.json`, which pin Node and pnpm for the web workspace.
 - Decision record 0007: Node 24, pnpm and TypeScript 6 for the web workspace.
 - Web workspace in `web/`: a pnpm workspace (`apps/*`, `packages/*`) with one catalog of dependency versions and a committed lockfile.
@@ -77,6 +77,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The smoke test of the development stack also checks that the `node` service runs the Node and pnpm versions the web workspace pins.
 - The development-environment CI workflow also runs on pull requests that change `web/.nvmrc` or `web/package.json`.
 - `make install` for the development stack also installs the web workspace's dependencies from its lockfile.
+- `make up` for the development stack builds the images whose Dockerfile changed before it starts the stack. It used to keep an existing image, so a changed PHP or Node version was not applied.
 - `.editorconfig` exempts the generated API client types from the TypeScript indent rule, so saving the file in an editor cannot make it differ from the generator's output.
 
 ---

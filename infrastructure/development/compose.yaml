@@ -68,7 +68,6 @@ services:
       # Mounted so that ../contracts resolves in the container as it does
       # on the host and in CI.
       - ../../contracts:/workspace/contracts:ro
-      - pnpm_home:/pnpm
     healthcheck:
       test: ["CMD", "node", "--version"]
       interval: 2s
@@ -102,4 +101,3 @@ volumes:
   redis_data:
   caddy_data:
   caddy_config:
-  pnpm_home:

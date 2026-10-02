@@ -13,11 +13,8 @@ RUN npm install --global pnpm@12.8.1 \
     && npm cache clean --force
 
 # The container runs as the host user, who has no home directory inside it.
-# pnpm keeps its store in $PNPM_HOME/store, on the pnpm_home volume. The
-# directory is world-writable so that the volume created from it is too.
-ENV HOME=/tmp/home \
-    PNPM_HOME=/pnpm
-
-RUN mkdir -p /pnpm && chmod 1777 /pnpm
+# pnpm keeps its store on the workspace's filesystem, in
+# web/node_modules/.pnpm-store, so packages are hard-linked, not copied.
+ENV HOME=/tmp/home
 
 WORKDIR /workspace/web
