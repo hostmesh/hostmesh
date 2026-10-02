@@ -4,6 +4,7 @@
 
 declare(strict_types=1);
 
+use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
@@ -61,11 +62,24 @@ it('generates the same document on every machine', function (): void {
         ->and(generateOpenApiDocument()['servers'])->toBe([['url' => '/api/v1']]);
 });
 
+it('keeps the relative server URL when the API path uses the include and exclude form', function (): void {
+    config(['scramble.api_path' => ['include' => 'api/v1', 'exclude' => ['api/v1/internal']]]);
+    Scramble::configure()->useConfig(config('scramble'));
+
+    expect(generateOpenApiDocument()['servers'])->toBe([['url' => '/api/v1']]);
+});
+
 it('lists paths in alphabetical order, whatever the order of the routes', function (): void {
     Route::get('/api/v1/zebra', fn (): array => ['ok' => true]);
     Route::get('/api/v1/aardvark', fn (): array => ['ok' => true]);
 
-    expect(array_keys(generateOpenApiDocument()['paths']))->toBe(['/aardvark', '/health', '/zebra']);
+    // Asserts the order, not the list: a new endpoint must not fail this test.
+    $paths = array_keys(generateOpenApiDocument()['paths']);
+    $sorted = $paths;
+    sort($sorted, SORT_STRING);
+
+    expect($paths)->toBe($sorted)
+        ->and(array_values(array_intersect($paths, ['/zebra', '/aardvark'])))->toBe(['/aardvark', '/zebra']);
 });
 
 it('serves no API documentation', function (string $uri): void {

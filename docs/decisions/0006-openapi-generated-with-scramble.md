@@ -8,12 +8,12 @@
 
 The API is the contract (spec sections 28 and 37): the OpenAPI specification is generated from the Laravel code and committed to `contracts/api/`, the TypeScript client is generated from it, and CI fails when either is stale. The spec names Scramble as an example, so the generator still had to be chosen, and the committed file has to be byte-identical wherever it is generated.
 
-Checked on 2026-10-02: `dedoc/scramble` v0.13.47 (MIT, released 2026-09-30) requires `php ^8.1` and `illuminate/contracts ^10.0|^11.0|^12.0|^13.0`, and installs cleanly into the control plane (Laravel 13.34, PHP 8.5), adding only `spatie/laravel-package-tools`. It infers the document from routes, controllers, enums and resources, so the code stays the single source.
+Checked on 2026-10-02: `dedoc/scramble` v0.13.47 (MIT, released 2026-09-30) requires `php ^8.1` and `illuminate/contracts ^10.0|^11.0|^12.0|^13.0`, and installs cleanly into the control plane (Laravel 13.34, PHP 8.5). The only new package it brings is `spatie/laravel-package-tools`. It infers the document from routes, controllers, enums and resources, so the code stays the single source.
 
 ## Options considered
 
-- **Scramble as a development dependency.** Production carries no generator. But controllers carry Scramble attributes, which would then name classes that do not exist in production, and the service provider would need `class_exists()` guards.
-- **Scramble as a runtime dependency, with its routes disabled.** One more inert package in production. No guards, and the attribute classes always exist.
+- **Scramble as a development dependency.** Production carries no generator. PHP loads an attribute's class only when the attribute is instantiated, so the Scramble attributes on controllers would be inert without the package, but only as long as nothing reflects on them. The service provider would need `class_exists()` guards.
+- **Scramble as a runtime dependency, with its routes disabled.** No guards, and the attribute classes always exist. The cost: a 0.x package and its service provider load on every request, and `myclabs/deep-copy` and `phpstan/phpdoc-parser` become runtime packages too.
 - **A hand-written or annotation-only specification.** Rejected by the spec: the contract must be generated from the code.
 
 ## Decision

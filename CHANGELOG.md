@@ -59,6 +59,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The agent's coverage gate no longer counts its in-memory fakes and the mutation journal, so it measures production code only.
 - The `php` service of the development stack also mounts `contracts/` (at `/var/www/contracts`), so the control plane can read and write the committed API contract. Run `make -C infrastructure/development up` once to recreate the container.
 - `GET /api/v1/health` is documented in the OpenAPI specification: a summary and description, public access, and a `200` response whose `status` is the `HealthStatus` enum (`ok`). The response body is unchanged.
+- `.editorconfig` exempts the generated `contracts/api/openapi.json` from the JSON indent and final-newline rules, so saving it in an editor cannot make it differ from the generator's output.
 
 ---
 

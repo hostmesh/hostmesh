@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\Path;
@@ -27,8 +28,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Keeps the generated document identical on every machine: Scramble
         // builds the server URL from APP_URL and lists paths in route order.
-        Scramble::configure()->withDocumentTransformers(function (OpenApi $document): void {
-            $document->servers = [new Server('/'.config()->string('scramble.api_path'))];
+        Scramble::configure()->withDocumentTransformers(function (OpenApi $document, OpenApiContext $context): void {
+            $document->servers = [new Server('/'.$context->config->apiPath()->serverPath())];
 
             usort($document->paths, fn (Path $a, Path $b): int => $a->path <=> $b->path);
         });
