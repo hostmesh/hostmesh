@@ -24,4 +24,9 @@ return [
     'ui' => [
         'title' => 'Hostmesh API',
     ],
+
+    // Scramble's browser dev tools follow APP_DEBUG by default.
+    'dev_tools' => [
+        'enabled' => false,
+    ],
 ];

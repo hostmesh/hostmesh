@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
+use function Pest\Laravel\get;
+
 // Spec sections 28 and 37: the OpenAPI document is generated from the code
 // and committed. Regenerate it with `composer openapi`; never edit it.
 
@@ -65,3 +67,7 @@ it('lists paths in alphabetical order, whatever the order of the routes', functi
 
     expect(array_keys(generateOpenApiDocument()['paths']))->toBe(['/aardvark', '/health', '/zebra']);
 });
+
+it('serves no API documentation', function (string $uri): void {
+    get($uri)->assertNotFound();
+})->with(['/docs/api', '/docs/api.json', '/_scramble/dev-tools/devtools.js']);

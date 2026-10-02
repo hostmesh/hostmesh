@@ -15,7 +15,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // The control plane serves no UI. Scramble only generates
+        // contracts/api/openapi.json (`composer openapi`).
+        Scramble::ignoreDefaultRoutes();
     }
 
     /**

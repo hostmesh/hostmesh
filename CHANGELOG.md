@@ -45,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - OpenAPI specification of the control plane's API in `contracts/api/openapi.json`, generated from the Laravel code by Scramble (`dedoc/scramble` 0.13). `composer openapi` in the control plane regenerates it. It is never edited by hand.
 - Contract test for the OpenAPI specification: the control plane's test suite fails when `contracts/api/openapi.json` is missing or differs from the freshly generated document.
 - The OpenAPI specification is identical on every machine: its server URL is the relative `/api/v1` instead of one built from `APP_URL`, its title and version are fixed in `control-plane/config/scramble.php`, and its paths are in alphabetical order whatever the order of the routes.
+- Tests that the control plane serves no API documentation: Scramble's `/docs/api` page, its `/docs/api.json` route and its browser dev tools are switched off, so the package only generates the committed specification.
 
 ---
 
