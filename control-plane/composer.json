@@ -6,6 +6,7 @@
     "license": "Apache-2.0",
     "require": {
         "php": "^8.5",
+        "dedoc/scramble": "^0.13.47",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0"
     },
@@ -47,6 +48,7 @@
             "@analyse",
             "@test:coverage"
         ],
+        "openapi": "@php artisan scramble:export",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

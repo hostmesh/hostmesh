@@ -1,0 +1,43 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Hostmesh API",
+        "version": "v1",
+        "description": "The Hostmesh control plane API."
+    },
+    "servers": [
+        {
+            "url": "http://api.hostmesh.test/api/v1"
+        }
+    ],
+    "paths": {
+        "/health": {
+            "get": {
+                "operationId": "v1.health",
+                "tags": [
+                    "Health"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
