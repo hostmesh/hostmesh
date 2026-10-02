@@ -14,19 +14,21 @@
         "/health": {
             "get": {
                 "operationId": "v1.health",
+                "description": "Reports that the application booted and can answer. It checks no dependency.",
+                "summary": "Liveness check",
                 "tags": [
                     "Health"
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
+                        "description": "The API is up.",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "status": {
-                                            "type": "string"
+                                            "$ref": "#/components/schemas/HealthStatus"
                                         }
                                     },
                                     "required": [
@@ -36,7 +38,19 @@
                             }
                         }
                     }
-                }
+                },
+                "security": []
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "HealthStatus": {
+                "type": "string",
+                "enum": [
+                    "ok"
+                ],
+                "title": "HealthStatus"
             }
         }
     }

@@ -71,3 +71,22 @@ it('lists paths in alphabetical order, whatever the order of the routes', functi
 it('serves no API documentation', function (string $uri): void {
     get($uri)->assertNotFound();
 })->with(['/docs/api', '/docs/api.json', '/_scramble/dev-tools/devtools.js']);
+
+it('documents the health endpoint and its response', function (): void {
+    $document = generateOpenApiDocument();
+    $operation = $document['paths']['/health']['get'];
+
+    expect($operation['summary'] ?? null)->toBe('Liveness check')
+        ->and($operation['description'])->toBe('Reports that the application booted and can answer. It checks no dependency.')
+        ->and($operation['security'])->toBe([])
+        ->and($operation['responses']['200']['description'])->toBe('The API is up.')
+        ->and($operation['responses']['200']['content']['application/json']['schema'])->toBe([
+            'type' => 'object',
+            'properties' => ['status' => ['$ref' => '#/components/schemas/HealthStatus']],
+            'required' => ['status'],
+        ])
+        ->and($document['components']['schemas']['HealthStatus'])->toMatchArray([
+            'type' => 'string',
+            'enum' => ['ok'],
+        ]);
+});
