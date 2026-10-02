@@ -43,7 +43,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `hostmesh-agent` command-line entry point with a `version` command.
 - CI workflow `Agent`: ruff, mypy and pytest (unit and contract tests) with the coverage gate, on Python 3.13 with a uv dependency cache. Runs on pull requests that touch `agent/` or `contracts/agent-protocol/`.
 
+---
+
 ### Changed
 
 - `api.hostmesh.test` now serves the control plane through PHP-FPM instead of a placeholder, and the smoke test checks `https://api.hostmesh.test/api/v1/health`.
 - The development-environment CI workflow installs the control plane before running the smoke test.
+- The agent's coverage gate no longer counts its in-memory fakes and the mutation journal, so it measures production code only.
+
+---
+
+### Fixed
+
+- `UserSpec` in the agent now rejects paths that start with `//` (the same directory as `/` on Linux, which slipped past the root check), `/` as a shell, `:` and control characters in the name, home and shell, an empty name, and a name starting with `-`.
+- `ensure_user` now refuses a home whose parent is missing or is not a directory before changing anything. It used to create the user first and fail afterwards, leaving the account behind on every run.

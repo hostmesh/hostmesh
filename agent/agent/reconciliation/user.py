@@ -16,8 +16,13 @@ _MAX_MODE = 0o7777
 _ROOT = PurePosixPath("/")
 
 
+def _has_unsafe_character(text: str) -> bool:
+    """True for ``:``, the passwd field separator, and for any non-printable character."""
+    return any(character == ":" or not character.isprintable() for character in text)
+
+
 class PathConflictError(Exception):
-    """The home path exists and is not a directory. Nothing was changed."""
+    """The home directory can be neither created nor adopted. Nothing was changed."""
 
 
 class Change(enum.Enum):
@@ -38,11 +43,20 @@ class UserSpec:
     home_mode: int
 
     def __post_init__(self) -> None:
+        if not self.name or self.name.startswith("-") or _has_unsafe_character(self.name):
+            raise ValueError(
+                "name must not be empty, start with '-' or contain ':' or control characters: "
+                f"{self.name!r}"
+            )
         for label, path in (("home", self.home), ("shell", self.shell)):
-            if not path.is_absolute() or ".." in path.parts:
-                raise ValueError(f"{label} must be an absolute path without '..': {path}")
-        if self.home == _ROOT:
-            raise ValueError("home must not be the root directory")
+            text = str(path)
+            # root is "//" after exactly two leading slashes, and "" for a relative path.
+            if path.root != "/" or ".." in path.parts:
+                raise ValueError(f"{label} must be an absolute path without '..': {text!r}")
+            if path == _ROOT:
+                raise ValueError(f"{label} must not be the root directory")
+            if _has_unsafe_character(text):
+                raise ValueError(f"{label} must not contain ':' or control characters: {text!r}")
         if not 0 <= self.home_mode <= _MAX_MODE:
             raise ValueError(f"home_mode must be between 0 and 0o7777: {self.home_mode}")
 
@@ -52,11 +66,16 @@ def ensure_user(spec: UserSpec, *, users: Users, filesystem: Filesystem) -> tupl
 
     Returns the changes made, in order, and ``()`` when nothing differed.
     Raises ``PathConflictError`` before changing anything if the home path
-    exists and is not a directory.
+    exists and is not a directory, or if it is absent and its parent is not an
+    existing directory.
     """
     entry = filesystem.stat(spec.home)
-    if entry is not None and entry.kind is not EntryKind.DIRECTORY:
-        raise PathConflictError(str(spec.home))
+    if entry is None:
+        parent = filesystem.stat(spec.home.parent)
+        if parent is None or parent.kind is not EntryKind.DIRECTORY:
+            raise PathConflictError(f"{spec.home.parent} is not an existing directory")
+    elif entry.kind is not EntryKind.DIRECTORY:
+        raise PathConflictError(f"{spec.home} exists and is not a directory")
 
     changes: list[Change] = []
 

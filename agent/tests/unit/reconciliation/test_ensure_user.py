@@ -201,20 +201,57 @@ def test_refuses_a_home_path_that_is_not_a_directory() -> None:
     assert world.state() == before
 
 
+def test_refuses_a_missing_parent_before_changing_anything() -> None:
+    journal = Journal()
+    world = World(journal, FakeUsers(journal), FakeFilesystem(journal))
+
+    with pytest.raises(PathConflictError, match=r"^/home is not an existing directory$"):
+        world.ensure()
+
+    assert journal.mutations == []
+    assert world.users.get(SPEC.name) is None
+
+
+def test_refuses_a_parent_that_is_not_a_directory_before_changing_anything() -> None:
+    journal = Journal()
+    world = World(journal, FakeUsers(journal), FakeFilesystem(journal))
+    world.filesystem.put(HOME.parent, Entry(EntryKind.FILE, uid=0, gid=0, mode=0o644))
+
+    with pytest.raises(PathConflictError, match=r"^/home is not an existing directory$"):
+        world.ensure()
+
+    assert journal.mutations == []
+    assert world.users.get(SPEC.name) is None
+
+
 @pytest.mark.parametrize(
-    ("home", "shell", "home_mode"),
+    ("name", "home", "shell", "home_mode"),
     [
-        pytest.param(PurePosixPath("home/acct1"), NOLOGIN, 0o750, id="relative-home"),
-        pytest.param(PurePosixPath("/home/../etc"), NOLOGIN, 0o750, id="home-with-dotdot"),
-        pytest.param(PurePosixPath("/"), NOLOGIN, 0o750, id="root-as-home"),
-        pytest.param(HOME, PurePosixPath("bin/bash"), 0o750, id="relative-shell"),
-        pytest.param(HOME, PurePosixPath("/bin/../bin/bash"), 0o750, id="shell-with-dotdot"),
-        pytest.param(HOME, NOLOGIN, -1, id="negative-mode"),
-        pytest.param(HOME, NOLOGIN, 0o10000, id="mode-above-range"),
+        pytest.param("acct1", PurePosixPath("home/acct1"), NOLOGIN, 0o750, id="relative-home"),
+        pytest.param("acct1", PurePosixPath("/home/../etc"), NOLOGIN, 0o750, id="home-with-dotdot"),
+        pytest.param("acct1", PurePosixPath("/"), NOLOGIN, 0o750, id="root-as-home"),
+        pytest.param("acct1", PurePosixPath("//"), NOLOGIN, 0o750, id="double-slash-root-as-home"),
+        pytest.param("acct1", PurePosixPath("//etc"), NOLOGIN, 0o750, id="double-slash-home"),
+        pytest.param("acct1", PurePosixPath("/home/a:b"), NOLOGIN, 0o750, id="home-with-colon"),
+        pytest.param("acct1", PurePosixPath("/home/a\nb"), NOLOGIN, 0o750, id="home-with-newline"),
+        pytest.param("acct1", PurePosixPath("/home/a\0b"), NOLOGIN, 0o750, id="home-with-nul"),
+        pytest.param("acct1", HOME, PurePosixPath("bin/bash"), 0o750, id="relative-shell"),
+        pytest.param(
+            "acct1", HOME, PurePosixPath("/bin/../bin/bash"), 0o750, id="shell-with-dotdot"
+        ),
+        pytest.param("acct1", HOME, PurePosixPath("/"), 0o750, id="root-as-shell"),
+        pytest.param("acct1", HOME, PurePosixPath("//bin/bash"), 0o750, id="double-slash-shell"),
+        pytest.param("acct1", HOME, PurePosixPath("/bin/ba:sh"), 0o750, id="shell-with-colon"),
+        pytest.param("", HOME, NOLOGIN, 0o750, id="empty-name"),
+        pytest.param("-o root", HOME, NOLOGIN, 0o750, id="name-starting-with-dash"),
+        pytest.param("a:b", HOME, NOLOGIN, 0o750, id="name-with-colon"),
+        pytest.param("a\nb", HOME, NOLOGIN, 0o750, id="name-with-newline"),
+        pytest.param("acct1", HOME, NOLOGIN, -1, id="negative-mode"),
+        pytest.param("acct1", HOME, NOLOGIN, 0o10000, id="mode-above-range"),
     ],
 )
 def test_spec_rejects_hostile_values(
-    home: PurePosixPath, shell: PurePosixPath, home_mode: int
+    name: str, home: PurePosixPath, shell: PurePosixPath, home_mode: int
 ) -> None:
     with pytest.raises(ValueError, match="must"):
-        UserSpec(name="acct1", home=home, shell=shell, home_mode=home_mode)
+        UserSpec(name=name, home=home, shell=shell, home_mode=home_mode)
