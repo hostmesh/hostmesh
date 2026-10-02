@@ -205,7 +205,7 @@ def test_refuses_a_missing_parent_before_changing_anything() -> None:
     journal = Journal()
     world = World(journal, FakeUsers(journal), FakeFilesystem(journal))
 
-    with pytest.raises(PathConflictError, match="/home"):
+    with pytest.raises(PathConflictError, match=r"^/home is not an existing directory$"):
         world.ensure()
 
     assert journal.mutations == []
@@ -217,7 +217,7 @@ def test_refuses_a_parent_that_is_not_a_directory_before_changing_anything() -> 
     world = World(journal, FakeUsers(journal), FakeFilesystem(journal))
     world.filesystem.put(HOME.parent, Entry(EntryKind.FILE, uid=0, gid=0, mode=0o644))
 
-    with pytest.raises(PathConflictError, match="/home"):
+    with pytest.raises(PathConflictError, match=r"^/home is not an existing directory$"):
         world.ensure()
 
     assert journal.mutations == []
