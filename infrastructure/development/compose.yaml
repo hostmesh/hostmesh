@@ -37,6 +37,10 @@ services:
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
       - ../../control-plane:/var/www/html
+      # The generated API contract (contracts/api/openapi.json) lives outside
+      # control-plane/. Mounted here so that ../contracts resolves in the
+      # container as it does on the host and in CI.
+      - ../../contracts:/var/www/contracts
     depends_on:
       postgres:
         condition: service_healthy

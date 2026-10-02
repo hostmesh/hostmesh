@@ -42,6 +42,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tests for `ensure_user` covering create, no-op when converged, drift repair, apply twice and resume after an interruption at every step, with a Hypothesis property over arbitrary starting states and interruption points.
 - `hostmesh-agent` command-line entry point with a `version` command.
 - CI workflow `Agent`: ruff, mypy and pytest (unit and contract tests) with the coverage gate, on Python 3.13 with a uv dependency cache. Runs on pull requests that touch `agent/` or `contracts/agent-protocol/`.
+- OpenAPI specification of the control plane's API in `contracts/api/openapi.json`, generated from the Laravel code by Scramble (`dedoc/scramble` 0.13). `composer openapi` in the control plane regenerates it. It is never edited by hand.
+- Contract test for the OpenAPI specification: the control plane's test suite fails when `contracts/api/openapi.json` is missing or differs from the freshly generated document.
+- The OpenAPI specification is identical on every machine: its server URL is the relative `/api/v1` instead of one built from `APP_URL`, its title and version are fixed in `control-plane/config/scramble.php`, and its paths are in alphabetical order whatever the order of the routes.
+- Tests that the control plane serves no API documentation: Scramble's `/docs/api` page, its `/docs/api.json` route and its browser dev tools are switched off, so the package only generates the committed specification.
+- The `Control plane` CI workflow regenerates the OpenAPI specification and fails on any difference from the committed `contracts/api/openapi.json`, including when the file is missing. The workflow also runs on pull requests that touch `contracts/api/`.
+- "API contract" section in `control-plane/README.md`: how to regenerate the OpenAPI specification and how the test and CI enforce it.
+- Decision record 0006: the OpenAPI specification is generated with Scramble, a runtime dependency with its documentation routes disabled.
 
 ---
 
@@ -50,6 +57,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `api.hostmesh.test` now serves the control plane through PHP-FPM instead of a placeholder, and the smoke test checks `https://api.hostmesh.test/api/v1/health`.
 - The development-environment CI workflow installs the control plane before running the smoke test.
 - The agent's coverage gate no longer counts its in-memory fakes and the mutation journal, so it measures production code only.
+- The `php` service of the development stack also mounts `contracts/` (at `/var/www/contracts`), so the control plane can read and write the committed API contract. Run `make -C infrastructure/development up` once to recreate the container.
+- `GET /api/v1/health` is documented in the OpenAPI specification: a summary and description, public access, and a `200` response whose `status` is the `HealthStatus` enum (`ok`). The response body is unchanged.
+- `.editorconfig` exempts the generated `contracts/api/openapi.json` from the JSON indent and final-newline rules, so saving it in an editor cannot make it differ from the generator's output.
 
 ---
 

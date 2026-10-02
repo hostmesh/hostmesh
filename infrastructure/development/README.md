@@ -86,11 +86,12 @@ After a `reset`, remove the old entry first (`certutil -d <database> -D -n "Host
 
 ## Control plane
 
-PHP runs in the `php` service as your user, with `control-plane/` mounted at `/var/www/html`. Run commands from this directory:
+PHP runs in the `php` service as your user, with `control-plane/` mounted at `/var/www/html` and `contracts/` at `/var/www/contracts`. Run commands from this directory:
 
 ```bash
-docker compose exec php composer check          # Pint, Larastan, Pest with the coverage gate
-docker compose exec php composer lint:fix       # fix code style
+docker compose exec php composer check                  # Pint, Larastan, Pest with the coverage gate
+docker compose exec php composer lint:fix               # fix code style
+docker compose exec php composer openapi                # regenerate contracts/api/openapi.json
 docker compose exec php vendor/bin/pest --filter=health
 docker compose exec php php artisan route:list
 ```
