@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://api.hostmesh.test/api/v1"
+            "url": "/api/v1"
         }
     ],
     "paths": {
