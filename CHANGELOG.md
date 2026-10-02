@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `make install` for the development stack: installs the control plane's dependencies, creates its `.env` and key, and runs its migrations.
 - `control-plane/README.md` with the layout, commands and testing rules, and a control plane section in the development environment guide.
 - Decision record 0004: PHP 8.5 for the control plane.
+- Decision record 0005: Python 3.13 and uv for the agent.
 
 ### Changed
 
