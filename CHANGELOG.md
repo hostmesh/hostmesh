@@ -62,6 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `@hostmesh/api-client` in `web/packages/api-client`: TypeScript types generated from `contracts/api/openapi.json` by openapi-typescript, and `createApiClient`, a thin openapi-fetch client typed by them. `pnpm generate:api` regenerates the types. The generated directory is never edited by hand.
 - Type-level test for the API client: it fails when the client and the OpenAPI specification disagree, checked on the health endpoint and on a path the specification does not have. A runtime test types its mock response from the generated schema, so a contract change breaks the typecheck.
 - Decision record 0008: the typed client is generated with openapi-typescript and openapi-fetch.
+- Both apps depend on `@hostmesh/ui` and `@hostmesh/api-client` as workspace packages, with a test in each app that they resolve.
 - CI workflow `Web`: ESLint, vue-tsc, Vitest and the builds of both apps, on the Node and pnpm versions the workspace pins, with a pnpm store cache. It regenerates the typed API client and fails on any difference from the committed files. Runs on pull requests that touch `web/` or `contracts/api/`.
 
 ---

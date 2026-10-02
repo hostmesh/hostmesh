@@ -12,7 +12,7 @@ The two Vue 3 single-page applications and the packages they share. Both apps ar
 | `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`. |
 | `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                  |
 
-Shared packages export their TypeScript source, so they have no build step.
+Shared packages export their TypeScript source, so they have no build step. Both apps depend on them as `workspace:*` packages, and a test in each app (`src/workspace.test.ts`) checks that they resolve.
 
 ## Commands
 
