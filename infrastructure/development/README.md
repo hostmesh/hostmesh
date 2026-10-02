@@ -45,7 +45,7 @@ Run them as `make -C infrastructure/development <target>`, or as `make <target>`
 | `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                  |
 | `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                       |
 | `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile. Safe to repeat. |
-| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint and the `node` service's Node and pnpm versions. Exits non-zero if anything fails.                                          |
+| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint, the node service's Node and pnpm versions and its Chromium build. Exits non-zero if anything fails.                        |
 | `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                      |
 | `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                   |
 
@@ -103,6 +103,8 @@ Tests use the `hostmesh_test` database and Redis database 15, never the developm
 Node runs in the `node` service as your user, with `web/` mounted at `/workspace/web` and `contracts/` mounted read-only at `/workspace/contracts`. pnpm keeps its store in `web/node_modules/.pnpm-store`, on the same filesystem as the workspace, so packages are hard-linked instead of copied; deleting `web/node_modules` deletes the store too. The service runs commands only; it serves nothing.
 
 The image pins Node and pnpm to the versions in `web/.nvmrc` and the `packageManager` field of `web/package.json`. The smoke test fails when they differ; change all three together and run `make up`, which rebuilds the image.
+
+The image also holds Chromium's headless shell, installed by Playwright into `/opt/playwright`, for the component tests of `@hostmesh/ui` (decision [0009](../../docs/decisions/0009-shadcn-vue-in-the-ui-package-and-browser-mode-tests.md)). `PLAYWRIGHT_VERSION` in the Dockerfile must equal the `playwright` entry of the catalog in `web/pnpm-workspace.yaml`; the smoke test fails when they differ. Change both together and run `make up`.
 
 ```bash
 docker compose exec node pnpm check                      # ESLint, vue-tsc, Vitest and both builds

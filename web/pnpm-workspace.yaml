@@ -18,6 +18,9 @@ catalog:
   openapi-fetch: ^0.17.0
   openapi-typescript: ^7.13.0
   pinia: ^4.0.3
+  # Exact: each Playwright release drives one Chromium build, and the node
+  # image installs the build of this version (decision 0009).
+  playwright: 1.63.0
   tailwindcss: ^4.3.3
   # 6.0.x only: typescript-eslint accepts <6.1.0 and vue-tsc fails on 7.
   typescript: ~6.0.3

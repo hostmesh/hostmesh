@@ -59,6 +59,9 @@ services:
     # are not owned by root. The Makefile exports HOST_UID and HOST_GID.
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     init: true
+    # Chromium keeps page memory in /dev/shm. Docker's default of 64 MB makes
+    # it crash under load (Playwright's Docker guidance).
+    shm_size: 1gb
     # Serves nothing yet: it exists so that pnpm commands can be run with
     # `docker compose exec node`.
     command: ["sleep", "infinity"]

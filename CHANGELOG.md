@@ -80,6 +80,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `make install` for the development stack also installs the web workspace's dependencies from its lockfile.
 - `make up` for the development stack builds the images whose Dockerfile changed before it starts the stack. It used to keep an existing image, so a changed PHP or Node version was not applied.
 - `.editorconfig` exempts the generated API client types from the TypeScript indent rule, so saving the file in an editor cannot make it differ from the generator's output.
+- The `node` service of the development stack holds Chromium's headless shell (Playwright 1.63.0) for browser-mode component tests, and gets 1 GB of shared memory. Run `make -C infrastructure/development up` once to rebuild the image.
+- The smoke test of the development stack also checks that the `node` service has the Chromium build of the Playwright version pinned in the web workspace's catalog.
+- The development-environment CI workflow also runs on pull requests that change `web/pnpm-workspace.yaml`.
 
 ---
 
