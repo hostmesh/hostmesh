@@ -53,7 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `web/.nvmrc` and the `packageManager` field of `web/package.json`, which pin Node and pnpm for the web workspace.
 - Decision record 0007: Node 24, pnpm and TypeScript 6 for the web workspace.
 - Web workspace in `web/`: a pnpm workspace (`apps/*`, `packages/*`) with one catalog of dependency versions and a committed lockfile.
-- Web tooling: TypeScript 6 in strict mode with `noUncheckedIndexedAccess`, ESLint 10 with a flat config, vue-tsc and Vitest 5. `pnpm check` runs lint, typecheck, tests and builds, also available as `lint`, `lint:fix`, `typecheck`, `test` and `build`.
+- Web tooling: TypeScript 6 in strict mode with `noUncheckedIndexedAccess`, ESLint 10 with a flat config, vue-tsc and Vitest 5. Each app typechecks its browser code without Node types, and its Vite configuration separately. `pnpm check` runs lint, typecheck, tests and builds, also available as `lint`, `lint:fix`, `typecheck`, `test` and `build`.
 - Admin app skeleton in `web/apps/admin`: Vue 3, Vite 8, Tailwind 4, Pinia and Vue Router, with a placeholder page and a smoke test that mounts the root component. It builds to static output in `dist/`.
 - `@hostmesh/ui` in `web/packages/ui`: an empty skeleton for the shared components.
 - ESLint rules for the apps and `@hostmesh/ui` that reject the direct ways around the generated client: `fetch` and `XMLHttpRequest` (also through `window`, `globalThis` and `self`), `navigator.sendBeacon`, and imports of `openapi-fetch` and other HTTP clients.

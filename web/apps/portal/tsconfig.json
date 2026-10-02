@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
+//
+// The browser code. No Node types here: `process` or `node:fs` in a
+// component must not typecheck. vite.config.ts is in tsconfig.node.json.
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["vite/client", "node"]
+    "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.vue"]
 }
