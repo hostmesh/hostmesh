@@ -52,6 +52,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `node` service in the development stack: Node 24.21.0 with pnpm 12.8.1, for the web workspace. It runs as the host user, mounts `web/` and (read-only) `contracts/`, and keeps the pnpm store in a volume. Run `make -C infrastructure/development up` once to build it.
 - `web/.nvmrc` and the `packageManager` field of `web/package.json`, which pin Node and pnpm for the web workspace.
 - Decision record 0007: Node 24, pnpm and TypeScript 6 for the web workspace.
+- Web workspace in `web/`: a pnpm workspace (`apps/*`, `packages/*`) with one catalog of dependency versions and a committed lockfile.
+- Web tooling: TypeScript 6 in strict mode with `noUncheckedIndexedAccess`, ESLint 10 with a flat config, vue-tsc and Vitest 5. `pnpm check` runs lint, typecheck, tests and builds, also available as `lint`, `lint:fix`, `typecheck`, `test` and `build`.
+- Admin app skeleton in `web/apps/admin`: Vue 3, Vite 8, Tailwind 4, Pinia and Vue Router, with a placeholder page and a smoke test that mounts the root component. It builds to static output in `dist/`.
+- `@hostmesh/ui` in `web/packages/ui`: an empty skeleton for the shared components.
+- ESLint rule for the apps and `@hostmesh/ui`: `fetch`, `XMLHttpRequest` and a direct `openapi-fetch` import are errors, so the API is reached only through the generated client.
+- `web/README.md` with the layout, commands and rules, and the web commands in the development environment guide.
 
 ---
 
@@ -65,6 +71,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `.editorconfig` exempts the generated `contracts/api/openapi.json` from the JSON indent and final-newline rules, so saving it in an editor cannot make it differ from the generator's output.
 - The smoke test of the development stack also checks that the `node` service runs the Node and pnpm versions the web workspace pins.
 - The development-environment CI workflow also runs on pull requests that change `web/.nvmrc` or `web/package.json`.
+- `make install` for the development stack also installs the web workspace's dependencies from its lockfile.
 
 ---
 

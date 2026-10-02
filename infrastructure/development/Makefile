@@ -23,6 +23,7 @@ install:
 		docker compose exec -T php sh -c 'test -f .env || cp .env.example .env'
 		docker compose exec -T php sh -c 'grep -q "^APP_KEY=base64:" .env || php artisan key:generate --ansi'
 		docker compose exec -T php php artisan migrate --force
+		docker compose exec -T node pnpm install --frozen-lockfile
 
 smoke:
 		./smoke.sh

@@ -39,15 +39,15 @@ The smoke test must end with `All checks passed`. Then open <https://app.hostmes
 
 Run them as `make -C infrastructure/development <target>`, or as `make <target>` from this directory.
 
-| Target    | What it does                                                                                                                                                                 |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `up`      | Creates `.env` from `.env.example` if it is missing, starts the stack and waits until every service is healthy.                                                              |
-| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                         |
-| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data, the pnpm store and the local CA. After the next `up`, run `trust` again.                              |
-| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, and runs its migrations. Safe to repeat.                     |
-| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint and the `node` service's Node and pnpm versions. Exits non-zero if anything fails. |
-| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                             |
-| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                          |
+| Target    | What it does                                                                                                                                                                                                          |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `up`      | Creates `.env` from `.env.example` if it is missing, starts the stack and waits until every service is healthy.                                                                                                       |
+| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                  |
+| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data, the pnpm store and the local CA. After the next `up`, run `trust` again.                                                                       |
+| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile. Safe to repeat. |
+| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint and the `node` service's Node and pnpm versions. Exits non-zero if anything fails.                                          |
+| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                      |
+| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                   |
 
 ## What `hosts` and `trust` change on your machine
 
@@ -105,8 +105,10 @@ Node runs in the `node` service as your user, with `web/` mounted at `/workspace
 The image pins Node and pnpm to the versions in `web/.nvmrc` and the `packageManager` field of `web/package.json`. The smoke test fails when they differ; change all three together and run `make up` to rebuild.
 
 ```bash
-docker compose exec node node --version
-docker compose exec node pnpm --version
+docker compose exec node pnpm check                      # ESLint, vue-tsc, Vitest and both builds
+docker compose exec node pnpm lint:fix                   # fix what ESLint can fix
+docker compose exec node pnpm install                    # after changing a dependency
+docker compose exec node pnpm vitest run --project admin
 ```
 
 See [`web/README.md`](../../web/README.md).
