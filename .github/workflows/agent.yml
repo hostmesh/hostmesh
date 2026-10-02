@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Agent
+
+on:
+  pull_request:
+    paths:
+      - "agent/**"
+      - "contracts/agent-protocol/**"
+      - ".github/workflows/agent.yml"
+  # Runs on main too, so pull requests can restore the uv cache.
+  push:
+    branches:
+      - main
+    paths:
+      - "agent/**"
+      - "contracts/agent-protocol/**"
+      - ".github/workflows/agent.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Ruff, mypy and pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # 10.2.0
+        with:
+          # Must satisfy required-version in agent/pyproject.toml.
+          version: "0.12.22"
+          working-directory: agent
+          # Keyed on agent/uv.lock. Python 3.13 (agent/.python-version) is cached with it.
+          enable-cache: true
+          cache-python: true
+      - name: Install dependencies
+        run: make install
+      - name: Ruff
+        run: make lint
+      - name: mypy
+        run: make typecheck
+      # Unit and contract tests only. Integration tests need the Debian test nodes.
+      - name: pytest with the 85% coverage gate
+        run: make test-coverage

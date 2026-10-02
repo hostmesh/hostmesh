@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `ensure_user` in the agent (`agent/reconciliation/user.py`): the first idempotent operation, built on the `Users` and `Filesystem` interfaces. It creates or corrects a user and its home directory, reports the changes it made, refuses a home path that is not a directory, and rejects relative paths, `..` components, `/` as home and out-of-range modes.
 - Tests for `ensure_user` covering create, no-op when converged, drift repair, apply twice and resume after an interruption at every step, with a Hypothesis property over arbitrary starting states and interruption points.
 - `hostmesh-agent` command-line entry point with a `version` command.
+- CI workflow `Agent`: ruff, mypy and pytest (unit and contract tests) with the coverage gate, on Python 3.13 with a uv dependency cache. Runs on pull requests that touch `agent/` or `contracts/agent-protocol/`.
 
 ### Changed
 
