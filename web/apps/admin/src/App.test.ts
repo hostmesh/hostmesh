@@ -17,6 +17,6 @@ describe('admin app', () => {
       global: { plugins: [createPinia(), router] },
     })
 
-    expect(wrapper.find('h1').text()).toBe('Hostmesh admin app')
+    expect(wrapper.find('h1').text()).toBe('deliberately broken')
   })
 })
