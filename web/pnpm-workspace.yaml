@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+packages:
+  - apps/*
+  - packages/*
+
+# One version of every shared dependency for the whole workspace
+# (decision 0007). Packages refer to an entry with "catalog:".
+catalog:
+  "@eslint/js": ^10.0.1
+  "@tailwindcss/vite": ^4.3.3
+  "@types/node": ^24.19.0
+  "@vitejs/plugin-vue": ^6.0.9
+  "@vue/test-utils": ^2.5.1
+  eslint: ^10.11.0
+  eslint-plugin-vue: ^10.11.1
+  globals: ^17.12.0
+  jsdom: ^30.1.1
+  openapi-fetch: ^0.17.0
+  openapi-typescript: ^7.13.0
+  pinia: ^4.0.3
+  tailwindcss: ^4.3.3
+  # 6.0.x only: typescript-eslint accepts <6.1.0 and vue-tsc fails on 7.
+  typescript: ~6.0.3
+  typescript-eslint: ^8.71.0
+  vite: ^8.3.1
+  vitest: ^5.0.3
+  vue: ^3.5.43
+  vue-eslint-parser: ^10.4.0
+  vue-router: ^5.3.1
+  vue-tsc: ^3.3.11
+# openapi-typescript 7.13.0 declares typescript ^5.x and has no release for
+# TypeScript 6 yet. It generates the same output on 6.0 (decision 0007).
+# Remove this when it declares TypeScript 6.
+peerDependencyRules:
+  allowedVersions:
+    "openapi-typescript>typescript": "6"

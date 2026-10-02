@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
-# placeholder hostname over HTTPS and the API's health endpoint, using the
-# system resolver and trust store. Runs every check and exits non-zero if
-# any of them failed.
+# placeholder hostname over HTTPS, the API's health endpoint and the versions
+# of the node service, using the system resolver and trust store. Runs every
+# check and exits non-zero if any of them failed.
 
 set -u
 
@@ -77,12 +77,32 @@ check_api_health() {
     fi
 }
 
+# The node service must run the versions the web workspace pins: Node from
+# web/.nvmrc and pnpm from the packageManager field of web/package.json.
+# pnpm is asked from / so that it reports the version built into the image
+# rather than one it switched to for the workspace.
+check_node() {
+    local name="The node service runs the Node and pnpm versions the web workspace pins"
+    local want_node want_pnpm got_node got_pnpm
+    want_node=$(cat ../../web/.nvmrc 2>/dev/null | tr -d '[:space:]')
+    want_pnpm=$(sed -n 's/.*"packageManager": *"pnpm@\([^"+]*\).*/\1/p' ../../web/package.json 2>/dev/null)
+    got_node=$(docker compose exec -T node node --version 2>/dev/null)
+    got_pnpm=$(docker compose exec -T -w / node pnpm --version 2>/dev/null)
+    if [ -n "$want_node" ] && [ -n "$want_pnpm" ] \
+        && [ "$got_node" = "v$want_node" ] && [ "$got_pnpm" = "$want_pnpm" ]; then
+        pass "$name"
+    else
+        fail "$name" "Wanted Node ${want_node:-?} and pnpm ${want_pnpm:-?}, got ${got_node:-none} and ${got_pnpm:-none}. Run: make up"
+    fi
+}
+
 check_postgres
 check_redis
 for host in "${HOSTNAMES[@]}"; do
     check_https "$host"
 done
 check_api_health
+check_node
 
 if [ "$failures" -gt 0 ]; then
     printf '\n%d check(s) failed\n' "$failures"

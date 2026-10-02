@@ -5,6 +5,9 @@ on:
   pull_request:
     paths:
       - "infrastructure/development/**"
+      # The smoke test compares the node service with these two pins.
+      - "web/.nvmrc"
+      - "web/package.json"
       - ".github/workflows/dev-environment.yml"
 
 permissions:
