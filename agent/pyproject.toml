@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+name = "hostmesh-agent"
+version = "0.1.0.dev0"
+description = "Hostmesh node agent: an outbound-only client that reconciles desired state on a node."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1,<1",
+]
+
+[project-scripts]
+hostmesh-agent = "agent.cli:main"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.168.3",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "respx>=0.23.1",
+    "ruff>=0.16.9",
+]
+
+[build-system]
+requires = ["hatchling>=1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent"]
+
+[tool.uv]
+required-version = ">=0.12.22,<0.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "A",     # builtin shadowing
+    "ASYNC", # async pitfalls
+    "B",     # bugbear
+    "BLE",   # blind except
+    "C4",    # comprehensions
+    "E",     # pycodestyle
+    "F",     # pyflakes
+    "I",     # import order
+    "INP",   # implicit namespace packages
+    "N",     # naming
+    "PIE",
+    "PT",    # pytest style
+    "PTH",   # pathlib
+    "RET",
+    "RUF",
+    "S",     # bandit, including shell=True and os.system
+    "SIM",
+    "T20",   # print
+    "TID",   # banned APIs
+    "UP",
+    "W",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]      # pytest asserts
+"agent/cli.py" = ["T201"]  # the command line prints its output
+
+[tool.ruff.lint.isort]
+known-first-party = ["agent", "tests"]
+
+# The agent runs typed operations only, never a shell command string (spec section 5).
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"os.system".msg = "No shell command strings (spec section 5). Use a typed operation behind a services/ interface."
+"os.popen".msg = "No shell command strings (spec section 5). Use a typed operation behind a services/ interface."
+"subprocess.getoutput".msg = "No shell command strings (spec section 5). Use a typed operation behind a services/ interface."
+"subprocess.getstatusoutput".msg = "No shell command strings (spec section 5). Use a typed operation behind a services/ interface."
+"asyncio.create_subprocess_shell".msg = "No shell command strings (spec section 5). Use a typed operation behind a services/ interface."
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+files = ["agent", "tests"]
+
+[tool.pytest]
+minversion = "9.0"
+testpaths = ["tests/unit", "tests/contracts"]
+addopts = ["-ra"]
+strict = true
+filterwarnings = ["error"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+branch = true
+source = ["agent"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 85

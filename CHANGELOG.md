@@ -29,6 +29,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `control-plane/README.md` with the layout, commands and testing rules, and a control plane section in the development environment guide.
 - Decision record 0004: PHP 8.5 for the control plane.
 - Decision record 0005: Python 3.13 and uv for the agent.
+- Agent project in `agent/`: Python 3.13 managed by uv, with the package layout of spec section 26. Every service and top-level package other than the ones below is an empty stub.
+- Agent tooling: ruff (lint and format, with shell-invoking APIs banned), mypy in strict mode, and pytest with pytest-asyncio, respx and Hypothesis. `make -C agent check` runs them all, also available as `install`, `lint`, `lint-fix`, `typecheck`, `test` and `test-coverage`.
+- Coverage gate for the agent: `make -C agent test-coverage` fails below 85% branch coverage.
+- `agent/README.md` with the layout, commands and requirements.
 
 ### Changed
 
