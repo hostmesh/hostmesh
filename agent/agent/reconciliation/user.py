@@ -22,7 +22,7 @@ def _has_unsafe_character(text: str) -> bool:
 
 
 class PathConflictError(Exception):
-    """The home path exists and is not a directory. Nothing was changed."""
+    """The home directory can be neither created nor adopted. Nothing was changed."""
 
 
 class Change(enum.Enum):
@@ -66,11 +66,16 @@ def ensure_user(spec: UserSpec, *, users: Users, filesystem: Filesystem) -> tupl
 
     Returns the changes made, in order, and ``()`` when nothing differed.
     Raises ``PathConflictError`` before changing anything if the home path
-    exists and is not a directory.
+    exists and is not a directory, or if it is absent and its parent is not an
+    existing directory.
     """
     entry = filesystem.stat(spec.home)
-    if entry is not None and entry.kind is not EntryKind.DIRECTORY:
-        raise PathConflictError(str(spec.home))
+    if entry is None:
+        parent = filesystem.stat(spec.home.parent)
+        if parent is None or parent.kind is not EntryKind.DIRECTORY:
+            raise PathConflictError(f"{spec.home.parent} is not an existing directory")
+    elif entry.kind is not EntryKind.DIRECTORY:
+        raise PathConflictError(f"{spec.home} exists and is not a directory")
 
     changes: list[Change] = []
 

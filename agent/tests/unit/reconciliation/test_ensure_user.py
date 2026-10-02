@@ -201,6 +201,29 @@ def test_refuses_a_home_path_that_is_not_a_directory() -> None:
     assert world.state() == before
 
 
+def test_refuses_a_missing_parent_before_changing_anything() -> None:
+    journal = Journal()
+    world = World(journal, FakeUsers(journal), FakeFilesystem(journal))
+
+    with pytest.raises(PathConflictError, match="/home"):
+        world.ensure()
+
+    assert journal.mutations == []
+    assert world.users.get(SPEC.name) is None
+
+
+def test_refuses_a_parent_that_is_not_a_directory_before_changing_anything() -> None:
+    journal = Journal()
+    world = World(journal, FakeUsers(journal), FakeFilesystem(journal))
+    world.filesystem.put(HOME.parent, Entry(EntryKind.FILE, uid=0, gid=0, mode=0o644))
+
+    with pytest.raises(PathConflictError, match="/home"):
+        world.ensure()
+
+    assert journal.mutations == []
+    assert world.users.get(SPEC.name) is None
+
+
 @pytest.mark.parametrize(
     ("name", "home", "shell", "home_mode"),
     [
