@@ -98,6 +98,11 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.coverage.run]
 branch = true
 source = ["agent"]
+# Test doubles. They must not hold the gate up for production code.
+omit = [
+    "agent/services/journal.py",
+    "agent/services/*/fake.py",
+]
 
 [tool.coverage.report]
 show_missing = true
