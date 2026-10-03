@@ -26,6 +26,7 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`. The stylesheet re
 | `src/styles/variants.css` | Tailwind variants the components use, copied from shadcn-vue.                                   |
 | `src/components/ui/`      | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                        |
 | `src/lib/utils.ts`        | `cn()`, from shadcn-vue.                                                                        |
+| `src/composables/`        | `useColorMode()`.                                                                               |
 | `src/test/`               | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components. |
 
 Inside the package, CLI code is imported as `#ui/components/ui/<name>` and `#ui/lib/utils`. These are Node subpath imports, declared under `imports` in `package.json` and mirrored in the `paths` of `tsconfig.json` for the CLI.
@@ -49,6 +50,18 @@ Components read only these variables, through Tailwind utilities such as `bg-pri
 | `--font-sans`, `--font-mono`                | The font stacks.                                  |
 
 A theme redefines any subset of them in a stylesheet loaded after `@hostmesh/ui/styles.css`, under `:root` and, for dark mode, under `.dark`. Tokens it leaves out keep their defaults.
+
+## Dark mode
+
+Dark mode is the class `dark` on `<html>`. An app calls `useColorMode()` once at start:
+
+```ts
+import { useColorMode } from '@hostmesh/ui'
+
+const { preference, mode } = useColorMode()
+```
+
+`preference` is `'auto'`, `'light'` or `'dark'`. `'auto'`, the default, follows the system setting, also when it changes. Setting it to `'light'` or `'dark'` stores the choice in `localStorage` under `hostmesh-color-mode`. `mode` is what is applied.
 
 ## Adding a component
 

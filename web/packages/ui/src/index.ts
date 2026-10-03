@@ -6,3 +6,10 @@ export * from '#ui/components/ui/button'
 export * from '#ui/components/ui/card'
 export * from '#ui/components/ui/input'
 export { cn } from '#ui/lib/utils'
+export {
+  COLOR_MODE_STORAGE_KEY,
+  useColorMode,
+  type ColorMode,
+  type ColorModePreference,
+  type UseColorMode,
+} from './composables/color-mode'
