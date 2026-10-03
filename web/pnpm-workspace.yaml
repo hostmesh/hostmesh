@@ -10,6 +10,7 @@ allowBuilds:
 catalog:
   "@eslint/js": ^10.0.1
   '@lucide/vue': ^1.49.0
+  "@standard-schema/spec": ^1.1.0
   "@tailwindcss/vite": ^4.3.3
   "@tanstack/vue-table": ^9.2.4
   "@types/node": ^24.19.0
@@ -38,6 +39,7 @@ catalog:
   # 6.0.x only: typescript-eslint accepts <6.1.0 and vue-tsc fails on 7.
   typescript: ~6.0.3
   typescript-eslint: ^8.71.0
+  vee-validate: ^4.15.1
   vite: ^8.3.1
   vitest: ^5.0.3
   vitest-browser-vue: ^3.1.0
@@ -46,6 +48,7 @@ catalog:
   vue-router: ^5.3.1
   vue-sonner: ^2.0.9
   vue-tsc: ^3.3.11
+  zod: ^4.6.5
 # openapi-typescript 7.13.0 declares typescript ^5.x and has no release for
 # TypeScript 6 yet. It generates the same output on 6.0 (decision 0007).
 # Remove this when it declares TypeScript 6.

@@ -12,6 +12,8 @@ export * from '#ui/components/ui/separator'
 export * from '#ui/components/ui/sonner'
 export * from '#ui/components/ui/table'
 export { default as DataTable } from './components/data-table/DataTable.vue'
+export { default as FormField } from './components/form/FormField.vue'
+export { toTypedSchema } from './components/form/typed-schema'
 export {
   createDataTableColumnHelper,
   dataTableFeatures,

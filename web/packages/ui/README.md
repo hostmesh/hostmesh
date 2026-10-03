@@ -26,6 +26,7 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`. The stylesheet re
 | `src/styles/variants.css`    | Tailwind variants the components use, copied from shadcn-vue.                                   |
 | `src/components/ui/`         | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                        |
 | `src/components/data-table/` | The data-table pattern: `DataTable` and its column helper.                                      |
+| `src/components/form/`       | The form pattern: `FormField` and `toTypedSchema`.                                              |
 | `src/lib/utils.ts`           | `cn()`, from shadcn-vue.                                                                        |
 | `src/composables/`           | `useColorMode()`.                                                                               |
 | `src/test/`                  | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components. |
@@ -84,6 +85,40 @@ const columns = columnHelper.columns([
 ```
 
 Only the core features are registered (`src/components/data-table/features.ts`). Sorting, filtering and pagination come with the first list that needs them, driven by the API. A full example is in `src/components/data-table/__fixtures__/ExampleTable.vue`; it exists for the tests and is not exported.
+
+## Forms
+
+Forms use vee-validate with a Zod schema, and `FormField` for each field. `FormField` renders the label, the description and the errors, and gives the control its `id`, `aria-invalid` and `aria-describedby`:
+
+```vue
+<script setup lang="ts">
+import { Button, FormField, Input, toTypedSchema } from '@hostmesh/ui'
+import { useForm } from 'vee-validate'
+import * as z from 'zod'
+
+const schema = z.object({ email: z.email('Enter a valid email address.') })
+
+const { handleSubmit } = useForm({
+  validationSchema: toTypedSchema(schema),
+  initialValues: { email: '' },
+})
+
+const onSubmit = handleSubmit((values) => {
+  // values is typed from the schema
+})
+</script>
+
+<template>
+  <form novalidate @submit="onSubmit">
+    <FormField v-slot="{ field }" name="email" label="Email">
+      <Input v-bind="field" type="email" />
+    </FormField>
+    <Button type="submit">Save</Button>
+  </form>
+</template>
+```
+
+`toTypedSchema` adapts a Zod 4 schema (any Standard Schema) to vee-validate 4. It reports errors only; pass `initialValues` to `useForm`. A schema describes input ergonomics; the API validates again and remains the authority (spec section 29). A full example is in `src/components/form/__fixtures__/ExampleForm.vue`; it exists for the tests and is not exported.
 
 ## Adding a component
 

@@ -73,6 +73,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Label, form field (label, description, error), separator and dialog components in `@hostmesh/ui`, with accessibility checks: the field's input is named by its label and described by its description, and the dialog is named by its title, traps focus, closes on Escape and returns focus to its trigger.
 - Table and toast components in `@hostmesh/ui`. Toasts use Sonner: an app mounts `<Toaster />` once and calls `toast()`, both exported by the package.
 - Data-table pattern in `@hostmesh/ui`: `DataTable` renders typed column definitions with TanStack Table v9 and shows an empty state, with `createDataTableColumnHelper()` for the columns.
+- Form pattern in `@hostmesh/ui`: `FormField` binds a vee-validate field to its label, description and errors with the accessibility attributes, and `toTypedSchema()` lets vee-validate 4 validate with a Zod 4 schema.
 
 ---
 
