@@ -70,6 +70,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tests that render the components with a non-default token set and assert the computed colors, radius and fonts.
 - Third-party notice for the MIT-licensed shadcn-vue code in `NOTICE` and `web/packages/ui/src/components/ui/LICENSE`.
 - `useColorMode()` in `@hostmesh/ui`: applies dark mode from the system setting, follows it when it changes, and remembers an explicit choice of light or dark.
+- Label, form field (label, description, error), separator and dialog components in `@hostmesh/ui`, with accessibility checks: the field's input is named by its label and described by its description, and the dialog is named by its title, traps focus, closes on Escape and returns focus to its trigger.
 
 ---
 

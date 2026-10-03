@@ -168,7 +168,7 @@ catalogs:
       specifier: ^10.0.1
       version: 10.0.1
     '@lucide/vue':
-      specifier: ^1.50.0
+      specifier: ^1.49.0
       version: 1.50.0
     '@tailwindcss/vite':
       specifier: ^4.3.3
