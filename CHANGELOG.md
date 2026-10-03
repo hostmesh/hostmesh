@@ -96,6 +96,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The tests of `@hostmesh/ui` run in headless Chromium (Vitest browser mode with Playwright) instead of jsdom, with Tailwind compiled, so they can assert computed styles.
 - CI workflow `Web` installs Chromium before running Vitest.
 - ESLint checks the files the shadcn-vue CLI writes for defects only: the Vue style rules are off under `web/packages/ui/src/components/ui/`.
+- The admin app and the customer portal load the design tokens of `@hostmesh/ui`, mount its toast host and follow the system's light or dark setting.
 
 ---
 
