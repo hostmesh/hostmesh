@@ -4,13 +4,13 @@ The two Vue 3 single-page applications and the packages they share. Both apps ar
 
 ## Layout
 
-| Path                   | Package                | Contents                                                                               |
-|------------------------|------------------------|----------------------------------------------------------------------------------------|
-| `apps/admin/`          | `@hostmesh/admin`      | The admin app. A placeholder page for now.                                             |
-| `apps/portal/`         | `@hostmesh/portal`     | The customer portal. A placeholder page for now.                                       |
-| `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens. An empty skeleton until #22.                      |
-| `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`. |
-| `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                  |
+| Path                   | Package                | Contents                                                                                             |
+|------------------------|------------------------|------------------------------------------------------------------------------------------------------|
+| `apps/admin/`          | `@hostmesh/admin`      | The admin app. A placeholder page for now.                                                           |
+| `apps/portal/`         | `@hostmesh/portal`     | The customer portal. A placeholder page for now.                                                     |
+| `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens, built with shadcn-vue. See its [README](packages/ui/README.md). |
+| `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`.               |
+| `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                                |
 
 Shared packages export their TypeScript source, so they have no build step. Both apps depend on them as `workspace:*` packages, and a test in each app (`src/workspace.test.ts`) checks that they resolve.
 
@@ -29,11 +29,13 @@ docker compose -f infrastructure/development/compose.yaml exec node pnpm check
 | `lint`         | ESLint (flat config) over the whole workspace, warnings fail.                                                                                                                 |
 | `lint:fix`     | ESLint with `--fix`.                                                                                                                                                          |
 | `typecheck`    | TypeScript strict in every package: `vue-tsc` for browser code (no Node types), `tsc` for the Vite and Vitest configuration and for the API client with its type-level tests. |
-| `test`         | Vitest, every project: each app and each package.                                                                                                                             |
+| `test`         | Vitest, every project: each app (jsdom) and each package. The `ui` project runs in headless Chromium.                                                                         |
 | `build`        | Builds each app to `apps/<name>/dist/`.                                                                                                                                       |
 | `generate:api` | Empties `packages/api-client/src/generated/` and regenerates `schema.d.ts` from `contracts/api/openapi.json`.                                                                 |
 
 One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`, `ui`, `api-client`).
+
+The `ui` project needs Chromium: the `node` service has it, and CI installs it. Outside the container run `pnpm --filter @hostmesh/ui exec playwright install chromium` once.
 
 CI (`.github/workflows/web.yml`) runs the same scripts on every pull request that touches `web/` or `contracts/api/`, on the Node and pnpm versions pinned here, and regenerates the API client, failing on any difference.
 
@@ -62,3 +64,5 @@ Never edit `packages/api-client/src/generated/` by hand. CI regenerates it and f
 - Versions live in the `catalog` of `pnpm-workspace.yaml`; packages refer to them with `catalog:`. `pnpm-lock.yaml` is committed.
 - The apps and `@hostmesh/ui` never call the network themselves. ESLint rejects the direct ways to do it there: `fetch` and `XMLHttpRequest` (also through `window`, `globalThis` and `self`), `navigator.sendBeacon`, and imports of `openapi-fetch` and other HTTP clients. It cannot catch every indirection, so review still applies.
 - Tests come first (spec section 37). A test file sits next to the code it tests, as `*.test.ts`.
+- Components come from `@hostmesh/ui`, and styling from its design tokens: use `bg-primary`, `text-muted-foreground` and the other token utilities, never a hard-coded color. Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`.
+- A new shared component is added to `packages/ui` with the shadcn-vue CLI (see its README), not written into an app.
