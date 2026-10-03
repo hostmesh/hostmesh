@@ -21,7 +21,8 @@
     "reka-ui": "catalog:",
     "tailwind-merge": "catalog:",
     "tw-animate-css": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "vue-sonner": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",

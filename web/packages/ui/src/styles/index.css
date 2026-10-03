@@ -11,6 +11,7 @@
 @import "./tokens.css";
 @import "./variants.css";
 @import "tw-animate-css";
+@import "vue-sonner/style.css";
 
 /* Tailwind does not scan node_modules: register the package's own files, so
    that every app's build contains the classes the components use. */
