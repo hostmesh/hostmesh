@@ -2,7 +2,13 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    // For the shadcn-vue CLI, which resolves the aliases of components.json
+    // through `paths`. Vite and the apps resolve `#ui/…` through the
+    // `imports` of package.json. Keep the two in step.
+    "paths": {
+      "#ui/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.vue"]
 }

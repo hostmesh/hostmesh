@@ -1,3 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-// Shared components and design tokens arrive with issue #22.
-export {}
+//
+// The public surface of @hostmesh/ui. Apps import from here and from
+// `@hostmesh/ui/styles.css`, never from a path inside the package.
+export * from '#ui/components/ui/button'
+export * from '#ui/components/ui/card'
+export * from '#ui/components/ui/input'
+export { cn } from '#ui/lib/utils'

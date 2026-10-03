@@ -3,12 +3,24 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles/index.css"
+  },
+  "imports": {
+    "#ui/lib/*": "./src/lib/*.ts",
+    "#ui/components/ui/*": "./src/components/ui/*/index.ts"
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit && tsc --noEmit --project tsconfig.node.json"
   },
   "dependencies": {
+    "@lucide/vue": "catalog:",
+    "@vueuse/core": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "reka-ui": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tw-animate-css": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {

@@ -65,6 +65,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Both apps depend on `@hostmesh/ui` and `@hostmesh/api-client` as workspace packages, with a test in each app that they resolve.
 - CI workflow `Web`: ESLint, vue-tsc, Vitest and the builds of both apps, on the Node and pnpm versions the workspace pins, with a pnpm store cache. It regenerates the typed API client and fails on any difference from the committed files, including a committed file that the generator does not write. Runs on pull requests that touch `web/` or `contracts/api/`.
 - Decision record 0009: shadcn-vue in the shared component package, design tokens, and component tests in a browser.
+- Design tokens in `@hostmesh/ui`: semantic CSS variables for surfaces and their text (background, card, popover, primary, secondary, muted, accent, destructive), border, input, ring, radius and fonts, with dark mode under `.dark`, mapped into Tailwind v4. Apps load them with `@import "@hostmesh/ui/styles.css"`.
+- Button, input and card components in `@hostmesh/ui`, written by the shadcn-vue CLI (style `reka-nova`) on Reka UI. `web/packages/ui/README.md` documents the tokens and how to add a component.
+- Tests that render the components with a non-default token set and assert the computed colors, radius and fonts.
+- Third-party notice for the MIT-licensed shadcn-vue code in `NOTICE` and `web/packages/ui/src/components/ui/LICENSE`.
 
 ---
 
@@ -86,6 +90,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The development-environment CI workflow also runs on pull requests that change `web/pnpm-workspace.yaml`.
 - The tests of `@hostmesh/ui` run in headless Chromium (Vitest browser mode with Playwright) instead of jsdom, with Tailwind compiled, so they can assert computed styles.
 - CI workflow `Web` installs Chromium before running Vitest.
+- ESLint checks the files the shadcn-vue CLI writes for defects only: the Vue style rules are off under `web/packages/ui/src/components/ui/`.
 
 ---
 

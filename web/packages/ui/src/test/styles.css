@@ -2,3 +2,39 @@
 
 /* The stylesheet of the component tests: what an app's style.css does. */
 @import "tailwindcss";
+@import "../styles/index.css";
+
+/*
+ * A non-default token set, as an operator's theme would define it. Every
+ * value differs from the defaults and from every other value, so a test can
+ * tell which token a component read. Applied to <html>.
+ */
+.tokens-non-default {
+  --background: rgb(10 20 30);
+  --foreground: rgb(240 230 220);
+  --card: rgb(20 40 60);
+  --card-foreground: rgb(1 2 3);
+  --popover: rgb(30 60 90);
+  --popover-foreground: rgb(4 5 6);
+  --primary: rgb(255 0 128);
+  --primary-foreground: rgb(0 255 128);
+  --secondary: rgb(40 80 120);
+  --secondary-foreground: rgb(7 8 9);
+  --muted: rgb(50 50 100);
+  --muted-foreground: rgb(200 100 0);
+  --accent: rgb(60 120 180);
+  --accent-foreground: rgb(10 11 12);
+  --destructive: rgb(128 0 255);
+  --destructive-foreground: rgb(13 14 15);
+  --border: rgb(0 128 0);
+  --input: rgb(0 0 255);
+  --ring: rgb(255 128 0);
+  --radius: 0px;
+  --font-sans: "Courier New", monospace;
+  --font-mono: "Times New Roman", serif;
+}
+
+/* A theme that sets one brand color and nothing else. */
+.tokens-partial {
+  --primary: rgb(0 128 128);
+}
