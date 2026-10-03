@@ -18,16 +18,17 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`. The stylesheet re
 
 ## Layout
 
-| Path                      | Contents                                                                                        |
-|---------------------------|-------------------------------------------------------------------------------------------------|
-| `src/index.ts`            | The public exports.                                                                             |
-| `src/styles/tokens.css`   | The design tokens, light under `:root` and dark under `.dark`.                                  |
-| `src/styles/index.css`    | The stylesheet apps import: tokens, the Tailwind mapping, the base layer.                       |
-| `src/styles/variants.css` | Tailwind variants the components use, copied from shadcn-vue.                                   |
-| `src/components/ui/`      | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                        |
-| `src/lib/utils.ts`        | `cn()`, from shadcn-vue.                                                                        |
-| `src/composables/`        | `useColorMode()`.                                                                               |
-| `src/test/`               | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components. |
+| Path                         | Contents                                                                                        |
+|------------------------------|-------------------------------------------------------------------------------------------------|
+| `src/index.ts`               | The public exports.                                                                             |
+| `src/styles/tokens.css`      | The design tokens, light under `:root` and dark under `.dark`.                                  |
+| `src/styles/index.css`       | The stylesheet apps import: tokens, the Tailwind mapping, the base layer.                       |
+| `src/styles/variants.css`    | Tailwind variants the components use, copied from shadcn-vue.                                   |
+| `src/components/ui/`         | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                        |
+| `src/components/data-table/` | The data-table pattern: `DataTable` and its column helper.                                      |
+| `src/lib/utils.ts`           | `cn()`, from shadcn-vue.                                                                        |
+| `src/composables/`           | `useColorMode()`.                                                                               |
+| `src/test/`                  | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components. |
 
 Inside the package, CLI code is imported as `#ui/components/ui/<name>` and `#ui/lib/utils`. These are Node subpath imports, declared under `imports` in `package.json` and mirrored in the `paths` of `tsconfig.json` for the CLI.
 
@@ -62,6 +63,27 @@ const { preference, mode } = useColorMode()
 ```
 
 `preference` is `'auto'`, `'light'` or `'dark'`. `'auto'`, the default, follows the system setting, also when it changes. Setting it to `'light'` or `'dark'` stores the choice in `localStorage` under `hostmesh-color-mode`. `mode` is what is applied.
+
+## Data tables
+
+`DataTable` renders columns and rows with TanStack Table v9 and the table components, and shows an empty state (the `empty` slot, `No results.` by default) when there are no rows:
+
+```ts
+import { createDataTableColumnHelper } from '@hostmesh/ui'
+
+const columnHelper = createDataTableColumnHelper<Website>()
+
+const columns = columnHelper.columns([
+  columnHelper.accessor('domain', { header: 'Domain' }),
+  columnHelper.display({ id: 'actions', header: 'Actions', cell: ({ row }) => h(RowActions, { website: row.original }) }),
+])
+```
+
+```vue
+<DataTable :columns="columns" :data="websites" />
+```
+
+Only the core features are registered (`src/components/data-table/features.ts`). Sorting, filtering and pagination come with the first list that needs them, driven by the API. A full example is in `src/components/data-table/__fixtures__/ExampleTable.vue`; it exists for the tests and is not exported.
 
 ## Adding a component
 

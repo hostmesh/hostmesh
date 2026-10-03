@@ -11,6 +11,12 @@ export * from '#ui/components/ui/label'
 export * from '#ui/components/ui/separator'
 export * from '#ui/components/ui/sonner'
 export * from '#ui/components/ui/table'
+export { default as DataTable } from './components/data-table/DataTable.vue'
+export {
+  createDataTableColumnHelper,
+  dataTableFeatures,
+  type DataTableFeatures,
+} from './components/data-table/features'
 export { cn } from '#ui/lib/utils'
 // Re-exported so that apps raise toasts without depending on vue-sonner.
 export { toast } from 'vue-sonner'
