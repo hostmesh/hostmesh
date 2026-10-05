@@ -86,7 +86,7 @@ After a `reset`, remove the old entry first (`certutil -d <database> -D -n "Host
 
 ## Control plane
 
-PHP runs in the `php` service as your user, with `control-plane/` mounted at `/var/www/html` and `contracts/` at `/var/www/contracts`. Run commands from this directory:
+PHP runs in the `php` service as your user, with `control-plane/` mounted at `/var/www/html`, `contracts/` at `/var/www/contracts` and `infrastructure/nginx/` read-only at `/var/www/infrastructure/nginx`. Run commands from this directory:
 
 ```bash
 docker compose exec php composer check                  # Pint, Larastan, Pest with the coverage gate
@@ -97,6 +97,8 @@ docker compose exec php php artisan route:list
 ```
 
 Tests use the `hostmesh_test` database and Redis database 15, never the development data. See [`control-plane/README.md`](../../control-plane/README.md).
+
+The control plane reads its hostnames from one setting, `HOSTMESH_DOMAIN=hostmesh.test`, in `control-plane/.env`. `make install` copies it from `.env.example` for a new checkout. An `.env` from before this setting existed needs the line added by hand; `APP_URL` is no longer read. For a production layout see [`infrastructure/nginx/`](../nginx/README.md).
 
 ## Web workspace
 

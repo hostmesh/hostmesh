@@ -41,6 +41,11 @@ services:
       # control-plane/. Mounted here so that ../contracts resolves in the
       # container as it does on the host and in CI.
       - ../../contracts:/var/www/contracts
+      # The Nginx example carries the Content Security Policy that
+      # control-plane/config/hostmesh.php defines; a Pest test compares the
+      # two. Mounted read-only so that ../infrastructure/nginx resolves in
+      # the container as it does on the host and in CI.
+      - ../nginx:/var/www/infrastructure/nginx:ro
     depends_on:
       postgres:
         condition: service_healthy

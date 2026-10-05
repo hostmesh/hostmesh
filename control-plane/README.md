@@ -43,6 +43,29 @@ Run it after any change to a route, a request, a response or an API enum, and co
 
 The document is the same on every machine: the server URL is the relative `/api/v1`, the title and version are fixed in `config/scramble.php`, and paths are sorted. Scramble's documentation pages are switched off, because the control plane serves no UI. See [decision 0006](../docs/decisions/0006-openapi-generated-with-scramble.md).
 
+## Hostnames and authentication
+
+`HOSTMESH_DOMAIN` is the only hostname setting. `app.`, `admin.`, `api.` and `agent.` under it are derived by `App\Support\Hostnames`, and `HostnameServiceProvider` writes the API URL, the CORS origins and the cookie domain. Never add another hostname setting or literal to `config/`: `tests/Feature/Platform/HostnamesTest.php` fails if you do.
+
+The two Vue apps authenticate with Sanctum's cookie-based SPA flow, in two isolated realms ([decision 0010](../docs/decisions/0010-session-realms-on-sanctum.md)):
+
+|                   | Admin                               | Portal                               |
+|-------------------|-------------------------------------|--------------------------------------|
+| Route group       | `/api/v1/admin`, `realm:admin`      | `/api/v1/customer`, `realm:customer` |
+| Allowed origin    | `https://admin.<domain>`            | `https://app.<domain>`               |
+| Guard and model   | `admin`, `Administrator`            | `customer`, `User`                   |
+| Session cookie    | `__Host-hostmesh-admin-session`     | `__Host-hostmesh-portal-session`     |
+| CSRF cookie       | `XSRF-TOKEN-ADMIN`                  | `XSRF-TOKEN-PORTAL`                  |
+| Idle lifetime     | 30 minutes                          | 120 minutes                          |
+
+A client calls `GET …/auth/csrf-cookie`, then sends the CSRF cookie's value in `X-XSRF-TOKEN` with every state-changing request, with credentials included. Each group offers `auth/login`, `auth/logout` and `auth/user`.
+
+Rules for new routes:
+
+- Put a route inside the group of the realm it belongs to. Protect it with `auth:admin` or `auth:customer`, never `auth:sanctum` and never the default guard.
+- A route outside both groups has no session and no user.
+- Tests drive the API through `Tests\Support\Browser`, which keeps a cookie jar and sends `Origin` and `X-XSRF-TOKEN` like a browser. CSRF verification is active in tests.
+
 ## Testing
 
 - Pest only, written test-first.

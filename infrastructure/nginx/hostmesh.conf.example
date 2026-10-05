@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Example Nginx configuration for the hostname layout of spec section 28.
+# Replace example.com with the value of HOSTMESH_DOMAIN, and adjust the
+# certificate, document root and PHP-FPM socket paths. See README.md.
+#
+#   app.example.com    customer portal (static build)
+#   admin.example.com  admin app (static build)
+#   api.example.com    Laravel API
+#   agent.example.com  agent mTLS endpoint, never behind a CDN
+#
+# Requires Nginx 1.25.1 or newer (`http2 on`).
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name app.example.com admin.example.com api.example.com agent.example.com;
+
+    return 301 https://$host$request_uri;
+}
+
+# Customer portal. A static build: every path falls back to index.html.
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name app.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    root /var/www/hostmesh/web/portal;
+    index index.html;
+
+    # The policy is defined in control-plane/config/hostmesh.php. A test
+    # fails when this line differs from it. Keep add_header out of location
+    # blocks: a location with its own add_header drops these.
+    add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.example.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
+
+# Admin app. Its own origin, so that a script injected into the portal
+# cannot reach it (spec section 28).
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name admin.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    root /var/www/hostmesh/web/admin;
+    index index.html;
+
+    add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.example.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
+
+# Laravel API. Every request goes to the front controller. CORS and the
+# session cookies are set by the application, not here.
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name api.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location / {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /var/www/hostmesh/control-plane/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+    }
+}
+
+# Agent endpoint (spec section 5). Agents authenticate with client
+# certificates, so TLS must end on this server: this hostname is never behind
+# a CDN or any proxy that terminates TLS. Point its DNS record straight at
+# this machine ("DNS only", not proxied).
+#
+# Client-certificate verification (ssl_client_certificate, ssl_verify_client)
+# and the upstream are added with the mTLS work. Until then the hostname
+# answers 404.
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name agent.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    return 404;
+}

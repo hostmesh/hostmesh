@@ -6,6 +6,8 @@ on:
     paths:
       - "control-plane/**"
       - "contracts/api/**"
+      # A Pest test keeps the Nginx example in step with the configured CSP.
+      - "infrastructure/nginx/**"
       - ".github/workflows/control-plane.yml"
   # Runs on main too, so pull requests can restore the Composer cache.
   push:
@@ -14,6 +16,8 @@ on:
     paths:
       - "control-plane/**"
       - "contracts/api/**"
+      # A Pest test keeps the Nginx example in step with the configured CSP.
+      - "infrastructure/nginx/**"
       - ".github/workflows/control-plane.yml"
 
 permissions:
@@ -89,7 +93,12 @@ jobs:
       # contracts/api/openapi.json is generated, never edited (spec sections
       # 28 and 37). --intent-to-add makes a file that was regenerated but
       # never committed show up as a diff; git diff ignores untracked files.
+      # Scramble opens a database connection to read the models behind the
+      # API resources. .env.example names the development database, which
+      # does not exist here; the test database does. It needs no tables.
       - name: OpenAPI spec is up to date
+        env:
+          DB_DATABASE: hostmesh_test
         run: |
           composer openapi
           git add --intent-to-add ../contracts/api/openapi.json
