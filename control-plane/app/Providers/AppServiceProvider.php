@@ -19,6 +19,15 @@ class AppServiceProvider extends ServiceProvider
         // The control plane serves no UI. Scramble only generates
         // contracts/api/openapi.json (`composer openapi`).
         Scramble::ignoreDefaultRoutes();
+
+        // Laravel merges its default `web` guard into config/auth.php. The
+        // only session guards are the two realms (spec section 28).
+        $guards = config('auth.guards');
+
+        if (is_array($guards)) {
+            unset($guards['web']);
+            config(['auth.guards' => $guards]);
+        }
     }
 
     /**

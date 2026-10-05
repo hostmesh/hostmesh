@@ -78,6 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Content Security Policy definitions for the portal and the admin app in `config/hostmesh.php`, rendered by `App\Support\ContentSecurityPolicy`: nothing inline, `connect-src` limited to the API origin.
 - CORS for the API (`config/cors.php`): exactly the portal and admin origins are allowed, with credentials. Every other origin, including the API host itself, look-alike domains, other ports and plain HTTP, gets no CORS headers.
 - Example Nginx configuration for the four hostnames (`infrastructure/nginx/hostmesh.conf.example`) with the strict Content Security Policy on both static apps, and a README that documents the agent hostname as never behind a CDN. A test keeps the policy in the example in step with `config/hostmesh.php`.
+- Identities in the control plane: `Administrator` (table `administrators`) and `User` (table `users`, portal logins) in `app/Domain/Identity`, with UUIDv7 keys, bcrypt-hashed passwords and emails stored in lower case. Each has its own session guard (`admin`, `customer`) and auth provider, so an account of one side can never authenticate on the other.
 
 ---
 
