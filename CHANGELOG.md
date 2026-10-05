@@ -64,6 +64,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0008: the typed client is generated with openapi-typescript and openapi-fetch.
 - Both apps depend on `@hostmesh/ui` and `@hostmesh/api-client` as workspace packages, with a test in each app that they resolve.
 - CI workflow `Web`: ESLint, vue-tsc, Vitest and the builds of both apps, on the Node and pnpm versions the workspace pins, with a pnpm store cache. It regenerates the typed API client and fails on any difference from the committed files, including a committed file that the generator does not write. Runs on pull requests that touch `web/` or `contracts/api/`.
+- Decision record 0009: shadcn-vue in the shared component package, design tokens, and component tests in a browser.
+- Design tokens in `@hostmesh/ui`: semantic CSS variables for surfaces and their text (background, card, popover, primary, secondary, muted, accent, destructive), border, input, ring, radius and fonts, with dark mode under `.dark`, mapped into Tailwind v4. Apps load them with `@import "@hostmesh/ui/styles.css"`.
+- Button, input and card components in `@hostmesh/ui`, written by the shadcn-vue CLI (style `reka-nova`) on Reka UI. `web/packages/ui/README.md` documents the tokens and how to add a component.
+- Tests that render the components with a non-default token set and assert the computed colors, radius and fonts.
+- Third-party notice for the MIT-licensed shadcn-vue code in `NOTICE` and `web/packages/ui/src/components/ui/LICENSE`.
+- `useColorMode()` in `@hostmesh/ui`: applies dark mode from the system setting, follows it when it changes, and remembers an explicit choice of light or dark.
+- Label, form field (label, description, error), separator and dialog components in `@hostmesh/ui`, with accessibility checks: the field's input is named by its label and described by its description, and the dialog is named by its title, traps focus, closes on Escape and returns focus to its trigger.
+- Table and toast components in `@hostmesh/ui`. Toasts use Sonner: an app mounts `<Toaster />` once and calls `toast()`, both exported by the package.
+- Data-table pattern in `@hostmesh/ui`: `DataTable` renders typed column definitions with TanStack Table v9 and shows an empty state, with `createDataTableColumnHelper()` for the columns.
+- Form pattern in `@hostmesh/ui`: `FormField` binds a vee-validate field to its label, description and errors with the accessibility attributes, and `toTypedSchema()` lets vee-validate 4 validate with a Zod 4 schema.
 
 ---
 
@@ -80,6 +90,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `make install` for the development stack also installs the web workspace's dependencies from its lockfile.
 - `make up` for the development stack builds the images whose Dockerfile changed before it starts the stack. It used to keep an existing image, so a changed PHP or Node version was not applied.
 - `.editorconfig` exempts the generated API client types from the TypeScript indent rule, so saving the file in an editor cannot make it differ from the generator's output.
+- The `node` service of the development stack holds Chromium's headless shell (Playwright 1.63.0) for browser-mode component tests, and gets 1 GB of shared memory. Run `make -C infrastructure/development up` once to rebuild the image.
+- The smoke test of the development stack also checks that the `node` service has the Chromium build of the Playwright version pinned in the web workspace's catalog.
+- The development-environment CI workflow also runs on pull requests that change `web/pnpm-workspace.yaml`.
+- The tests of `@hostmesh/ui` run in headless Chromium (Vitest browser mode with Playwright) instead of jsdom, with Tailwind compiled, so they can assert computed styles.
+- CI workflow `Web` installs Chromium before running Vitest.
+- ESLint checks the files the shadcn-vue CLI writes for defects only: the Vue style rules are off under `web/packages/ui/src/components/ui/`.
+- The admin app and the customer portal load the design tokens of `@hostmesh/ui`, mount its toast host and follow the system's light or dark setting.
+- `web/README.md` describes `@hostmesh/ui`, the browser-mode tests and the rule that apps style only through the design tokens.
 
 ---
 

@@ -3,21 +3,43 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles/index.css"
+  },
+  "imports": {
+    "#ui/lib/*": "./src/lib/*.ts",
+    "#ui/composables/*": "./src/composables/*.ts",
+    "#ui/components/ui/*": "./src/components/ui/*/index.ts"
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit && tsc --noEmit --project tsconfig.node.json"
   },
   "dependencies": {
-    "vue": "catalog:"
+    "@lucide/vue": "catalog:",
+    "@standard-schema/spec": "catalog:",
+    "@tanstack/vue-table": "catalog:",
+    "@vueuse/core": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "reka-ui": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tw-animate-css": "catalog:",
+    "vee-validate": "catalog:",
+    "vue": "catalog:",
+    "vue-sonner": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "jsdom": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
+    "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
+    "vitest-browser-vue": "catalog:",
     "vue-tsc": "catalog:"
   }
 }

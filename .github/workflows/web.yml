@@ -62,6 +62,10 @@ jobs:
         run: pnpm lint
       - name: vue-tsc
         run: pnpm typecheck
+      # The component tests of @hostmesh/ui run in headless Chromium
+      # (decision 0009). The version comes from the lockfile.
+      - name: Install Chromium for the component tests
+        run: pnpm --filter @hostmesh/ui exec playwright install --with-deps --only-shell chromium
       - name: Vitest
         run: pnpm test
       - name: Build both apps

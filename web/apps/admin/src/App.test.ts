@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
+import { Toaster } from '@hostmesh/ui'
 
 import App from './App.vue'
 import { createAppRouter } from './router'
@@ -18,5 +19,17 @@ describe('admin app', () => {
     })
 
     expect(wrapper.find('h1').text()).toBe('Hostmesh admin app')
+  })
+
+  it('mounts the toast host of the component package', async () => {
+    const router = createAppRouter(createMemoryHistory())
+    await router.push('/')
+    await router.isReady()
+
+    const wrapper = mount(App, {
+      global: { plugins: [createPinia(), router] },
+    })
+
+    expect(wrapper.findComponent(Toaster).exists()).toBe(true)
   })
 })

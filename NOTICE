@@ -3,3 +3,8 @@ Copyright 2026 The Hostmesh Authors
 
 This product includes software developed by the Hostmesh contributors
 (https://github.com/hostmesh).
+
+This product includes source code from shadcn-vue
+(https://github.com/unovue/shadcn-vue) in web/packages/ui.
+Copyright (c) 2023 unovue. Licensed under the MIT License; see
+web/packages/ui/src/components/ui/LICENSE.

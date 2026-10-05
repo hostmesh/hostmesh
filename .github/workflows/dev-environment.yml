@@ -5,9 +5,10 @@ on:
   pull_request:
     paths:
       - "infrastructure/development/**"
-      # The smoke test compares the node service with these two pins.
+      # The smoke test compares the node service with these three pins.
       - "web/.nvmrc"
       - "web/package.json"
+      - "web/pnpm-workspace.yaml"
       - ".github/workflows/dev-environment.yml"
 
 permissions:

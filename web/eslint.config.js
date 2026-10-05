@@ -16,6 +16,20 @@ const networkProperties = ['window', 'globalThis', 'self'].flatMap((object) =>
 // HTTP clients that would bypass the generated one.
 const httpLibraries = ['openapi-fetch', 'axios', 'ky', 'ofetch', 'superagent', 'wretch']
 
+// The files the shadcn-vue CLI writes stay as upstream formats them, so that
+// re-running the CLI gives a clean diff (decision 0009). For them, the Vue
+// rules beyond `flat/essential` (formatting and conventions) are off. The
+// essential rules, typescript-eslint and the network rules below stay on.
+const essentialVueRules = new Set(
+  pluginVue.configs['flat/essential'].flatMap((config) => Object.keys(config.rules ?? {})),
+)
+const vueStyleRulesOff = Object.fromEntries(
+  pluginVue.configs['flat/recommended']
+    .flatMap((config) => Object.keys(config.rules ?? {}))
+    .filter((rule) => !essentialVueRules.has(rule))
+    .map((rule) => [rule, 'off']),
+)
+
 export default defineConfig(
   globalIgnores(['**/dist/', '**/coverage/', '**/generated/']),
   {
@@ -56,6 +70,14 @@ export default defineConfig(
         'error',
         { paths: httpLibraries.map((name) => ({ name, message: apiClientOnly })) },
       ],
+    },
+  },
+  {
+    files: ['packages/ui/src/components/ui/**/*.{ts,vue}'],
+    rules: {
+      ...vueStyleRulesOff,
+      // Upstream names components Button.vue, Input.vue and Card.vue.
+      'vue/multi-word-component-names': 'off',
     },
   },
 )

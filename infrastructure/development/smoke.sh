@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
-# placeholder hostname over HTTPS, the API's health endpoint and the versions
-# of the node service, using the system resolver and trust store. Runs every
-# check and exits non-zero if any of them failed.
+# placeholder hostname over HTTPS, the API's health endpoint, the versions
+# of the node service and its Chromium build, using the system resolver and
+# trust store. Runs every check and exits non-zero if any of them failed.
 
 set -u
 
@@ -96,6 +96,23 @@ check_node() {
     fi
 }
 
+# The component tests of @hostmesh/ui run in the Chromium build that one
+# Playwright release drives. The image installs it for PLAYWRIGHT_VERSION,
+# which must equal the playwright entry of the catalog in
+# web/pnpm-workspace.yaml.
+check_playwright() {
+    local name="The node service has Chromium for the Playwright version the web workspace pins"
+    local want got_version got_browser
+    want=$(sed -n 's/^  playwright: *//p' ../../web/pnpm-workspace.yaml 2>/dev/null | tr -d '[:space:]"')
+    got_version=$(docker compose exec -T node printenv PLAYWRIGHT_VERSION 2>/dev/null | tr -d '[:space:]')
+    got_browser=$(docker compose exec -T node sh -c 'ls -d "$PLAYWRIGHT_BROWSERS_PATH"/chromium_headless_shell-* 2>/dev/null | head -n 1' 2>/dev/null)
+    if [ -n "$want" ] && [ "$got_version" = "$want" ] && [ -n "$got_browser" ]; then
+        pass "$name"
+    else
+        fail "$name" "Wanted Playwright ${want:-?} with Chromium, got ${got_version:-none} and ${got_browser:-no browser}. Run: make up"
+    fi
+}
+
 check_postgres
 check_redis
 for host in "${HOSTNAMES[@]}"; do
@@ -103,6 +120,7 @@ for host in "${HOSTNAMES[@]}"; do
 done
 check_api_health
 check_node
+check_playwright
 
 if [ "$failures" -gt 0 ]; then
     printf '\n%d check(s) failed\n' "$failures"
