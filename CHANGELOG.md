@@ -77,6 +77,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `HOSTMESH_DOMAIN`: the one hostname setting of the control plane. The API URL, the two SPA origins, the CORS origins, the cookie domain and the Content Security Policy derive from it (`config/hostmesh.php`, `App\Support\Hostnames`). A malformed value stops the application at boot.
 - Content Security Policy definitions for the portal and the admin app in `config/hostmesh.php`, rendered by `App\Support\ContentSecurityPolicy`: nothing inline, `connect-src` limited to the API origin.
 - CORS for the API (`config/cors.php`): exactly the portal and admin origins are allowed, with credentials. Every other origin, including the API host itself, look-alike domains, other ports and plain HTTP, gets no CORS headers.
+- Example Nginx configuration for the four hostnames (`infrastructure/nginx/hostmesh.conf.example`) with the strict Content Security Policy on both static apps, and a README that documents the agent hostname as never behind a CDN. A test keeps the policy in the example in step with `config/hostmesh.php`.
 
 ---
 

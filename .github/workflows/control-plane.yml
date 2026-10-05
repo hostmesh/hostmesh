@@ -6,6 +6,8 @@ on:
     paths:
       - "control-plane/**"
       - "contracts/api/**"
+      # A Pest test keeps the Nginx example in step with the configured CSP.
+      - "infrastructure/nginx/**"
       - ".github/workflows/control-plane.yml"
   # Runs on main too, so pull requests can restore the Composer cache.
   push:
@@ -14,6 +16,8 @@ on:
     paths:
       - "control-plane/**"
       - "contracts/api/**"
+      # A Pest test keeps the Nginx example in step with the configured CSP.
+      - "infrastructure/nginx/**"
       - ".github/workflows/control-plane.yml"
 
 permissions:
