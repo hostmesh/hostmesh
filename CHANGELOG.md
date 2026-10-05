@@ -82,6 +82,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Laravel Sanctum 4.3 for cookie-based SPA authentication.
 - Session realms (`realm:admin`, `realm:customer`, `App\Http\Middleware\UseSessionRealm`): each route group accepts only its own SPA origin and has its own guard, session cookie (`__Host-hostmesh-admin-session`, `__Host-hostmesh-portal-session`), session table and idle lifetime (30 and 120 minutes, `HOSTMESH_ADMIN_SESSION_LIFETIME` and `HOSTMESH_PORTAL_SESSION_LIFETIME`). Session cookies are host-only, `Secure`, `HttpOnly` and `SameSite=Lax`.
 - `GET /api/v1/admin/auth/csrf-cookie` and `GET /api/v1/customer/auth/csrf-cookie`: start the CSRF cookie flow. Each app has its own CSRF cookie (`XSRF-TOKEN-ADMIN`, `XSRF-TOKEN-PORTAL`) and echoes it in `X-XSRF-TOKEN`.
+- Authentication endpoints for both apps: `POST …/auth/login`, `POST …/auth/logout` and `GET …/auth/user` under `/api/v1/admin` (administrators) and `/api/v1/customer` (portal users). A wrong password and an unknown email produce identical responses; login regenerates the session ID and logout ends the session on the server.
+- Login rate limit: 5 attempts per minute for one email from one address and 20 per minute per address, counted per realm, answered with 429 and `Retry-After` whether or not the account exists.
+- A portal session cannot reach admin endpoints and an admin session cannot reach portal endpoints: a request from the other app's origin is refused with 403, and a session ID of one realm means nothing in the other.
 
 ---
 

@@ -42,8 +42,10 @@ it('derives every hostname-dependent value from the base domain', function (stri
 it('reads the base domain from the environment in exactly one place', function (): void {
     $files = collect(File::files(config_path()));
 
-    expect($files->filter(fn ($file) => str_contains($file->getContents(), 'HOSTMESH_DOMAIN'))
-        ->map->getFilename()->values()->all())->toBe(['hostmesh.php']);
+    // A read, not a mention: comments elsewhere may name the setting.
+    $reads = fn ($file): bool => preg_match('/env\(\s*[\'"]HOSTMESH_DOMAIN/', $file->getContents()) === 1;
+
+    expect($files->filter($reads)->map->getFilename()->values()->all())->toBe(['hostmesh.php']);
 
     foreach ($files as $file) {
         expect($file->getContents())

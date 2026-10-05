@@ -21,11 +21,23 @@ Route::get('/health', HealthController::class);
 Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
         Route::get('/csrf-cookie', Admin\Auth\CsrfCookieController::class)->name('csrf-cookie');
+        Route::post('/login', Admin\Auth\LoginController::class)->middleware('throttle:login')->name('login');
+
+        Route::middleware('auth:admin')->group(function (): void {
+            Route::post('/logout', Admin\Auth\LogoutController::class)->name('logout');
+            Route::get('/user', Admin\Auth\CurrentUserController::class)->name('user');
+        });
     });
 });
 
 Route::prefix('customer')->name('customer.')->middleware('realm:customer')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
         Route::get('/csrf-cookie', Customer\Auth\CsrfCookieController::class)->name('csrf-cookie');
+        Route::post('/login', Customer\Auth\LoginController::class)->middleware('throttle:login')->name('login');
+
+        Route::middleware('auth:customer')->group(function (): void {
+            Route::post('/logout', Customer\Auth\LogoutController::class)->name('logout');
+            Route::get('/user', Customer\Auth\CurrentUserController::class)->name('user');
+        });
     });
 });
