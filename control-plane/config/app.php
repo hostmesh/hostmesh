@@ -52,7 +52,11 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    // A placeholder. HostnameServiceProvider replaces it with the API origin
+    // derived from the base domain (config/hostmesh.php). It must be a
+    // string: Laravel builds the console request from it before any
+    // provider is registered.
+    'url' => 'http://localhost',
 
     /*
     |--------------------------------------------------------------------------

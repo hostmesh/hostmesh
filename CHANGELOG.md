@@ -74,6 +74,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Table and toast components in `@hostmesh/ui`. Toasts use Sonner: an app mounts `<Toaster />` once and calls `toast()`, both exported by the package.
 - Data-table pattern in `@hostmesh/ui`: `DataTable` renders typed column definitions with TanStack Table v9 and shows an empty state, with `createDataTableColumnHelper()` for the columns.
 - Form pattern in `@hostmesh/ui`: `FormField` binds a vee-validate field to its label, description and errors with the accessibility attributes, and `toTypedSchema()` lets vee-validate 4 validate with a Zod 4 schema.
+- `HOSTMESH_DOMAIN`: the one hostname setting of the control plane. The API URL, the two SPA origins, the CORS origins, the cookie domain and the Content Security Policy derive from it (`config/hostmesh.php`, `App\Support\Hostnames`). A malformed value stops the application at boot.
+- Content Security Policy definitions for the portal and the admin app in `config/hostmesh.php`, rendered by `App\Support\ContentSecurityPolicy`: nothing inline, `connect-src` limited to the API origin.
 
 ---
 
@@ -98,6 +100,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - ESLint checks the files the shadcn-vue CLI writes for defects only: the Vue style rules are off under `web/packages/ui/src/components/ui/`.
 - The admin app and the customer portal load the design tokens of `@hostmesh/ui`, mount its toast host and follow the system's light or dark setting.
 - `web/README.md` describes `@hostmesh/ui`, the browser-mode tests and the rule that apps style only through the design tokens.
+- `APP_URL` is no longer read. `control-plane/.env.example` carries `HOSTMESH_DOMAIN` instead; add it to an existing `.env`.
+- Session configuration is fixed in `config/session.php`: database driver, `Secure`, `HttpOnly`, `SameSite=Lax`, host-only cookies. The `SESSION_*` env keys are no longer read.
 
 ---
 
