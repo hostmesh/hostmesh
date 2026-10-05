@@ -19,8 +19,10 @@ Both static apps ship a strict policy: no inline script or style, and `connect-s
 
 To print the header value for your domain:
 
-    docker compose -f infrastructure/development/compose.yaml exec php \
+    docker compose -f infrastructure/development/compose.yaml exec -e XDG_CONFIG_HOME=/tmp php \
       php artisan tinker --execute="echo app(App\Support\ContentSecurityPolicy::class)->header('portal');"
+
+`XDG_CONFIG_HOME` gives Tinker a writable configuration directory: the service runs as your user, which has no home directory in the container, and without it the command prints a warning and nothing else.
 
 Keep `add_header` at server level. A `location` block with its own `add_header` drops the inherited ones.
 
