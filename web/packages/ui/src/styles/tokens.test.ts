@@ -12,7 +12,7 @@ function styleOf(locator: Locator): CSSStyleDeclaration {
 }
 
 afterEach(() => {
-  root.classList.remove('tokens-non-default', 'tokens-partial', 'dark')
+  root.classList.remove('tokens-non-default', 'tokens-partial', 'tokens-partial-dark', 'dark')
 })
 
 describe('design tokens', () => {
@@ -92,6 +92,17 @@ describe('design tokens', () => {
       expect(styleOf(screen.getByTestId('accent')).color).toBe('rgb(10, 11, 12)')
       expect(styleOf(screen.getByTestId('bordered')).borderTopColor).toBe('rgb(0, 128, 0)')
     })
+
+    it('maps the destructive pair into Tailwind utilities', async () => {
+      root.classList.add('tokens-non-default')
+      const screen = await render(TokenSample)
+
+      // No component reads --destructive-foreground yet: the pair is there
+      // for the first one that puts text on a destructive surface.
+      const destructive = styleOf(screen.getByTestId('destructive'))
+      expect(destructive.backgroundColor).toBe('rgb(128, 0, 255)')
+      expect(destructive.color).toBe('rgb(13, 14, 15)')
+    })
   })
 
   describe('with the default token set', () => {
@@ -117,6 +128,36 @@ describe('design tokens', () => {
       await expect.poll(() => styleOf(button).backgroundColor).toBe('rgb(0, 128, 128)')
       expect(styleOf(card).backgroundColor).toBe(defaultCardBackground)
       expect(styleOf(button).borderTopLeftRadius).toBe('10px')
+    })
+
+    // A theme's `:root` and the default `.dark` have the same specificity,
+    // and the theme is loaded later: what it sets for light replaces the
+    // dark default too.
+    it('applies a token set only for light in dark mode too', async () => {
+      const screen = await render(TokenSample)
+      const button = screen.getByRole('button', { name: 'Save' })
+
+      root.classList.add('dark', 'tokens-partial')
+
+      await expect.poll(() => styleOf(button).backgroundColor).toBe('rgb(0, 128, 128)')
+    })
+
+    it('takes the dark value a theme sets under .dark and keeps the other dark defaults', async () => {
+      const screen = await render(TokenSample)
+      const button = screen.getByRole('button', { name: 'Save' })
+      const card = screen.getByTestId('card')
+      root.classList.add('dark')
+      await expect.poll(() => styleOf(card).backgroundColor).not.toBe('rgb(255, 255, 255)')
+      const darkCardBackground = styleOf(card).backgroundColor
+
+      root.classList.add('tokens-partial-dark')
+
+      await expect.poll(() => styleOf(button).backgroundColor).toBe('rgb(128, 128, 0)')
+      expect(styleOf(card).backgroundColor).toBe(darkCardBackground)
+
+      root.classList.remove('dark')
+
+      await expect.poll(() => styleOf(button).backgroundColor).toBe('rgb(0, 128, 128)')
     })
   })
 

@@ -8,6 +8,7 @@
   },
   "imports": {
     "#ui/lib/*": "./src/lib/*.ts",
+    "#ui/composables/*": "./src/composables/*.ts",
     "#ui/components/ui/*": "./src/components/ui/*/index.ts"
   },
   "scripts": {

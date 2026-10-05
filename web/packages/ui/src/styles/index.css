@@ -13,9 +13,10 @@
 @import "tw-animate-css";
 @import "vue-sonner/style.css";
 
-/* Tailwind does not scan node_modules: register the package's own files, so
-   that every app's build contains the classes the components use. */
-@source "../";
+/* Tailwind does not scan node_modules: register the package's components, so
+   that every app's build contains the classes they use. Not the whole
+   package: the samples in src/test are for the tests only. */
+@source "../components";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -42,6 +43,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);

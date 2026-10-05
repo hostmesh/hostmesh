@@ -37,7 +37,7 @@ One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec no
 
 The `ui` project needs Chromium: the `node` service has it, and CI installs it. Outside the container run `pnpm --filter @hostmesh/ui exec playwright install chromium` once.
 
-CI (`.github/workflows/web.yml`) runs the same scripts on every pull request that touches `web/` or `contracts/api/`, on the Node and pnpm versions pinned here, and regenerates the API client, failing on any difference.
+CI (`.github/workflows/web.yml`) runs the same scripts on every pull request that touches `web/` or `contracts/api/`, on the Node and pnpm versions pinned here, installs Chromium for the component tests, and regenerates the API client, failing on any difference.
 
 ## API client
 

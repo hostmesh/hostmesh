@@ -14,7 +14,7 @@ The shared components and design tokens of the admin app and the customer portal
 import { Button } from '@hostmesh/ui'
 ```
 
-Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`. The stylesheet registers the package's files with Tailwind (`@source`), so an app needs no further configuration.
+Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`: the package re-exports what an app needs from the libraries behind it (`toast`, `useForm`, `z`). The stylesheet registers the package's components with Tailwind (`@source`), so an app needs no further configuration.
 
 ## Layout
 
@@ -31,11 +31,11 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`. The stylesheet re
 | `src/composables/`           | `useColorMode()`.                                                                               |
 | `src/test/`                  | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components. |
 
-Inside the package, CLI code is imported as `#ui/components/ui/<name>` and `#ui/lib/utils`. These are Node subpath imports, declared under `imports` in `package.json` and mirrored in the `paths` of `tsconfig.json` for the CLI.
+Inside the package, CLI code is imported as `#ui/components/ui/<name>`, `#ui/lib/<name>` and `#ui/composables/<name>`. These are Node subpath imports, declared under `imports` in `package.json`: one entry for each directory the CLI writes to. The `paths` of `tsconfig.json` are for the CLI and are wider (`#ui/*`), so a path outside those directories typechecks and then fails in Vite; add it to `imports` first.
 
 ## Design tokens
 
-Components read only these variables, through Tailwind utilities such as `bg-primary` and `rounded-lg`. No component has a hard-coded color.
+Components read only these variables, through Tailwind utilities such as `bg-primary` and `rounded-lg`. No component has a hard-coded color: `src/styles/no-hard-coded-colors.test.ts` fails on a Tailwind palette class (`bg-black`, `text-zinc-500`) or a color literal in the package's source.
 
 | Token                                       | Use                                               |
 |---------------------------------------------|---------------------------------------------------|
@@ -47,11 +47,26 @@ Components read only these variables, through Tailwind utilities such as `bg-pri
 | `--muted`, `--muted-foreground`             | Subdued surfaces and text.                        |
 | `--accent`, `--accent-foreground`           | Hover and selection.                              |
 | `--destructive`, `--destructive-foreground` | Destructive actions and errors.                   |
+| `--overlay`                                 | The scrim behind a dialog, without its opacity.   |
 | `--border`, `--input`, `--ring`             | Borders, input borders, focus rings.              |
 | `--radius`                                  | The corner radius every radius step derives from. |
 | `--font-sans`, `--font-mono`                | The font stacks.                                  |
 
-A theme redefines any subset of them in a stylesheet loaded after `@hostmesh/ui/styles.css`, under `:root` and, for dark mode, under `.dark`. Tokens it leaves out keep their defaults.
+`--destructive-foreground` is reserved: no component reads it yet, because the destructive button puts `--destructive` text on a tint of it. It is there, and mapped to `text-destructive-foreground`, for the first component that puts text on a destructive surface.
+
+A theme redefines any subset of them in a stylesheet loaded after `@hostmesh/ui/styles.css`, under `:root` and, for dark mode, under `.dark`. Tokens it leaves out keep their defaults in both modes.
+
+A token set under `:root` only applies in dark mode too: the theme's `:root` and the default `.dark` have the same specificity, and the theme comes later. So a theme that changes a color for light sets it under `.dark` as well, unless the same value suits both:
+
+```css
+:root {
+  --primary: rgb(0 128 128);
+}
+
+.dark {
+  --primary: rgb(128 128 0);
+}
+```
 
 ## Dark mode
 
@@ -92,9 +107,7 @@ Forms use vee-validate with a Zod schema, and `FormField` for each field. `FormF
 
 ```vue
 <script setup lang="ts">
-import { Button, FormField, Input, toTypedSchema } from '@hostmesh/ui'
-import { useForm } from 'vee-validate'
-import * as z from 'zod'
+import { Button, FormField, Input, toTypedSchema, useForm, z } from '@hostmesh/ui'
 
 const schema = z.object({ email: z.email('Enter a valid email address.') })
 
@@ -118,7 +131,7 @@ const onSubmit = handleSubmit((values) => {
 </template>
 ```
 
-`toTypedSchema` adapts a Zod 4 schema (any Standard Schema) to vee-validate 4. It reports errors only; pass `initialValues` to `useForm`. A schema describes input ergonomics; the API validates again and remains the authority (spec section 29). A full example is in `src/components/form/__fixtures__/ExampleForm.vue`; it exists for the tests and is not exported.
+`useForm` is vee-validate's and `z` is Zod's, re-exported so that an app depends on neither and writes its schemas with the Zod version the adapter is tested against. `toTypedSchema` adapts a Zod 4 schema (any Standard Schema) to vee-validate 4. It reports errors only; pass `initialValues` to `useForm`. A schema describes input ergonomics; the API validates again and remains the authority (spec section 29). A full example is in `src/components/form/__fixtures__/ExampleForm.vue`; it exists for the tests and is not exported.
 
 ## Adding a component
 
@@ -140,11 +153,22 @@ Do not reformat the CLI's files. ESLint checks them for defects only.
 
 ## Local changes to upstream files
 
-None.
+| File                                               | Change                                                                                          |
+|----------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `src/components/ui/dialog/DialogOverlay.vue`       | `bg-black/10` is `bg-overlay/10`: the scrim reads the `--overlay` token (no hard-coded colors). |
+| `src/components/ui/dialog/DialogScrollContent.vue` | `bg-black/80` is `bg-overlay/80`, for the same reason.                                          |
+
+## Upstream quirks
+
+Defects and oddities of the CLI's files that are left as upstream wrote them. Check them again after an `add --overwrite`.
+
+- `sonner/Sonner.vue` sets `--gray2` to `hsl(var(--popover) / 0.9)`. The tokens are not HSL channels, so the value is invalid and the hover background of a toast's close button falls back to none.
+- `sonner/Sonner.vue` does not pass `theme` to vue-sonner, which then uses its light theme. Plain toasts read the tokens and follow dark mode; `richColors` toasts take vue-sonner's light colors in both modes.
+- `dialog/DialogScrollContent.vue` is in the older style (`bg-background`, `data-[state=open]:`) next to the Nova `DialogContent` (`bg-popover`, `data-open:`), so the two dialogs differ in surface and animation.
 
 ## Tests
 
-`pnpm vitest run --project ui` runs the tests in headless Chromium (Vitest browser mode with Playwright), with Tailwind compiled, so a test can assert a computed style. `src/test/styles.css` defines `tokens-non-default`, a token set in which every value is distinct, and `tokens-partial`; a test puts the class on `<html>`. The `node` service of the development stack has Chromium; elsewhere run `pnpm --filter @hostmesh/ui exec playwright install chromium` once.
+`pnpm vitest run --project ui` runs the tests in headless Chromium (Vitest browser mode with Playwright), with Tailwind compiled, so a test can assert a computed style. `src/test/styles.css` defines `tokens-non-default`, a token set in which every value is distinct, and `tokens-partial` and `tokens-partial-dark`, themes that set one color; a test puts the class on `<html>`. The `node` service of the development stack has Chromium; elsewhere run `pnpm --filter @hostmesh/ui exec playwright install chromium` once.
 
 ## Licensing
 

@@ -1,14 +1,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- An example for the tests only. It is not exported by the package. -->
 <script setup lang="ts">
-import { useForm } from 'vee-validate'
-import * as z from 'zod'
-
-import { Button } from '#ui/components/ui/button'
-import { Input } from '#ui/components/ui/input'
-
-import FormField from '../FormField.vue'
-import { toTypedSchema } from '../typed-schema'
+// From the package's entry point, as an app writes it.
+import { Button, FormField, Input, toTypedSchema, useForm, z } from '../../../index'
 
 const emit = defineEmits<{
   submit: [values: { domain: string, email: string }]

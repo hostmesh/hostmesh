@@ -9,7 +9,9 @@
  *
  * Each surface token has a `-foreground` partner for the text on it.
  * --destructive-foreground is not part of upstream's theme; it is defined
- * here so that destructive is a pair too.
+ * here so that destructive is a pair too. --overlay is not upstream's
+ * either: it is the color of the scrim behind a dialog, which upstream
+ * hard-codes as black. The component sets the opacity.
  */
 :root {
   --background: oklch(1 0 0);
@@ -31,6 +33,7 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  --overlay: oklch(0 0 0);
 
   --radius: 0.625rem;
 
@@ -61,4 +64,5 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  --overlay: oklch(0 0 0);
 }

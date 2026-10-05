@@ -47,7 +47,7 @@ Forms:
 
 `web/packages/ui/components.json` is written by hand with the style `reka-nova`, the base color neutral, and aliases under `#ui/`. Components are added with `pnpm dlx shadcn-vue@2.8.2 add <name> --cwd packages/ui` into `src/components/ui/`, which holds only CLI output and its MIT license. The package's `imports` map `#ui/lib/*` and `#ui/components/ui/*`; its `exports` are the barrel and `./styles.css`. The custom variants the components need are copied into `src/styles/variants.css`.
 
-Tokens live in `src/styles/tokens.css` as CSS variables under `:root` and `.dark`, and `src/styles/index.css` maps them into Tailwind with `@theme inline` and declares the package's files with `@source`. An app imports `tailwindcss` and then `@hostmesh/ui/styles.css`. `useColorMode()` wraps VueUse's composable: without a stored choice the system setting decides.
+Tokens live in `src/styles/tokens.css` as CSS variables under `:root` and `.dark`, and `src/styles/index.css` maps them into Tailwind with `@theme inline` and declares the package's components with `@source`. An app imports `tailwindcss` and then `@hostmesh/ui/styles.css`. `useColorMode()` wraps VueUse's composable: without a stored choice the system setting decides.
 
 `@vueuse/core` is `^14.4.0`, the major reka-ui uses.
 

@@ -4,8 +4,11 @@
   "compilerOptions": {
     "types": ["vite/client"],
     // For the shadcn-vue CLI, which resolves the aliases of components.json
-    // through `paths`. Vite and the apps resolve `#ui/…` through the
-    // `imports` of package.json. Keep the two in step.
+    // through `paths`: it needs the wildcard to find the directories
+    // themselves. Vite and the apps resolve `#ui/…` through the `imports` of
+    // package.json, which name each directory the CLI writes to (`lib`,
+    // `composables`, `components/ui`). A path outside those typechecks here
+    // and fails in Vite: add it to `imports` first.
     "paths": {
       "#ui/*": ["./src/*"]
     }

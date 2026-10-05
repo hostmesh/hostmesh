@@ -34,6 +34,12 @@ import { Button, Card, CardContent, Input } from '../index'
     >
       Accent
     </div>
+    <div
+      class="bg-destructive text-destructive-foreground"
+      data-testid="destructive"
+    >
+      Destructive
+    </div>
     <code
       class="font-mono"
       data-testid="mono"

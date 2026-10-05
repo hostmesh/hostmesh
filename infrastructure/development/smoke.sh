@@ -3,8 +3,8 @@
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
 # placeholder hostname over HTTPS, the API's health endpoint, the versions
-# of the node service and its Chromium build, using the system resolver and trust store. Runs every
-# check and exits non-zero if any of them failed.
+# of the node service and its Chromium build, using the system resolver and
+# trust store. Runs every check and exits non-zero if any of them failed.
 
 set -u
 

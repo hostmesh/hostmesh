@@ -26,6 +26,7 @@
   --accent-foreground: rgb(10 11 12);
   --destructive: rgb(128 0 255);
   --destructive-foreground: rgb(13 14 15);
+  --overlay: rgb(90 60 30);
   --border: rgb(0 128 0);
   --input: rgb(0 0 255);
   --ring: rgb(255 128 0);
@@ -37,4 +38,14 @@
 /* A theme that sets one brand color and nothing else. */
 .tokens-partial {
   --primary: rgb(0 128 128);
+}
+
+/* The same theme with a value for dark mode too: a `:root` and a `.dark`
+   block, as the package's README asks of a theme. */
+.tokens-partial-dark {
+  --primary: rgb(0 128 128);
+}
+
+.tokens-partial-dark.dark {
+  --primary: rgb(128 128 0);
 }
