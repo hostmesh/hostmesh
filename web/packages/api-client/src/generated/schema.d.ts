@@ -4,6 +4,52 @@
  */
 
 export interface paths {
+    "/admin/auth/csrf-cookie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Start the CSRF cookie flow (admin)
+         * @description Sets the admin session cookie and the `XSRF-TOKEN-ADMIN` cookie.
+         *     The admin app sends the value of that cookie in the `X-XSRF-TOKEN`
+         *     header of every state-changing request. Call it once before logging in.
+         *     Only the admin origin may call it.
+         */
+        get: operations["admin.auth.csrf-cookie"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/csrf-cookie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Start the CSRF cookie flow (portal)
+         * @description Sets the portal session cookie and the `XSRF-TOKEN-PORTAL` cookie.
+         *     The portal sends the value of that cookie in the `X-XSRF-TOKEN`
+         *     header of every state-changing request. Call it once before logging in.
+         *     Only the portal origin may call it.
+         */
+        get: operations["customer.auth.csrf-cookie"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -42,6 +88,46 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "admin.auth.csrf-cookie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cookies are set. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    "customer.auth.csrf-cookie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cookies are set. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
     "v1.health": {
         parameters: {
             query?: never;

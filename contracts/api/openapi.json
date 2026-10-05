@@ -11,6 +11,52 @@
         }
     ],
     "paths": {
+        "/admin/auth/csrf-cookie": {
+            "get": {
+                "operationId": "admin.auth.csrf-cookie",
+                "description": "Sets the admin session cookie and the `XSRF-TOKEN-ADMIN` cookie.\nThe admin app sends the value of that cookie in the `X-XSRF-TOKEN`\nheader of every state-changing request. Call it once before logging in.\nOnly the admin origin may call it.",
+                "summary": "Start the CSRF cookie flow (admin)",
+                "tags": [
+                    "CsrfCookie"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The cookies are set.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/customer/auth/csrf-cookie": {
+            "get": {
+                "operationId": "customer.auth.csrf-cookie",
+                "description": "Sets the portal session cookie and the `XSRF-TOKEN-PORTAL` cookie.\nThe portal sends the value of that cookie in the `X-XSRF-TOKEN`\nheader of every state-changing request. Call it once before logging in.\nOnly the portal origin may call it.",
+                "summary": "Start the CSRF cookie flow (portal)",
+                "tags": [
+                    "CsrfCookie"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The cookies are set.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
         "/health": {
             "get": {
                 "operationId": "v1.health",

@@ -79,6 +79,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CORS for the API (`config/cors.php`): exactly the portal and admin origins are allowed, with credentials. Every other origin, including the API host itself, look-alike domains, other ports and plain HTTP, gets no CORS headers.
 - Example Nginx configuration for the four hostnames (`infrastructure/nginx/hostmesh.conf.example`) with the strict Content Security Policy on both static apps, and a README that documents the agent hostname as never behind a CDN. A test keeps the policy in the example in step with `config/hostmesh.php`.
 - Identities in the control plane: `Administrator` (table `administrators`) and `User` (table `users`, portal logins) in `app/Domain/Identity`, with UUIDv7 keys, bcrypt-hashed passwords and emails stored in lower case. Each has its own session guard (`admin`, `customer`) and auth provider, so an account of one side can never authenticate on the other.
+- Laravel Sanctum 4.3 for cookie-based SPA authentication.
+- Session realms (`realm:admin`, `realm:customer`, `App\Http\Middleware\UseSessionRealm`): each route group accepts only its own SPA origin and has its own guard, session cookie (`__Host-hostmesh-admin-session`, `__Host-hostmesh-portal-session`), session table and idle lifetime (30 and 120 minutes, `HOSTMESH_ADMIN_SESSION_LIFETIME` and `HOSTMESH_PORTAL_SESSION_LIFETIME`). Session cookies are host-only, `Secure`, `HttpOnly` and `SameSite=Lax`.
+- `GET /api/v1/admin/auth/csrf-cookie` and `GET /api/v1/customer/auth/csrf-cookie`: start the CSRF cookie flow. Each app has its own CSRF cookie (`XSRF-TOKEN-ADMIN`, `XSRF-TOKEN-PORTAL`) and echoes it in `X-XSRF-TOKEN`.
 
 ---
 
