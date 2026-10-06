@@ -88,6 +88,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0010: session realms on top of Sanctum.
 - "Hostnames and authentication" in `control-plane/README.md`: the one hostname setting, the two realms and the rules for adding routes.
 - Decision record 0011: TOTP two-factor authentication on `pragmarx/google2fa` instead of Laravel Fortify.
+- Two-factor state on administrators and users: the TOTP secret (encrypted at rest), the confirmation time, the last accepted time step and the recovery codes (stored as SHA-256 hashes).
 
 ---
 

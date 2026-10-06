@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Domain\Identity\User;
+use Database\Factories\Concerns\TwoFactorStates;
 use Illuminate\Database\Eloquent\Factories\Attributes\UseModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 #[UseModel(User::class)]
 final class UserFactory extends Factory
 {
+    use TwoFactorStates;
+
     /** @return array<string, mixed> */
     public function definition(): array
     {
