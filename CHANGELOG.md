@@ -87,6 +87,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A portal session cannot reach admin endpoints and an admin session cannot reach portal endpoints: a request from the other app's origin is refused with 403, and a session ID of one realm means nothing in the other.
 - Decision record 0010: session realms on top of Sanctum.
 - "Hostnames and authentication" in `control-plane/README.md`: the one hostname setting, the two realms and the rules for adding routes.
+- Decision record 0011: TOTP two-factor authentication on `pragmarx/google2fa` instead of Laravel Fortify.
 
 ---
 
