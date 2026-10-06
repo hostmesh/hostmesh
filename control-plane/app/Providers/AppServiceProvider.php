@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Domain\Identity\TwoFactor\Totp;
 use App\Http\Middleware\UseSessionRealm;
+use App\Infrastructure\TwoFactor\Google2faTotp;
 use App\Support\Realm;
 use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
@@ -33,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
             unset($guards['web']);
             config(['auth.guards' => $guards]);
         }
+
+        $this->app->bind(Totp::class, Google2faTotp::class);
     }
 
     /**
