@@ -57,14 +57,18 @@ The two Vue apps authenticate with Sanctum's cookie-based SPA flow, in two isola
 | Session cookie    | `__Host-hostmesh-admin-session`     | `__Host-hostmesh-portal-session`     |
 | CSRF cookie       | `XSRF-TOKEN-ADMIN`                  | `XSRF-TOKEN-PORTAL`                  |
 | Idle lifetime     | 30 minutes                          | 120 minutes                          |
+| Two-factor        | mandatory                           | optional                             |
 
 A client calls `GET …/auth/csrf-cookie`, then sends the CSRF cookie's value in `X-XSRF-TOKEN` with every state-changing request, with credentials included. Each group offers `auth/login`, `auth/logout` and `auth/user`.
+
+Two-factor authentication is TOTP ([decision 0011](../docs/decisions/0011-totp-two-factor-on-google2fa.md)). A password login returns `meta.second_factor`: `challenge` (send a code or a recovery code to `auth/two-factor/challenge`), `enrollment` (call `auth/two-factor`, show the `provisioning_uri` as a QR code, then `auth/two-factor/confirm`) or `none`. Until that step is done, every other route answers 403 with `code: two_factor_required` or `two_factor_enrollment_required`. `DELETE auth/two-factor` and `auth/two-factor/recovery-codes` need the current password and a valid code. Secrets are encrypted at rest, recovery codes are stored hashed, and a code is accepted once.
 
 Rules for new routes:
 
 - Put a route inside the group of the realm it belongs to. Protect it with `auth:admin` or `auth:customer`, never `auth:sanctum` and never the default guard.
 - A route outside both groups has no session and no user.
 - Tests drive the API through `Tests\Support\Browser`, which keeps a cookie jar and sends `Origin` and `X-XSRF-TOKEN` like a browser. CSRF verification is active in tests.
+- Put it inside the group's `two-factor` block. `tests/Feature/Auth/SecondFactorGateTest.php` reads the route list and fails for an admin route outside it; a route that must work before the second factor is added to that test's list on purpose.
 
 ## Testing
 

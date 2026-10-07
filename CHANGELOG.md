@@ -94,6 +94,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Two-factor login challenge in both API groups: `POST auth/two-factor/challenge` completes a login with a TOTP code or a single-use recovery code, refuses a code that was already used, and is limited to 5 attempts per minute for one account.
 - Second-factor gate (`two-factor` middleware): every admin route except CSRF cookie, login, logout and the challenge answers 403 with `code: two_factor_required` or `two_factor_enrollment_required` until the session has completed two-factor authentication, which is mandatory for administrators and optional for customers. A test reads the route list, so admin routes added later are covered.
 - `DELETE auth/two-factor` and `POST auth/two-factor/recovery-codes` in both API groups: disabling two-factor and replacing the recovery codes each need the current password and a valid code.
+- Two-factor authentication in the OpenAPI document and the typed client, and in the authentication section of `control-plane/README.md`.
 
 ---
 
