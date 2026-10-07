@@ -8,8 +8,10 @@ namespace Tests\Support;
 
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
+use Database\Factories\Concerns\TwoFactorTestValues;
 use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Testing\TestResponse;
+use PragmaRX\Google2FA\Google2FA;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
@@ -59,6 +61,38 @@ final class Browser
             : User::factory()->create();
     }
 
+    /** An account with confirmed two-factor (TwoFactorTestValues::TEST_SECRET). */
+    public static function createEnrolled(string $origin): Administrator|User
+    {
+        return $origin === self::ADMIN
+            ? Administrator::factory()->withTwoFactor()->create()
+            : User::factory()->withTwoFactor()->create();
+    }
+
+    /**
+     * The code an authenticator app shows now. A code works once: call
+     * $this->travel(30)->seconds() in the test before asking for another.
+     */
+    public static function code(string $secret = TwoFactorTestValues::TEST_SECRET): string
+    {
+        return (new Google2FA)->oathTotp($secret, intdiv(now()->getTimestamp(), 30));
+    }
+
+    /** Six digits that are not valid now, nor one step either way. */
+    public static function wrongCode(string $secret = TwoFactorTestValues::TEST_SECRET): string
+    {
+        $step = intdiv(now()->getTimestamp(), 30);
+        $valid = array_map(fn (int $s): string => (new Google2FA)->oathTotp($secret, $s), [$step - 1, $step, $step + 1]);
+
+        foreach (['000000', '111111', '222222', '333333'] as $candidate) {
+            if (! in_array($candidate, $valid, true)) {
+                return $candidate;
+            }
+        }
+
+        return '444444';
+    }
+
     /** @return TestResponse<Response> */
     public function get(string $origin, string $uri): TestResponse
     {
@@ -72,6 +106,26 @@ final class Browser
     public function post(string $origin, string $uri, array $data = []): TestResponse
     {
         return $this->send('POST', $origin, $uri, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return TestResponse<Response>
+     */
+    public function delete(string $origin, string $uri, array $data = []): TestResponse
+    {
+        return $this->send('DELETE', $origin, $uri, $data);
+    }
+
+    /**
+     * Any method, for tests that walk the route list.
+     *
+     * @param  array<string, mixed>  $data
+     * @return TestResponse<Response>
+     */
+    public function request(string $method, string $origin, string $uri, array $data = []): TestResponse
+    {
+        return $this->send($method, $origin, $uri, $data);
     }
 
     /**

@@ -90,6 +90,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0011: TOTP two-factor authentication on `pragmarx/google2fa` instead of Laravel Fortify.
 - Two-factor state on administrators and users: the TOTP secret (encrypted at rest), the confirmation time, the last accepted time step and the recovery codes (stored as SHA-256 hashes).
 - TOTP engine in the control plane (`App\Domain\Identity\TwoFactor\Totp`, implemented on `pragmarx/google2fa`): 6 digits, 30-second steps, one step of clock drift either way, and a code is refused once it was accepted.
+- Two-factor enrollment in both API groups: `POST auth/two-factor` returns a TOTP secret and its `otpauth://` URI, and `POST auth/two-factor/confirm` turns two-factor on with a valid code and returns ten recovery codes once.
 
 ---
 

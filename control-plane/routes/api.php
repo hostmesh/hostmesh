@@ -7,6 +7,7 @@ declare(strict_types=1);
 // Served under /api/v1 (see bootstrap.app).
 
 use App\Http\Api\V1\Admin;
+use App\Http\Api\V1\Auth\TwoFactor;
 use App\Http\Api\V1\Customer;
 use App\Http\Api\V1\HealthController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,8 @@ Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(functio
         Route::middleware('auth:admin')->group(function (): void {
             Route::post('/logout', Admin\Auth\LogoutController::class)->name('logout');
             Route::get('/user', Admin\Auth\CurrentUserController::class)->name('user');
+            Route::post('/two-factor', TwoFactor\EnrollController::class)->name('two-factor.enroll');
+            Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->name('two-factor.confirm');
         });
     });
 });
@@ -38,6 +41,8 @@ Route::prefix('customer')->name('customer.')->middleware('realm:customer')->grou
         Route::middleware('auth:customer')->group(function (): void {
             Route::post('/logout', Customer\Auth\LogoutController::class)->name('logout');
             Route::get('/user', Customer\Auth\CurrentUserController::class)->name('user');
+            Route::post('/two-factor', TwoFactor\EnrollController::class)->name('two-factor.enroll');
+            Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->name('two-factor.confirm');
         });
     });
 });

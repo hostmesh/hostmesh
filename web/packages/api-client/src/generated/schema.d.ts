@@ -69,6 +69,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/auth/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start two-factor enrollment
+         * @description Returns a new TOTP secret and its `otpauth://` URI for a QR code.
+         *     Two-factor is not on until `POST auth/two-factor/confirm` succeeds.
+         *     Calling this again replaces an unconfirmed secret.
+         *     Answers 409 when two-factor is already on.
+         */
+        post: operations["admin.auth.two-factor.enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm two-factor enrollment
+         * @description Turns two-factor on with a code from the authenticator app and completes the second factor
+         *     for this session. The recovery codes in the response are shown only once.
+         */
+        post: operations["admin.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/auth/user": {
         parameters: {
             query?: never;
@@ -152,6 +196,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customer/auth/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start two-factor enrollment
+         * @description Returns a new TOTP secret and its `otpauth://` URI for a QR code.
+         *     Two-factor is not on until `POST auth/two-factor/confirm` succeeds.
+         *     Calling this again replaces an unconfirmed secret.
+         *     Answers 409 when two-factor is already on.
+         */
+        post: operations["customer.auth.two-factor.enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm two-factor enrollment
+         * @description Turns two-factor on with a code from the authenticator app and completes the second factor
+         *     for this session. The recovery codes in the response are shown only once.
+         */
+        post: operations["customer.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customer/auth/user": {
         parameters: {
             query?: never;
@@ -201,6 +289,10 @@ export interface components {
             id: string;
             name: string;
             email: string;
+        };
+        /** CodeRequest */
+        CodeRequest: {
+            code: string;
         };
         /**
          * HealthStatus
@@ -340,6 +432,73 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "admin.auth.two-factor.enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            secret: string;
+                            provisioning_uri: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.auth.two-factor.confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "admin.auth.user": {
         parameters: {
             query?: never;
@@ -444,6 +603,73 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "customer.auth.two-factor.enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            secret: string;
+                            provisioning_uri: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "customer.auth.two-factor.confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "customer.auth.user": {

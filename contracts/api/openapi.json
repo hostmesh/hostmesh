@@ -125,6 +125,130 @@
                 }
             }
         },
+        "/admin/auth/two-factor": {
+            "post": {
+                "operationId": "admin.auth.two-factor.enroll",
+                "description": "Returns a new TOTP secret and its `otpauth://` URI for a QR code.\nTwo-factor is not on until `POST auth/two-factor/confirm` succeeds.\nCalling this again replaces an unconfirmed secret.\nAnswers 409 when two-factor is already on.",
+                "summary": "Start two-factor enrollment",
+                "tags": [
+                    "Enroll"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "string"
+                                                },
+                                                "provisioning_uri": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "secret",
+                                                "provisioning_uri"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/admin/auth/two-factor/confirm": {
+            "post": {
+                "operationId": "admin.auth.two-factor.confirm",
+                "description": "Turns two-factor on with a code from the authenticator app and completes the second factor\nfor this session. The recovery codes in the response are shown only once.",
+                "summary": "Confirm two-factor enrollment",
+                "tags": [
+                    "Confirm"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recovery_codes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "recovery_codes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/admin/auth/user": {
             "get": {
                 "operationId": "admin.auth.user",
@@ -272,6 +396,130 @@
                 }
             }
         },
+        "/customer/auth/two-factor": {
+            "post": {
+                "operationId": "customer.auth.two-factor.enroll",
+                "description": "Returns a new TOTP secret and its `otpauth://` URI for a QR code.\nTwo-factor is not on until `POST auth/two-factor/confirm` succeeds.\nCalling this again replaces an unconfirmed secret.\nAnswers 409 when two-factor is already on.",
+                "summary": "Start two-factor enrollment",
+                "tags": [
+                    "Enroll"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "string"
+                                                },
+                                                "provisioning_uri": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "secret",
+                                                "provisioning_uri"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/customer/auth/two-factor/confirm": {
+            "post": {
+                "operationId": "customer.auth.two-factor.confirm",
+                "description": "Turns two-factor on with a code from the authenticator app and completes the second factor\nfor this session. The recovery codes in the response are shown only once.",
+                "summary": "Confirm two-factor enrollment",
+                "tags": [
+                    "Confirm"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recovery_codes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "recovery_codes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/customer/auth/user": {
             "get": {
                 "operationId": "customer.auth.user",
@@ -358,6 +606,19 @@
                     "email"
                 ],
                 "title": "AdministratorResource"
+            },
+            "CodeRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "maxLength": 16
+                    }
+                },
+                "required": [
+                    "code"
+                ],
+                "title": "CodeRequest"
             },
             "HealthStatus": {
                 "type": "string",
