@@ -136,3 +136,13 @@ it('requires a session', function (string $origin, string $prefix): void {
     $browser->post($origin, $prefix.'/auth/two-factor')->assertUnauthorized();
     $browser->post($origin, $prefix.'/auth/two-factor/confirm', ['code' => '123456'])->assertUnauthorized();
 })->with('realms');
+
+it('refuses enrollment with 409 when two-factor is already on', function (string $origin, string $prefix): void {
+    $account = Browser::createEnrolled($origin);
+    $browser = new Browser($this);
+    $browser->signIn($origin, $account);
+
+    $browser->post($origin, $prefix.'/auth/two-factor')->assertConflict();
+
+    expect($account->fresh()->hasTwoFactor())->toBeTrue();
+})->with('realms');

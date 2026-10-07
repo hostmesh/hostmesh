@@ -142,6 +142,21 @@ final class Browser
         return $this->post($origin, $prefix.'/auth/login', ['email' => $email, 'password' => $password]);
     }
 
+    /**
+     * A complete login: password, then the challenge when the account has
+     * two-factor. Uses the current code, so travel 30 seconds before the
+     * test sends another one.
+     */
+    public function signIn(string $origin, Administrator|User $account): void
+    {
+        $this->logIn($origin, $account->email)->assertOk();
+
+        if ($account->hasTwoFactor()) {
+            $this->post($origin, self::PREFIXES[$origin].'/auth/two-factor/challenge', ['code' => self::code()])
+                ->assertNoContent();
+        }
+    }
+
     public function usingCsrfToken(string|false|null $token): self
     {
         $this->csrfToken = $token;

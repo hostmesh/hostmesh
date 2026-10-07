@@ -26,9 +26,8 @@ it('sets a CSRF cookie that the app can read, on the parent domain', function (
         ->and($cookie->getPath())->toBe('/')
         ->and($cookie->isHttpOnly())->toBeFalse()
         ->and($cookie->isSecure())->toBeTrue()
-        ->and($cookie->getSameSite())->toBe('lax');
-
-    expect($response->getCookie('XSRF-TOKEN', false))->toBeNull();
+        ->and($cookie->getSameSite())->toBe('lax')
+        ->and($response->getCookie('XSRF-TOKEN', false))->toBeNull();
 })->with('realms');
 
 it('accepts a state-changing request that echoes the cookie in X-XSRF-TOKEN', function (
@@ -81,9 +80,9 @@ it('rejects the token of the other app', function (): void {
 });
 
 it('requires the token to log out', function (string $origin, string $prefix): void {
-    $account = Browser::createAccount($origin);
+    $account = $origin === Browser::ADMIN ? Browser::createEnrolled($origin) : Browser::createAccount($origin);
     $browser = new Browser($this);
-    $browser->logIn($origin, $account->email)->assertOk();
+    $browser->signIn($origin, $account);
 
     $browser->usingCsrfToken(false)->post($origin, $prefix.'/auth/logout')->assertStatus(419);
     $browser->usingCsrfToken(null)->get($origin, $prefix.'/auth/user')->assertOk();
