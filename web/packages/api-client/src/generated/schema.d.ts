@@ -88,7 +88,13 @@ export interface paths {
          *     Answers 409 when two-factor is already on.
          */
         post: operations["admin.auth.two-factor.enroll"];
-        delete?: never;
+        /**
+         * Disable two-factor authentication
+         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
+         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
+         *     Limited to 5 attempts per minute for one account.
+         */
+        delete: operations["admin.auth.two-factor.disable"];
         options?: never;
         head?: never;
         patch?: never;
@@ -130,6 +136,27 @@ export interface paths {
          *     for this session. The recovery codes in the response are shown only once.
          */
         post: operations["admin.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate the recovery codes
+         * @description Needs the current password and a valid code. Every earlier recovery code stops working.
+         *     The new codes in the response are shown only once. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["admin.auth.two-factor.recovery-codes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -238,7 +265,13 @@ export interface paths {
          *     Answers 409 when two-factor is already on.
          */
         post: operations["customer.auth.two-factor.enroll"];
-        delete?: never;
+        /**
+         * Disable two-factor authentication
+         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
+         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
+         *     Limited to 5 attempts per minute for one account.
+         */
+        delete: operations["customer.auth.two-factor.disable"];
         options?: never;
         head?: never;
         patch?: never;
@@ -280,6 +313,27 @@ export interface paths {
          *     for this session. The recovery codes in the response are shown only once.
          */
         post: operations["customer.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate the recovery codes
+         * @description Needs the current password and a valid code. Every earlier recovery code stops working.
+         *     The new codes in the response are shown only once. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["customer.auth.two-factor.recovery-codes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -356,6 +410,11 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+        };
+        /** PasswordAndCodeRequest */
+        PasswordAndCodeRequest: {
+            password: string;
+            code: string;
         };
         /** UserResource */
         UserResource: {
@@ -526,6 +585,31 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "admin.auth.two-factor.disable": {
+        parameters: {
+            query: {
+                password: string;
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Two-factor authentication is off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "admin.auth.two-factor.challenge": {
         parameters: {
             query?: never;
@@ -562,6 +646,35 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.auth.two-factor.recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordAndCodeRequest"];
             };
         };
         responses: {
@@ -728,6 +841,31 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "customer.auth.two-factor.disable": {
+        parameters: {
+            query: {
+                password: string;
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Two-factor authentication is off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "customer.auth.two-factor.challenge": {
         parameters: {
             query?: never;
@@ -764,6 +902,35 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "customer.auth.two-factor.recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordAndCodeRequest"];
             };
         };
         responses: {

@@ -39,6 +39,8 @@ Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(functio
             Route::get('/user', Admin\Auth\CurrentUserController::class)->name('user');
             Route::post('/two-factor', TwoFactor\EnrollController::class)->name('two-factor.enroll');
             Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->middleware('throttle:two-factor')->name('two-factor.confirm');
+            Route::post('/two-factor/recovery-codes', TwoFactor\RecoveryCodesController::class)->middleware('throttle:two-factor')->name('two-factor.recovery-codes');
+            Route::delete('/two-factor', TwoFactor\DisableController::class)->middleware('throttle:two-factor')->name('two-factor.disable');
         });
     });
 });
@@ -60,6 +62,8 @@ Route::prefix('customer')->name('customer.')->middleware('realm:customer')->grou
             Route::get('/user', Customer\Auth\CurrentUserController::class)->name('user');
             Route::post('/two-factor', TwoFactor\EnrollController::class)->name('two-factor.enroll');
             Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->middleware('throttle:two-factor')->name('two-factor.confirm');
+            Route::post('/two-factor/recovery-codes', TwoFactor\RecoveryCodesController::class)->middleware('throttle:two-factor')->name('two-factor.recovery-codes');
+            Route::delete('/two-factor', TwoFactor\DisableController::class)->middleware('throttle:two-factor')->name('two-factor.disable');
         });
     });
 });
