@@ -6,6 +6,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Identity;
 
+use App\Domain\Authorization\Permission;
+use App\Domain\Authorization\Role;
 use App\Domain\Identity\TwoFactor\HasTwoFactor;
 use Carbon\CarbonImmutable;
 use Database\Factories\AdministratorFactory;
@@ -13,8 +15,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
@@ -29,6 +33,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property CarbonImmutable|null $two_factor_confirmed_at
  * @property int|null $two_factor_last_step
  * @property list<string>|null $two_factor_recovery_codes
+ * @property-read Collection<int, AdministratorRole> $roleAssignments
  */
 #[UseFactory(AdministratorFactory::class)]
 #[Fillable('name', 'email', 'password')]
@@ -47,6 +52,39 @@ final class Administrator extends Authenticatable
     public function getRememberTokenName(): string
     {
         return '';
+    }
+
+    /**
+     * The only question a policy asks about an administrator (decision 0012).
+     * The assignments are read once for this instance, so any number of
+     * checks in a request costs one query.
+     */
+    public function hasPermission(Permission $permission): bool
+    {
+        return array_any($this->roles(), fn (Role $role): bool => $role->grants($permission));
+    }
+
+    /** @return list<Role> */
+    public function roles(): array
+    {
+        $roles = [];
+
+        foreach ($this->roleAssignments as $assignment) {
+            // A name the code no longer defines grants nothing.
+            $role = Role::tryFrom($assignment->role);
+
+            if ($role !== null) {
+                $roles[] = $role;
+            }
+        }
+
+        return $roles;
+    }
+
+    /** @return HasMany<AdministratorRole, $this> */
+    public function roleAssignments(): HasMany
+    {
+        return $this->hasMany(AdministratorRole::class);
     }
 
     /** @return array<string, string> */

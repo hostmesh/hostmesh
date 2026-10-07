@@ -9,6 +9,7 @@ namespace App\Http\Api\V1\Admin\Auth;
 use App\Domain\Identity\Administrator;
 use App\Http\Api\V1\Admin\AdministratorResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 final class CurrentUserController
 {
@@ -22,6 +23,8 @@ final class CurrentUserController
         $administrator = $request->user('admin');
 
         abort_unless($administrator instanceof Administrator, 401);
+
+        Gate::authorize('view', $administrator);
 
         return new AdministratorResource($administrator);
     }
