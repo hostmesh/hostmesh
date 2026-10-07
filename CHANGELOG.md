@@ -87,6 +87,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A portal session cannot reach admin endpoints and an admin session cannot reach portal endpoints: a request from the other app's origin is refused with 403, and a session ID of one realm means nothing in the other.
 - Decision record 0010: session realms on top of Sanctum.
 - "Hostnames and authentication" in `control-plane/README.md`: the one hostname setting, the two realms and the rules for adding routes.
+- Decision record 0011: TOTP two-factor authentication on `pragmarx/google2fa` instead of Laravel Fortify.
+- Two-factor state on administrators and users: the TOTP secret (encrypted at rest), the confirmation time, the last accepted time step and the recovery codes (stored as SHA-256 hashes).
+- TOTP engine in the control plane (`App\Domain\Identity\TwoFactor\Totp`, implemented on `pragmarx/google2fa`): 6 digits, 30-second steps, one step of clock drift either way, and a code is refused once it was accepted.
+- Two-factor enrollment in both API groups: `POST auth/two-factor` returns a TOTP secret and its `otpauth://` URI, and `POST auth/two-factor/confirm` turns two-factor on with a valid code and returns ten recovery codes once.
+- Two-factor login challenge in both API groups: `POST auth/two-factor/challenge` completes a login with a TOTP code or a single-use recovery code, refuses a code that was already used, and is limited to 5 attempts per minute for one account.
+- Second-factor gate (`two-factor` middleware): every admin route except CSRF cookie, login, logout and the challenge answers 403 with `code: two_factor_required` or `two_factor_enrollment_required` until the session has completed two-factor authentication, which is mandatory for administrators and optional for customers. A test reads the route list, so admin routes added later are covered.
+- `DELETE auth/two-factor` and `POST auth/two-factor/recovery-codes` in both API groups: disabling two-factor and replacing the recovery codes each need the current password and a valid code.
+- Two-factor authentication in the OpenAPI document and the typed client, and in the authentication section of `control-plane/README.md`.
 
 ---
 
@@ -113,6 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `web/README.md` describes `@hostmesh/ui`, the browser-mode tests and the rule that apps style only through the design tokens.
 - `APP_URL` is no longer read. `control-plane/.env.example` carries `HOSTMESH_DOMAIN` instead; add it to an existing `.env`.
 - Session configuration is fixed in `config/session.php`: database driver, `Secure`, `HttpOnly`, `SameSite=Lax`, host-only cookies. The `SESSION_*` env keys are no longer read.
+- Login responses of both API groups now carry `two_factor_enabled` on the account and `meta.second_factor` (`challenge`, `enrollment` or `none`).
 
 ---
 

@@ -17,17 +17,21 @@ it('logs in and returns the account', function (string $origin): void {
 
     (new Browser($this))->logIn($origin, $account->email)
         ->assertOk()
-        ->assertExactJson(['data' => [
-            'id' => $account->id,
-            'name' => $account->name,
-            'email' => $account->email,
-        ]]);
+        ->assertExactJson([
+            'data' => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'email' => $account->email,
+                'two_factor_enabled' => false,
+            ],
+            'meta' => ['second_factor' => $origin === Browser::ADMIN ? 'enrollment' : 'none'],
+        ]);
 })->with('realms');
 
 it('reports the current user', function (string $origin, string $prefix): void {
-    $account = Browser::createAccount($origin);
+    $account = $origin === Browser::ADMIN ? Browser::createEnrolled($origin) : Browser::createAccount($origin);
     $browser = new Browser($this);
-    $browser->logIn($origin, $account->email);
+    $browser->signIn($origin, $account);
 
     $browser->get($origin, $prefix.'/auth/user')
         ->assertOk()
@@ -35,6 +39,7 @@ it('reports the current user', function (string $origin, string $prefix): void {
             'id' => $account->id,
             'name' => $account->name,
             'email' => $account->email,
+            'two_factor_enabled' => $origin === Browser::ADMIN,
         ]]);
 })->with('realms');
 

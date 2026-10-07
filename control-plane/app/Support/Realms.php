@@ -38,6 +38,12 @@ final readonly class Realms
                 );
             }
 
+            $twoFactorRequired = $settings['two_factor_required'] ?? null;
+
+            if (! is_bool($twoFactorRequired)) {
+                throw new InvalidArgumentException("hostmesh.realms.$name.two_factor_required must be true or false.");
+            }
+
             $realms[$name] = new Realm(
                 name: $name,
                 guard: self::string($name, $settings, 'guard'),
@@ -47,6 +53,7 @@ final readonly class Realms
                 csrfCookie: self::string($name, $settings, 'csrf_cookie'),
                 sessionLifetime: $lifetime,
                 cookieDomain: $hostnames->domain,
+                twoFactorRequired: $twoFactorRequired,
             );
         }
 

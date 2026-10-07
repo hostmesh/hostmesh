@@ -6,12 +6,14 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Support\Realm;
 use App\Support\Realms;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Session\SessionManager;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use LogicException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -89,5 +91,13 @@ final class UseSessionRealm extends EnsureFrontendRequestsAreStateful
     public static function fromFrontend($request): bool
     {
         return $request->attributes->has(self::ATTRIBUTE);
+    }
+
+    /** The realm of a request inside a realm route group. */
+    public static function realm(Request $request): Realm
+    {
+        $realm = $request->attributes->get(self::ATTRIBUTE);
+
+        return $realm instanceof Realm ? $realm : throw new LogicException('This route is outside the realm route groups.');
     }
 }

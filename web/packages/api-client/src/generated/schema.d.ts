@@ -41,6 +41,8 @@ export interface paths {
          * @description Starts an administrator session. Call `GET /admin/auth/csrf-cookie` first
          *     and send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response.
          *     Limited to 5 attempts per minute for one email from one address.
+         *     The session is complete only after the step in `meta.second_factor`: `challenge`
+         *     (send a code to `auth/two-factor/challenge`) or `enrollment` (set up two-factor first).
          */
         post: operations["admin.auth.login"];
         delete?: never;
@@ -63,6 +65,98 @@ export interface paths {
          * @description Ends the administrator session. The session ID stops working on the server.
          */
         post: operations["admin.auth.logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start two-factor enrollment
+         * @description Returns a new TOTP secret and its `otpauth://` URI for a QR code.
+         *     Two-factor is not on until `POST auth/two-factor/confirm` succeeds.
+         *     Calling this again replaces an unconfirmed secret.
+         *     Answers 409 when two-factor is already on.
+         */
+        post: operations["admin.auth.two-factor.enroll"];
+        /**
+         * Disable two-factor authentication
+         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
+         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
+         *     Limited to 5 attempts per minute for one account.
+         */
+        delete: operations["admin.auth.two-factor.disable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete the two-factor challenge
+         * @description The second step of a login: send `code` from the authenticator app, or `recovery_code`, which
+         *     works once. A code is refused when it was already used. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["admin.auth.two-factor.challenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm two-factor enrollment
+         * @description Turns two-factor on with a code from the authenticator app and completes the second factor
+         *     for this session. The recovery codes in the response are shown only once.
+         */
+        post: operations["admin.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate the recovery codes
+         * @description Needs the current password and a valid code. Every earlier recovery code stops working.
+         *     The new codes in the response are shown only once. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["admin.auth.two-factor.recovery-codes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -124,6 +218,8 @@ export interface paths {
         /**
          * Log in (portal)
          * @description Starts a customer session. Call `GET /customer/auth/csrf-cookie` first and send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response. Limited to 5 attempts per minute for one email from one address.
+         *
+         *     When `meta.second_factor` is `challenge`, the session is complete only after `auth/two-factor/challenge`; `none` means it is complete.
          */
         post: operations["customer.auth.login"];
         delete?: never;
@@ -146,6 +242,98 @@ export interface paths {
          * @description Ends the customer session. The session ID stops working on the server.
          */
         post: operations["customer.auth.logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start two-factor enrollment
+         * @description Returns a new TOTP secret and its `otpauth://` URI for a QR code.
+         *     Two-factor is not on until `POST auth/two-factor/confirm` succeeds.
+         *     Calling this again replaces an unconfirmed secret.
+         *     Answers 409 when two-factor is already on.
+         */
+        post: operations["customer.auth.two-factor.enroll"];
+        /**
+         * Disable two-factor authentication
+         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
+         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
+         *     Limited to 5 attempts per minute for one account.
+         */
+        delete: operations["customer.auth.two-factor.disable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete the two-factor challenge
+         * @description The second step of a login: send `code` from the authenticator app, or `recovery_code`, which
+         *     works once. A code is refused when it was already used. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["customer.auth.two-factor.challenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm two-factor enrollment
+         * @description Turns two-factor on with a code from the authenticator app and completes the second factor
+         *     for this session. The recovery codes in the response are shown only once.
+         */
+        post: operations["customer.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate the recovery codes
+         * @description Needs the current password and a valid code. Every earlier recovery code stops working.
+         *     The new codes in the response are shown only once. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["customer.auth.two-factor.recovery-codes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -201,6 +389,16 @@ export interface components {
             id: string;
             name: string;
             email: string;
+            two_factor_enabled: boolean;
+        };
+        /** ChallengeRequest */
+        ChallengeRequest: {
+            code?: string;
+            recovery_code?: string;
+        };
+        /** CodeRequest */
+        CodeRequest: {
+            code: string;
         };
         /**
          * HealthStatus
@@ -213,11 +411,17 @@ export interface components {
             email: string;
             password: string;
         };
+        /** PasswordAndCodeRequest */
+        PasswordAndCodeRequest: {
+            password: string;
+            code: string;
+        };
         /** UserResource */
         UserResource: {
             id: string;
             name: string;
             email: string;
+            two_factor_enabled: boolean;
         };
     };
     responses: {
@@ -298,6 +502,9 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["AdministratorResource"];
+                        meta: {
+                            second_factor: string;
+                        };
                     };
                 };
             };
@@ -338,6 +545,153 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "admin.auth.two-factor.enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            secret: string;
+                            provisioning_uri: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.auth.two-factor.disable": {
+        parameters: {
+            query: {
+                password: string;
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Two-factor authentication is off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.auth.two-factor.challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description The second factor is complete for this session. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.auth.two-factor.confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.auth.two-factor.recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordAndCodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "admin.auth.user": {
@@ -404,6 +758,9 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["UserResource"];
+                        meta: {
+                            second_factor: string;
+                        };
                     };
                 };
             };
@@ -444,6 +801,153 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "customer.auth.two-factor.enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            secret: string;
+                            provisioning_uri: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "customer.auth.two-factor.disable": {
+        parameters: {
+            query: {
+                password: string;
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Two-factor authentication is off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "customer.auth.two-factor.challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description The second factor is complete for this session. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "customer.auth.two-factor.confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "customer.auth.two-factor.recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordAndCodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            recovery_codes: string[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "customer.auth.user": {

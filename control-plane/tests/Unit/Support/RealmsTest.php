@@ -16,6 +16,7 @@ function realmSettings(array $overrides = []): array
         'session_table' => 'admin_sessions',
         'csrf_cookie' => 'XSRF-TOKEN-ADMIN',
         'session_lifetime' => 30,
+        'two_factor_required' => true,
     ]];
 }
 
@@ -29,7 +30,8 @@ it('builds a realm from its settings and the hostnames', function (): void {
         ->and($realm->sessionTable)->toBe('admin_sessions')
         ->and($realm->csrfCookie)->toBe('XSRF-TOKEN-ADMIN')
         ->and($realm->sessionLifetime)->toBe(30)
-        ->and($realm->cookieDomain)->toBe('example.com');
+        ->and($realm->cookieDomain)->toBe('example.com')
+        ->and($realm->twoFactorRequired)->toBeTrue();
 });
 
 it('refuses an unknown realm', function (): void {
@@ -50,3 +52,8 @@ it('refuses a missing setting', function (string $key): void {
     expect(fn () => Realms::fromConfig($settings, new Hostnames('example.com')))
         ->toThrow(InvalidArgumentException::class, $key);
 })->with(['guard', 'subdomain', 'session_cookie', 'session_table', 'csrf_cookie']);
+
+it('refuses a two-factor setting that is not a boolean', function (mixed $value): void {
+    expect(fn () => Realms::fromConfig(realmSettings(['two_factor_required' => $value]), new Hostnames('example.com')))
+        ->toThrow(InvalidArgumentException::class, 'two_factor_required');
+})->with([null, 'yes', 1]);

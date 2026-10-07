@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Domain\Identity\TwoFactor\Totp;
 use App\Http\Middleware\UseSessionRealm;
+use App\Infrastructure\TwoFactor\Google2faTotp;
 use App\Support\Realm;
 use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
@@ -33,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
             unset($guards['web']);
             config(['auth.guards' => $guards]);
         }
+
+        $this->app->bind(Totp::class, Google2faTotp::class);
     }
 
     /**
@@ -62,6 +66,24 @@ class AppServiceProvider extends ServiceProvider
             return [
                 Limit::perMinute(5)->by("account|$scope|$account|$address"),
                 Limit::perMinute(20)->by("address|$scope|$address"),
+            ];
+        });
+
+        // Second-factor attempts (issue #25): challenge, confirmation and
+        // the two endpoints that take a password and a code. Counted per
+        // account, so a new login does not reset it. Each realm counts on
+        // its own.
+        RateLimiter::for('two-factor', function (Request $request): array {
+            $realm = $request->attributes->get(UseSessionRealm::ATTRIBUTE);
+            $scope = $realm instanceof Realm ? $realm->name : 'none';
+
+            $identifier = $request->user()?->getAuthIdentifier();
+            $account = is_string($identifier) ? $identifier : '';
+            $address = (string) $request->ip();
+
+            return [
+                Limit::perMinute(5)->by("two-factor|$scope|$account"),
+                Limit::perMinute(20)->by("two-factor-address|$scope|$address"),
             ];
         });
     }

@@ -62,11 +62,11 @@ it('does not let admin credentials log in to the portal API', function (): void 
 });
 
 it('keeps both sessions alive side by side in one browser', function (): void {
-    $administrator = Administrator::factory()->create();
+    $administrator = Administrator::factory()->withTwoFactor()->create();
     $user = User::factory()->create();
     $browser = new Browser($this);
 
-    $browser->logIn(Browser::ADMIN, $administrator->email)->assertOk();
+    $browser->signIn(Browser::ADMIN, $administrator);
     $browser->logIn(Browser::PORTAL, $user->email)->assertOk();
 
     $browser->get(Browser::ADMIN, '/api/v1/admin/auth/user')->assertOk()->assertJsonPath('data.id', $administrator->id);

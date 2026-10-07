@@ -81,9 +81,9 @@ it('rejects the token of the other app', function (): void {
 });
 
 it('requires the token to log out', function (string $origin, string $prefix): void {
-    $account = Browser::createAccount($origin);
+    $account = $origin === Browser::ADMIN ? Browser::createEnrolled($origin) : Browser::createAccount($origin);
     $browser = new Browser($this);
-    $browser->logIn($origin, $account->email)->assertOk();
+    $browser->signIn($origin, $account);
 
     $browser->usingCsrfToken(false)->post($origin, $prefix.'/auth/logout')->assertStatus(419);
     $browser->usingCsrfToken(null)->get($origin, $prefix.'/auth/user')->assertOk();

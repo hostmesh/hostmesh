@@ -33,6 +33,8 @@ return [
 
     // One realm per route group (spec section 28): its own guard, session
     // cookie, session table and CSRF cookie. Lifetimes are idle minutes.
+    // Two-factor authentication is mandatory where two_factor_required is true (spec section 28: admin).
+    // It is not an environment setting.
     'realms' => [
         'admin' => [
             'guard' => 'admin',
@@ -41,6 +43,7 @@ return [
             'session_table' => 'admin_sessions',
             'csrf_cookie' => 'XSRF-TOKEN-ADMIN',
             'session_lifetime' => (int) env('HOSTMESH_ADMIN_SESSION_LIFETIME', 30),
+            'two_factor_required' => true,
         ],
         'customer' => [
             'guard' => 'customer',
@@ -49,6 +52,7 @@ return [
             'session_table' => 'portal_sessions',
             'csrf_cookie' => 'XSRF-TOKEN-PORTAL',
             'session_lifetime' => (int) env('HOSTMESH_PORTAL_SESSION_LIFETIME', 120),
+            'two_factor_required' => false,
         ],
     ],
 

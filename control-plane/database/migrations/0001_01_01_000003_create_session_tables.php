@@ -14,8 +14,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    private const array TABLES = ['admin_sessions', 'portal_sessions'];
+    protected const array TABLES = ['admin_sessions', 'portal_sessions'];
 
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         foreach (self::TABLES as $name) {
@@ -30,6 +33,9 @@ return new class extends Migration
         }
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         foreach (self::TABLES as $name) {

@@ -6,6 +6,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Identity;
 
+use App\Domain\Identity\TwoFactor\HasTwoFactor;
+use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -23,15 +25,20 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $name
  * @property string $email
  * @property string $password
+ * @property string|null $two_factor_secret
+ * @property CarbonImmutable|null $two_factor_confirmed_at
+ * @property int|null $two_factor_last_step
+ * @property list<string>|null $two_factor_recovery_codes
  */
 #[UseFactory(UserFactory::class)]
 #[Fillable('name', 'email', 'password')]
-#[Hidden('password')]
+#[Hidden('password', 'two_factor_secret', 'two_factor_recovery_codes')]
 final class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
+    use HasTwoFactor;
     use HasUuids;
 
     /**

@@ -37,7 +37,7 @@
         "/admin/auth/login": {
             "post": {
                 "operationId": "admin.auth.login",
-                "description": "Starts an administrator session. Call `GET /admin/auth/csrf-cookie` first\nand send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response.\nLimited to 5 attempts per minute for one email from one address.",
+                "description": "Starts an administrator session. Call `GET /admin/auth/csrf-cookie` first\nand send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response.\nLimited to 5 attempts per minute for one email from one address.\nThe session is complete only after the step in `meta.second_factor`: `challenge`\n(send a code to `auth/two-factor/challenge`) or `enrollment` (set up two-factor first).",
                 "summary": "Log in (admin)",
                 "tags": [
                     "Login"
@@ -62,10 +62,22 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/AdministratorResource"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "second_factor": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "second_factor"
+                                            ]
                                         }
                                     },
                                     "required": [
-                                        "data"
+                                        "data",
+                                        "meta"
                                     ]
                                 }
                             }
@@ -121,6 +133,269 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/auth/two-factor": {
+            "delete": {
+                "operationId": "admin.auth.two-factor.disable",
+                "description": "Needs the current password and a valid code. Removes the secret and the recovery codes.\nWhere two-factor is mandatory, the account must enroll again before it can use anything else.\nLimited to 5 attempts per minute for one account.",
+                "summary": "Disable two-factor authentication",
+                "tags": [
+                    "Disable"
+                ],
+                "parameters": [
+                    {
+                        "name": "password",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 16
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Two-factor authentication is off.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "admin.auth.two-factor.enroll",
+                "description": "Returns a new TOTP secret and its `otpauth://` URI for a QR code.\nTwo-factor is not on until `POST auth/two-factor/confirm` succeeds.\nCalling this again replaces an unconfirmed secret.\nAnswers 409 when two-factor is already on.",
+                "summary": "Start two-factor enrollment",
+                "tags": [
+                    "Enroll"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "string"
+                                                },
+                                                "provisioning_uri": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "secret",
+                                                "provisioning_uri"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/admin/auth/two-factor/challenge": {
+            "post": {
+                "operationId": "admin.auth.two-factor.challenge",
+                "description": "The second step of a login: send `code` from the authenticator app, or `recovery_code`, which\nworks once. A code is refused when it was already used. Limited to 5 attempts per minute for one account.",
+                "summary": "Complete the two-factor challenge",
+                "tags": [
+                    "Challenge"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChallengeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "The second factor is complete for this session.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/admin/auth/two-factor/confirm": {
+            "post": {
+                "operationId": "admin.auth.two-factor.confirm",
+                "description": "Turns two-factor on with a code from the authenticator app and completes the second factor\nfor this session. The recovery codes in the response are shown only once.",
+                "summary": "Confirm two-factor enrollment",
+                "tags": [
+                    "Confirm"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recovery_codes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "recovery_codes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/admin/auth/two-factor/recovery-codes": {
+            "post": {
+                "operationId": "admin.auth.two-factor.recovery-codes",
+                "description": "Needs the current password and a valid code. Every earlier recovery code stops working.\nThe new codes in the response are shown only once. Limited to 5 attempts per minute for one account.",
+                "summary": "Regenerate the recovery codes",
+                "tags": [
+                    "RecoveryCodes"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordAndCodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recovery_codes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "recovery_codes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -184,7 +459,7 @@
         "/customer/auth/login": {
             "post": {
                 "operationId": "customer.auth.login",
-                "description": "Starts a customer session. Call `GET /customer/auth/csrf-cookie` first and send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response. Limited to 5 attempts per minute for one email from one address.",
+                "description": "Starts a customer session. Call `GET /customer/auth/csrf-cookie` first and send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response. Limited to 5 attempts per minute for one email from one address.\n\nWhen `meta.second_factor` is `challenge`, the session is complete only after `auth/two-factor/challenge`; `none` means it is complete.",
                 "summary": "Log in (portal)",
                 "tags": [
                     "Login"
@@ -209,10 +484,22 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/UserResource"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "second_factor": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "second_factor"
+                                            ]
                                         }
                                     },
                                     "required": [
-                                        "data"
+                                        "data",
+                                        "meta"
                                     ]
                                 }
                             }
@@ -268,6 +555,269 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/customer/auth/two-factor": {
+            "delete": {
+                "operationId": "customer.auth.two-factor.disable",
+                "description": "Needs the current password and a valid code. Removes the secret and the recovery codes.\nWhere two-factor is mandatory, the account must enroll again before it can use anything else.\nLimited to 5 attempts per minute for one account.",
+                "summary": "Disable two-factor authentication",
+                "tags": [
+                    "Disable"
+                ],
+                "parameters": [
+                    {
+                        "name": "password",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 16
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Two-factor authentication is off.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "customer.auth.two-factor.enroll",
+                "description": "Returns a new TOTP secret and its `otpauth://` URI for a QR code.\nTwo-factor is not on until `POST auth/two-factor/confirm` succeeds.\nCalling this again replaces an unconfirmed secret.\nAnswers 409 when two-factor is already on.",
+                "summary": "Start two-factor enrollment",
+                "tags": [
+                    "Enroll"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "string"
+                                                },
+                                                "provisioning_uri": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "secret",
+                                                "provisioning_uri"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/customer/auth/two-factor/challenge": {
+            "post": {
+                "operationId": "customer.auth.two-factor.challenge",
+                "description": "The second step of a login: send `code` from the authenticator app, or `recovery_code`, which\nworks once. A code is refused when it was already used. Limited to 5 attempts per minute for one account.",
+                "summary": "Complete the two-factor challenge",
+                "tags": [
+                    "Challenge"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChallengeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "The second factor is complete for this session.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/customer/auth/two-factor/confirm": {
+            "post": {
+                "operationId": "customer.auth.two-factor.confirm",
+                "description": "Turns two-factor on with a code from the authenticator app and completes the second factor\nfor this session. The recovery codes in the response are shown only once.",
+                "summary": "Confirm two-factor enrollment",
+                "tags": [
+                    "Confirm"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recovery_codes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "recovery_codes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/customer/auth/two-factor/recovery-codes": {
+            "post": {
+                "operationId": "customer.auth.two-factor.recovery-codes",
+                "description": "Needs the current password and a valid code. Every earlier recovery code stops working.\nThe new codes in the response are shown only once. Limited to 5 attempts per minute for one account.",
+                "summary": "Regenerate the recovery codes",
+                "tags": [
+                    "RecoveryCodes"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordAndCodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recovery_codes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "recovery_codes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -350,14 +900,45 @@
                     },
                     "email": {
                         "type": "string"
+                    },
+                    "two_factor_enabled": {
+                        "type": "boolean"
                     }
                 },
                 "required": [
                     "id",
                     "name",
-                    "email"
+                    "email",
+                    "two_factor_enabled"
                 ],
                 "title": "AdministratorResource"
+            },
+            "ChallengeRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "maxLength": 16
+                    },
+                    "recovery_code": {
+                        "type": "string",
+                        "maxLength": 64
+                    }
+                },
+                "title": "ChallengeRequest"
+            },
+            "CodeRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "maxLength": 16
+                    }
+                },
+                "required": [
+                    "code"
+                ],
+                "title": "CodeRequest"
             },
             "HealthStatus": {
                 "type": "string",
@@ -384,6 +965,23 @@
                 ],
                 "title": "LoginRequest"
             },
+            "PasswordAndCodeRequest": {
+                "type": "object",
+                "properties": {
+                    "password": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string",
+                        "maxLength": 16
+                    }
+                },
+                "required": [
+                    "password",
+                    "code"
+                ],
+                "title": "PasswordAndCodeRequest"
+            },
             "UserResource": {
                 "type": "object",
                 "properties": {
@@ -395,12 +993,16 @@
                     },
                     "email": {
                         "type": "string"
+                    },
+                    "two_factor_enabled": {
+                        "type": "boolean"
                     }
                 },
                 "required": [
                     "id",
                     "name",
-                    "email"
+                    "email",
+                    "two_factor_enabled"
                 ],
                 "title": "UserResource"
             }

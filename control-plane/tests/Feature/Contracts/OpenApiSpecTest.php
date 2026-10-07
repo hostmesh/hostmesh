@@ -86,6 +86,13 @@ it('serves no API documentation', function (string $uri): void {
     get($uri)->assertNotFound();
 })->with(['/docs/api', '/docs/api.json', '/_scramble/dev-tools/devtools.js']);
 
+it('documents login as needing no session and keeps docblock tags out of the description', function (string $path): void {
+    $operation = generateOpenApiDocument()['paths'][$path]['post'];
+
+    expect($operation['security'] ?? null)->toBe([])
+        ->and($operation['description'])->not->toContain('@unauthenticated');
+})->with(['/admin/auth/login', '/customer/auth/login']);
+
 it('documents the health endpoint and its response', function (): void {
     $document = generateOpenApiDocument();
     $operation = $document['paths']['/health']['get'];

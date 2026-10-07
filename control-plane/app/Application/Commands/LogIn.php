@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace App\Application\Commands;
 
 use App\Application\Exceptions\InvalidCredentials;
+use App\Application\Services\SecondFactorSession;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory;
 use Illuminate\Contracts\Auth\StatefulGuard;
@@ -16,6 +17,7 @@ final readonly class LogIn
 {
     public function __construct(
         protected Factory $auth,
+        protected SecondFactorSession $secondFactor,
     ) {
         //
     }
@@ -38,6 +40,9 @@ final readonly class LogIn
         if (! $session->attempt(['email' => mb_strtolower($email), 'password' => $password])) {
             throw new InvalidCredentials;
         }
+
+        // A password alone never completes the second factor (issue #25).
+        $this->secondFactor->clear();
 
         return $session->user() ?? throw new InvalidCredentials;
     }
