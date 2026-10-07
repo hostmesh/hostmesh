@@ -1,6 +1,6 @@
 # 0013. Audit log as a plain append-only table behind an interface
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-07
 - Issue: Audit logging (#27)
 

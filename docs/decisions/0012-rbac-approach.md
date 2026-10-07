@@ -1,6 +1,6 @@
 # 0012. RBAC with Laravel policies and roles defined in code
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-07
 - Issue: RBAC: roles, permissions and policies (#26)
 
