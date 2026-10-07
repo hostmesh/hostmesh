@@ -41,6 +41,8 @@ export interface paths {
          * @description Starts an administrator session. Call `GET /admin/auth/csrf-cookie` first
          *     and send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response.
          *     Limited to 5 attempts per minute for one email from one address.
+         *     The session is complete only after the step in `meta.second_factor`: `challenge`
+         *     (send a code to `auth/two-factor/challenge`) or `enrollment` (set up two-factor first).
          */
         post: operations["admin.auth.login"];
         delete?: never;
@@ -86,6 +88,27 @@ export interface paths {
          *     Answers 409 when two-factor is already on.
          */
         post: operations["admin.auth.two-factor.enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete the two-factor challenge
+         * @description The second step of a login: send `code` from the authenticator app, or `recovery_code`, which
+         *     works once. A code is refused when it was already used. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["admin.auth.two-factor.challenge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -168,6 +191,8 @@ export interface paths {
         /**
          * Log in (portal)
          * @description Starts a customer session. Call `GET /customer/auth/csrf-cookie` first and send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response. Limited to 5 attempts per minute for one email from one address.
+         *
+         *     When `meta.second_factor` is `challenge`, the session is complete only after `auth/two-factor/challenge`; `none` means it is complete.     * @unauthenticated
          */
         post: operations["customer.auth.login"];
         delete?: never;
@@ -213,6 +238,27 @@ export interface paths {
          *     Answers 409 when two-factor is already on.
          */
         post: operations["customer.auth.two-factor.enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete the two-factor challenge
+         * @description The second step of a login: send `code` from the authenticator app, or `recovery_code`, which
+         *     works once. A code is refused when it was already used. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["customer.auth.two-factor.challenge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -289,6 +335,12 @@ export interface components {
             id: string;
             name: string;
             email: string;
+            two_factor_enabled: boolean;
+        };
+        /** ChallengeRequest */
+        ChallengeRequest: {
+            code?: string;
+            recovery_code?: string;
         };
         /** CodeRequest */
         CodeRequest: {
@@ -310,6 +362,7 @@ export interface components {
             id: string;
             name: string;
             email: string;
+            two_factor_enabled: boolean;
         };
     };
     responses: {
@@ -390,6 +443,9 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["AdministratorResource"];
+                        meta: {
+                            second_factor: string;
+                        };
                     };
                 };
             };
@@ -467,6 +523,32 @@ export interface operations {
                     };
                 };
             };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.auth.two-factor.challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description The second factor is complete for this session. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -563,6 +645,9 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["UserResource"];
+                        meta: {
+                            second_factor: string;
+                        };
                     };
                 };
             };
@@ -640,6 +725,32 @@ export interface operations {
                     };
                 };
             };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "customer.auth.two-factor.challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description The second factor is complete for this session. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
         };
     };

@@ -20,6 +20,7 @@ final readonly class Realm
         public string $csrfCookie,
         public int $sessionLifetime,
         public string $cookieDomain,
+        public bool $twoFactorRequired,
     ) {
         //
     }

@@ -91,6 +91,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Two-factor state on administrators and users: the TOTP secret (encrypted at rest), the confirmation time, the last accepted time step and the recovery codes (stored as SHA-256 hashes).
 - TOTP engine in the control plane (`App\Domain\Identity\TwoFactor\Totp`, implemented on `pragmarx/google2fa`): 6 digits, 30-second steps, one step of clock drift either way, and a code is refused once it was accepted.
 - Two-factor enrollment in both API groups: `POST auth/two-factor` returns a TOTP secret and its `otpauth://` URI, and `POST auth/two-factor/confirm` turns two-factor on with a valid code and returns ten recovery codes once.
+- Two-factor login challenge in both API groups: `POST auth/two-factor/challenge` completes a login with a TOTP code or a single-use recovery code, refuses a code that was already used, and is limited to 5 attempts per minute for one account.
 
 ---
 
@@ -117,6 +118,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `web/README.md` describes `@hostmesh/ui`, the browser-mode tests and the rule that apps style only through the design tokens.
 - `APP_URL` is no longer read. `control-plane/.env.example` carries `HOSTMESH_DOMAIN` instead; add it to an existing `.env`.
 - Session configuration is fixed in `config/session.php`: database driver, `Secure`, `HttpOnly`, `SameSite=Lax`, host-only cookies. The `SESSION_*` env keys are no longer read.
+- Login responses of both API groups now carry `two_factor_enabled` on the account and `meta.second_factor` (`challenge`, `enrollment` or `none`).
 
 ---
 

@@ -68,5 +68,23 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(20)->by("address|$scope|$address"),
             ];
         });
+
+        // Second-factor attempts (issue #25): challenge, confirmation and
+        // the two endpoints that take a password and a code. Counted per
+        // account, so a new login does not reset it. Each realm counts on
+        // its own.
+        RateLimiter::for('two-factor', function (Request $request): array {
+            $realm = $request->attributes->get(UseSessionRealm::ATTRIBUTE);
+            $scope = $realm instanceof Realm ? $realm->name : 'none';
+
+            $identifier = $request->user()?->getAuthIdentifier();
+            $account = is_string($identifier) ? $identifier : '';
+            $address = (string) $request->ip();
+
+            return [
+                Limit::perMinute(5)->by("two-factor|$scope|$account"),
+                Limit::perMinute(20)->by("two-factor-address|$scope|$address"),
+            ];
+        });
     }
 }

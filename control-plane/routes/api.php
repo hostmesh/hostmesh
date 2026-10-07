@@ -28,7 +28,8 @@ Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(functio
             Route::post('/logout', Admin\Auth\LogoutController::class)->name('logout');
             Route::get('/user', Admin\Auth\CurrentUserController::class)->name('user');
             Route::post('/two-factor', TwoFactor\EnrollController::class)->name('two-factor.enroll');
-            Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->name('two-factor.confirm');
+            Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->middleware('throttle:two-factor')->name('two-factor.confirm');
+            Route::post('/two-factor/challenge', TwoFactor\ChallengeController::class)->middleware('throttle:two-factor')->name('two-factor.challenge');
         });
     });
 });
@@ -42,7 +43,8 @@ Route::prefix('customer')->name('customer.')->middleware('realm:customer')->grou
             Route::post('/logout', Customer\Auth\LogoutController::class)->name('logout');
             Route::get('/user', Customer\Auth\CurrentUserController::class)->name('user');
             Route::post('/two-factor', TwoFactor\EnrollController::class)->name('two-factor.enroll');
-            Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->name('two-factor.confirm');
+            Route::post('/two-factor/confirm', TwoFactor\ConfirmController::class)->middleware('throttle:two-factor')->name('two-factor.confirm');
+            Route::post('/two-factor/challenge', TwoFactor\ChallengeController::class)->middleware('throttle:two-factor')->name('two-factor.challenge');
         });
     });
 });

@@ -6,6 +6,8 @@ declare(strict_types=1);
 
 namespace App\Application\Services;
 
+use App\Domain\Identity\Administrator;
+use App\Domain\Identity\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Session\SessionManager;
 use Illuminate\Session\Store;
@@ -38,6 +40,19 @@ final readonly class SecondFactorSession
     public function passedBy(Authenticatable $account): bool
     {
         return $this->store()->get(self::KEY) === $account->getAuthIdentifier();
+    }
+
+    /**
+     * The step this session still owes, or null when it is complete.
+     * $required: the realm makes two-factor mandatory.
+     */
+    public function pending(Administrator|User $account, bool $required): ?SecondFactorStep
+    {
+        if ($account->hasTwoFactor()) {
+            return $this->passedBy($account) ? null : SecondFactorStep::Challenge;
+        }
+
+        return $required ? SecondFactorStep::Enrollment : null;
     }
 
     public function clear(): void
