@@ -4,7 +4,10 @@
 
 declare(strict_types=1);
 
+use App\Application\Commands\StartTwoFactorEnrollment;
+use App\Application\Exceptions\TwoFactorAlreadyEnabled;
 use App\Domain\Identity\TwoFactor\RecoveryCodes;
+use Database\Factories\Concerns\TwoFactorTestValues;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Browser;
@@ -145,4 +148,22 @@ it('refuses enrollment with 409 when two-factor is already on', function (string
     $browser->post($origin, $prefix.'/auth/two-factor')->assertConflict();
 
     expect($account->fresh()->hasTwoFactor())->toBeTrue();
+})->with('realms');
+
+it('does not replace the secret of an account that another request confirmed meanwhile', function (string $origin): void {
+    // The copy a request holds, read before the other request confirmed.
+    $stale = Browser::createAccount($origin);
+
+    $confirmed = $stale->fresh();
+    $confirmed->beginTwoFactorEnrollment(TwoFactorTestValues::TEST_SECRET);
+    $confirmed->confirmTwoFactor(['hash-one']);
+
+    expect(fn () => app(StartTwoFactorEnrollment::class)->handle($stale))
+        ->toThrow(TwoFactorAlreadyEnabled::class);
+
+    $fresh = $stale->fresh();
+
+    expect($fresh->hasTwoFactor())->toBeTrue()
+        ->and($fresh->two_factor_secret)->toBe(TwoFactorTestValues::TEST_SECRET)
+        ->and($fresh->two_factor_recovery_codes)->toBe(['hash-one']);
 })->with('realms');

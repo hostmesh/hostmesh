@@ -6,24 +6,29 @@ declare(strict_types=1);
 
 use App\Domain\Identity\Administrator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Tests\Support\Browser;
 
 // Issue #25, spec sections 28 and 37: admin routes require two-factor
-// authentication. These tests read the route list, so an admin route that
-// is added later is covered without touching this file. A new route that
-// must work before the second factor has to be added to the list below,
-// which makes it a visible decision in review.
+// authentication, and so does every customer route for a customer who
+// turned it on. These tests read the route list, so a route that is added
+// later is covered without touching this file. A new route that must work
+// before the second factor has to be added to the list below, which makes
+// it a visible decision in review.
 
 uses(RefreshDatabase::class);
 
+const ADMIN_PREFIX = '/api/v1/admin';
+
+// Route names without the realm's prefix (`admin.`, `customer.`).
 const BEFORE_SECOND_FACTOR = [
-    'admin.auth.csrf-cookie',
-    'admin.auth.login',
-    'admin.auth.logout',
-    'admin.auth.two-factor.challenge',
+    'auth.csrf-cookie',
+    'auth.login',
+    'auth.logout',
+    'auth.two-factor.challenge',
 ];
 
 // Behind the gate, but open to an administrator who has not enrolled yet.
@@ -32,18 +37,27 @@ const ENROLLMENT = [
     'admin.auth.two-factor.confirm',
 ];
 
-/** @return Collection<int, RoutingRoute> */
-function adminRoutes(): Collection
+/** The realm's name, which is also its guard and its route name prefix. */
+function realmOf(string $prefix): string
+{
+    return basename($prefix);
+}
+
+/**
+ * @param  string  $prefix  the realm's URI prefix, as the `realms` dataset gives it
+ * @return Collection<int, RoutingRoute>
+ */
+function realmRoutes(string $prefix): Collection
 {
     return collect(Route::getRoutes()->getRoutes())
-        ->filter(fn (RoutingRoute $route): bool => str_starts_with($route->uri(), 'api/v1/admin'))
+        ->filter(fn (RoutingRoute $route): bool => str_starts_with('/'.$route->uri().'/', $prefix.'/'))
         ->values();
 }
 
 /** @return Collection<int, RoutingRoute> */
-function gatedAdminRoutes(): Collection
+function gatedRoutes(string $prefix): Collection
 {
-    return adminRoutes()
+    return realmRoutes($prefix)
         ->filter(fn (RoutingRoute $route): bool => in_array('two-factor', $route->gatherMiddleware(), true))
         ->values();
 }
@@ -63,40 +77,48 @@ beforeEach(function (): void {
     $this->freezeTime();
 });
 
-it('names every admin route', function (): void {
-    expect(adminRoutes())->not->toBeEmpty();
+it('names every route of a realm', function (string $origin, string $prefix): void {
+    expect(realmRoutes($prefix))->not->toBeEmpty();
 
-    foreach (adminRoutes() as $route) {
+    foreach (realmRoutes($prefix) as $route) {
         expect($route->getName())->not->toBeNull("{$route->uri()} has no name");
     }
-});
+})->with('realms');
 
-it('leaves only the documented admin routes outside the gate', function (): void {
-    $outside = adminRoutes()
+it('leaves only the documented routes of a realm outside the gate', function (string $origin, string $prefix): void {
+    $outside = realmRoutes($prefix)
         ->reject(fn (RoutingRoute $route): bool => in_array('two-factor', $route->gatherMiddleware(), true))
         ->map(fn (RoutingRoute $route): ?string => $route->getName())
         ->all();
 
-    expect($outside)->toEqualCanonicalizing(BEFORE_SECOND_FACTOR);
-});
+    $documented = array_map(fn (string $name): string => realmOf($prefix).'.'.$name, BEFORE_SECOND_FACTOR);
 
-it('puts authentication in front of the gate on every gated admin route', function (): void {
-    foreach (gatedAdminRoutes() as $route) {
+    expect($outside)->toEqualCanonicalizing($documented);
+})->with('realms');
+
+it('puts authentication in front of the gate on every gated route', function (string $origin, string $prefix): void {
+    $realm = realmOf($prefix);
+
+    foreach (gatedRoutes($prefix) as $route) {
         $middleware = $route->gatherMiddleware();
 
-        expect($middleware)->toContain('realm:admin', 'auth:admin');
+        expect($middleware)->toContain("realm:$realm", "auth:$realm");
     }
-});
+})->with('realms');
 
-it('rejects a password-only session of an enrolled administrator on every gated admin route', function (): void {
+it('rejects a password-only session of an enrolled account on every gated route', function (string $origin, string $prefix): void {
+    // The gate is under test, not the rate limit, which runs in front of it
+    // and would answer 429 once enough gated routes are throttled.
+    $this->withoutMiddleware(ThrottleRequests::class);
+
     $browser = new Browser($this);
-    $browser->logIn(Browser::ADMIN, Browser::createEnrolled(Browser::ADMIN)->email)->assertOk();
+    $browser->logIn($origin, Browser::createEnrolled($origin)->email)->assertOk();
 
-    expect(gatedAdminRoutes())->not->toBeEmpty();
+    expect(gatedRoutes($prefix))->not->toBeEmpty();
 
-    foreach (gatedAdminRoutes() as $route) {
+    foreach (gatedRoutes($prefix) as $route) {
         foreach (callsOf($route) as [$method, $uri]) {
-            $browser->request($method, Browser::ADMIN, $uri)
+            $browser->request($method, $origin, $uri)
                 ->assertForbidden()
                 ->assertExactJson([
                     'message' => 'Two-factor authentication is required.',
@@ -104,13 +126,15 @@ it('rejects a password-only session of an enrolled administrator on every gated 
                 ]);
         }
     }
-});
+})->with('realms');
 
 it('rejects an administrator who has not enrolled on every gated admin route but enrollment', function (): void {
+    $this->withoutMiddleware(ThrottleRequests::class);
+
     $browser = new Browser($this);
     $browser->logIn(Browser::ADMIN, Browser::createAccount(Browser::ADMIN)->email)->assertOk();
 
-    $routes = gatedAdminRoutes()->reject(fn (RoutingRoute $route): bool => in_array($route->getName(), ENROLLMENT, true));
+    $routes = gatedRoutes(ADMIN_PREFIX)->reject(fn (RoutingRoute $route): bool => in_array($route->getName(), ENROLLMENT, true));
 
     expect($routes)->not->toBeEmpty();
 
@@ -244,13 +268,13 @@ it('keeps two-factor optional for customers', function (): void {
     $other->get(Browser::PORTAL, '/api/v1/customer/auth/user')->assertOk();
 });
 
-it('answers 401, not 403, without a session', function (): void {
+it('answers 401, not 403, without a session', function (string $origin, string $prefix): void {
     $browser = new Browser($this);
-    $browser->get(Browser::ADMIN, '/api/v1/admin/auth/csrf-cookie');
+    $browser->get($origin, $prefix.'/auth/csrf-cookie');
 
-    foreach (gatedAdminRoutes() as $route) {
+    foreach (gatedRoutes($prefix) as $route) {
         foreach (callsOf($route) as [$method, $uri]) {
-            $browser->request($method, Browser::ADMIN, $uri)->assertUnauthorized();
+            $browser->request($method, $origin, $uri)->assertUnauthorized();
         }
     }
-});
+})->with('realms');

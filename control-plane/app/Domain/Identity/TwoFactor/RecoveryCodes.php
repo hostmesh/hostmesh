@@ -21,7 +21,9 @@ final readonly class RecoveryCodes
     // 32 characters, 5 bits each. No I, O, 0 or 1.
     protected const string ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-    /** @return list<string>
+    /**
+     * @return list<string>
+     *
      * @throws Exception
      */
     public function generate(): array

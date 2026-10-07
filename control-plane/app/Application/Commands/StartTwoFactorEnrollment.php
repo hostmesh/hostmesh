@@ -11,6 +11,7 @@ use App\Domain\Identity\Administrator;
 use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
 use Illuminate\Contracts\Config\Repository;
+use Throwable;
 
 final readonly class StartTwoFactorEnrollment
 {
@@ -26,15 +27,29 @@ final readonly class StartTwoFactorEnrollment
      * account confirms it with a code.
      *
      * @throws TwoFactorAlreadyEnabled
+     * @throws Throwable
      */
     public function handle(Administrator|User $account): TwoFactorEnrollment
     {
-        if ($account->hasTwoFactor()) {
+        $secret = $this->totp->generateSecret();
+
+        // On a locked copy: $account was read before this request, and a
+        // confirmation since then must not have its secret replaced.
+        $started = $account->getConnection()->transaction(function () use ($account, $secret): bool {
+            $locked = $account->lockedCopy();
+
+            if ($locked->hasTwoFactor()) {
+                return false;
+            }
+
+            $locked->beginTwoFactorEnrollment($secret);
+
+            return true;
+        });
+
+        if (! $started) {
             throw new TwoFactorAlreadyEnabled;
         }
-
-        $secret = $this->totp->generateSecret();
-        $account->beginTwoFactorEnrollment($secret);
 
         $issuer = $this->config->get('app.name');
 

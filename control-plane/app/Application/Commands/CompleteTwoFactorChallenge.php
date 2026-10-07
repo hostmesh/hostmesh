@@ -33,9 +33,9 @@ final readonly class CompleteTwoFactorChallenge
     public function handle(
         Administrator|User $account,
         #[SensitiveParameter] ?string $code,
-        #[SensitiveParameter] ?string $recoverCode,
+        #[SensitiveParameter] ?string $recoveryCode,
     ): void {
-        $accepted = $account->getConnection()->transaction(function () use ($account, $code, $recoverCode): bool {
+        $accepted = $account->getConnection()->transaction(function () use ($account, $code, $recoveryCode): bool {
             $locked = $account->lockedCopy();
 
             if (! $locked->hasTwoFactor()) {
@@ -46,8 +46,8 @@ final readonly class CompleteTwoFactorChallenge
                 return $locked->acceptTotpCode($this->totp, $code);
             }
 
-            return $recoverCode !== null
-                && $locked->consumeRecoveryCode($this->recoveryCodes->hash($recoverCode));
+            return $recoveryCode !== null
+                && $locked->consumeRecoveryCode($this->recoveryCodes->hash($recoveryCode));
         });
 
         if (! $accepted) {

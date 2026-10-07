@@ -31,7 +31,7 @@ final class LoginController
     public function __invoke(
         LoginRequest $request,
         LogIn $logIn,
-        SecondFactorSession $secondFactor
+        SecondFactorSession $secondFactor,
     ): AdministratorResource {
         try {
             $administrator = $logIn->handle(

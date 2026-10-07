@@ -22,7 +22,9 @@ final class LoginController
      *
      * Starts a customer session. Call `GET /customer/auth/csrf-cookie` first and send `X-XSRF-TOKEN`. A wrong password and an unknown email produce the same response. Limited to 5 attempts per minute for one email from one address.
      *
-     * When `meta.second_factor` is `challenge`, the session is complete only after `auth/two-factor/challenge`; `none` means it is complete.     * @unauthenticated
+     * When `meta.second_factor` is `challenge`, the session is complete only after `auth/two-factor/challenge`; `none` means it is complete.
+     *
+     * @unauthenticated
      */
     public function __invoke(LoginRequest $request, LogIn $logIn, SecondFactorSession $secondFactor): UserResource
     {

@@ -68,6 +68,6 @@ final readonly class SecondFactorSession
     {
         $store = $this->sessions->driver();
 
-        return $store instanceof Store ? $store : throw new LogicException('The session store is not available');
+        return $store instanceof Store ? $store : throw new LogicException('The session store is not available.');
     }
 }

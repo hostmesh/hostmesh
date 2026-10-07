@@ -14,7 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api/v1',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // The first middleware of each realm's route group (routes/api.php).
         $middleware->alias([
             // The first middleware of each realm's route group (routes/api.php).
             'realm' => UseSessionRealm::class,

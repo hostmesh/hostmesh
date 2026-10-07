@@ -20,7 +20,7 @@ Route::get('/health', HealthController::class);
 // its group; nothing outside a group has a session.
 // Inside a group, everything except the few routes that make up a login sits behind
 // `two-factor` (issue #25). tests/Feature/Auth/SecondFactorGateTest.php fails
-// when an admin route does not.
+// when a route of either realm does not.
 
 Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {

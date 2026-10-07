@@ -34,7 +34,7 @@ final readonly class RequireSecondFactor
     }
 
     /**
-     * @param  Closure(Request):  Response  $next
+     * @param  Closure(Request): (Response)  $next
      *
      * @throws AuthenticationException
      */

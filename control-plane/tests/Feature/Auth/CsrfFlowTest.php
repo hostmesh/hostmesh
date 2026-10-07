@@ -26,8 +26,9 @@ it('sets a CSRF cookie that the app can read, on the parent domain', function (
         ->and($cookie->getPath())->toBe('/')
         ->and($cookie->isHttpOnly())->toBeFalse()
         ->and($cookie->isSecure())->toBeTrue()
-        ->and($cookie->getSameSite())->toBe('lax')
-        ->and($response->getCookie('XSRF-TOKEN', false))->toBeNull();
+        ->and($cookie->getSameSite())->toBe('lax');
+
+    expect($response->getCookie('XSRF-TOKEN', false))->toBeNull();
 })->with('realms');
 
 it('accepts a state-changing request that echoes the cookie in X-XSRF-TOKEN', function (
