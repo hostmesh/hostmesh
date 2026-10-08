@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CaptureRequestContext;
 use App\Http\Middleware\RequireSecondFactor;
 use App\Http\Middleware\UseSessionRealm;
 use Illuminate\Foundation\Application;
@@ -14,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api/v1',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // First in the group, so that a request refused further in still
+        // gets its X-Request-Id.
+        $middleware->api(prepend: [CaptureRequestContext::class]);
+
         $middleware->alias([
             // The first middleware of each realm's route group (routes/api.php).
             'realm' => UseSessionRealm::class,

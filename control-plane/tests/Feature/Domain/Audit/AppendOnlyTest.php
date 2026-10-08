@@ -120,3 +120,11 @@ it('allows deleting an event older than 12 months', function (): void {
 
     expect(DB::table('audit_events')->pluck('id')->all())->toBe([$recent]);
 });
+
+it('migrates again on a database that was wiped', function (): void {
+    // `migrate:fresh` drops the tables and leaves the trigger function.
+    $this->artisan('migrate:fresh')->assertSuccessful();
+    $this->artisan('migrate:fresh')->assertSuccessful();
+
+    expect(storeAuditEvent())->not->toBe('');
+});

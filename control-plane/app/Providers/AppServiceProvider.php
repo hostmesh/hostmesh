@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Application\Events\Audited;
+use App\Application\Listeners\RecordAuditEvent;
+use App\Application\Services\AuditContext;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\Policies\AdministratorPolicy;
@@ -19,6 +22,7 @@ use Dedoc\Scramble\Support\Generator\Path;
 use Dedoc\Scramble\Support\Generator\Server;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -48,6 +52,9 @@ class AppServiceProvider extends ServiceProvider
         // Decision 0013: callers depend on the interface. Not a singleton,
         // so a test can swap it between two requests.
         $this->app->bind(AuditLog::class, DatabaseAuditLog::class);
+
+        // One per request: the middleware fills it, the listener reads it.
+        $this->app->scoped(AuditContext::class);
     }
 
     /**
@@ -59,6 +66,10 @@ class AppServiceProvider extends ServiceProvider
         // are the only place where authorization is decided.
         Gate::policy(Administrator::class, AdministratorPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+
+        // Decision 0013: every event that implements Audited is written to
+        // the audit log, synchronously, inside the caller's transaction.
+        Event::listen(Audited::class, RecordAuditEvent::class);
 
         // Keeps the generated document identical on every machine: Scramble
         // builds the server URL from APP_URL and lists paths in route order.

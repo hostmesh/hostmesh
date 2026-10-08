@@ -40,9 +40,10 @@ return new class extends Migration
         // Append-only. This guards against bugs; it does not stop someone
         // who controls the database. The 12 months are a floor that is not
         // configurable: retention can be shortened to it, a bug cannot
-        // remove recent history.
+        // remove recent history. OR REPLACE: `migrate:fresh` drops the
+        // tables and leaves the function behind.
         DB::unprepared(<<<'SQL'
-            CREATE FUNCTION audit_events_append_only() RETURNS trigger LANGUAGE plpgsql AS $$
+            CREATE OR REPLACE FUNCTION audit_events_append_only() RETURNS trigger LANGUAGE plpgsql AS $$
             BEGIN
                 IF TG_OP = 'UPDATE' THEN
                     IF (NEW.ip_address IS NULL OR NEW.ip_address IS NOT DISTINCT FROM OLD.ip_address)
