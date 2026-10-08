@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace App\Application\Jobs;
 
 use App\Application\Exceptions\JobFailure;
+use App\Application\Exceptions\JobStillRunning;
 use App\Application\Services\JobHistory;
 use App\Domain\Provisioning\FailureClass;
 use App\Domain\Provisioning\Jitter;
@@ -43,6 +44,13 @@ abstract class OneShotJob implements ShouldQueue
      */
     public int $timeout = 60;
 
+    /**
+     * Seconds before the queue hands the job out again when handle()
+     * itself threw: a wrong setting, PostgreSQL away. There is no try
+     * limit, so without a pause the worker would spin.
+     */
+    public int $backoff = 10;
+
     final public function __construct(
         public readonly string $historyId,
     ) {
@@ -61,21 +69,33 @@ abstract class OneShotJob implements ShouldQueue
     abstract protected function perform(JobHistoryEntry $entry): void;
 
     /**
-     * @throws Throwable when the history row cannot be written; the queue then delivers the job again
+     * @throws Throwable when the history row cannot be written; the queue then delivers the job again after `backoff`
      */
     final public function handle(JobHistory $history, RetryPolicy $policy, Jitter $jitter): void
     {
-        $entry = $history->begin($this->historyId);
+        try {
+            $entry = $history->begin($this->historyId, $this->timeout);
+        } catch (JobStillRunning $running) {
+            // Delivered twice while the first run may be alive. Not an attempt.
+            $this->release($running->retryIn);
+
+            return;
+        }
 
         // Unknown or finished: delivered twice, or pushed again by hand.
         if ($entry === null) {
             return;
         }
 
-        // begin() counted an interrupted run, and that was the last one.
-        if ($policy->exhausted($entry->attempts)) {
-            $history->failed($entry, FailureClass::Retryable, JobHistory::INTERRUPTED);
-            $this->fail(JobFailure::retryable(JobHistory::INTERRUPTED));
+        // The last attempt was already counted: by begin() for a run that
+        // was interrupted, or by a run that died before it closed the row.
+        // The row keeps the message of that failure. A waiting row is not
+        // a failure and runs, whatever its count.
+        if ($entry->failure_class === FailureClass::Retryable && $policy->exhausted($entry->attempts)) {
+            $message = $entry->message ?? JobHistory::INTERRUPTED;
+
+            $history->failed($entry, FailureClass::Retryable, $message);
+            $this->fail(JobFailure::retryable($message));
 
             return;
         }
@@ -89,9 +109,11 @@ abstract class OneShotJob implements ShouldQueue
         } catch (Throwable $e) {
             // A failure nobody classified is a bug or an outage we did not
             // foresee. The operator must see it; the job gets its attempts.
+            // The row gets the class only: the text of an exception we did
+            // not write can hold a secret (a query, a connection string).
             report($e);
 
-            $this->settle($entry, JobFailure::retryable($e::class.': '.$e->getMessage(), $e), $history, $policy, $jitter);
+            $this->settle($entry, JobFailure::retryable($e::class, $e), $history, $policy, $jitter);
 
             return;
         }

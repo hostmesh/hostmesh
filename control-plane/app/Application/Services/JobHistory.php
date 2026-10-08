@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace App\Application\Services;
 
+use App\Application\Exceptions\JobStillRunning;
 use App\Domain\Provisioning\FailureClass;
 use App\Domain\Provisioning\JobHistoryEntry;
 use App\Domain\Provisioning\JobStatus;
@@ -57,18 +58,23 @@ final readonly class JobHistory
     /**
      * Marks the start of a run. Null when there is nothing to run: the
      * row is unknown or already finished. A row that is still running
-     * means the previous run died, which counts as one retryable attempt.
+     * after the timeout of its run means that run died, which counts as
+     * one retryable attempt. Inside the timeout the run may be alive, and
+     * a second one beside it would write the same row.
      *
+     * @param  int  $timeout  seconds one run of the job may take
+     *
+     * @throws JobStillRunning when the previous run is inside its timeout
      * @throws Throwable
      */
-    public function begin(string $id): ?JobHistoryEntry
+    public function begin(string $id, int $timeout): ?JobHistoryEntry
     {
         // PostgreSQL answers a malformed UUID with an error, not with no row.
         if (! Str::isUuid($id)) {
             return null;
         }
 
-        return $this->connection->transaction(function () use ($id): ?JobHistoryEntry {
+        return $this->connection->transaction(function () use ($id, $timeout): ?JobHistoryEntry {
             $entry = JobHistoryEntry::query()->lockForUpdate()->find($id);
 
             if ($entry === null || $entry->status->isFinished()) {
@@ -76,6 +82,14 @@ final readonly class JobHistory
             }
 
             if ($entry->status === JobStatus::Running) {
+                // Every write of a run goes through begin(), so the row
+                // was last touched when the run started.
+                $elapsed = (int) $entry->updated_at->diffInSeconds(CarbonImmutable::now());
+
+                if ($elapsed < $timeout) {
+                    throw new JobStillRunning($timeout - $elapsed);
+                }
+
                 $entry->attempts++;
                 $entry->failure_class = FailureClass::Retryable;
                 $entry->message = self::INTERRUPTED;
@@ -83,6 +97,8 @@ final readonly class JobHistory
 
             $entry->status = JobStatus::Running;
             $entry->started_at ??= CarbonImmutable::now();
+            // A row that changes nothing else must still say when this run began.
+            $entry->updated_at = CarbonImmutable::now();
             $entry->save();
 
             return $entry;

@@ -107,10 +107,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0014: job history in the table `job_history`, attempts counted in PostgreSQL, no Laravel Horizon.
 - Table `job_history` and the application service `JobHistory`: one row per operation with its type, resource, generation, node, status, failure class, last message, attempts and start and finish times (decision 0014).
 - `RetryPolicy` for one-shot jobs: exponential backoff from 10 seconds with jitter, capped at 10 minutes, 8 attempts, and a 2-minute recheck for waiting jobs. Every number is configurable through `HOSTMESH_JOB_RETRY_BASE_DELAY`, `HOSTMESH_JOB_RETRY_MAX_DELAY`, `HOSTMESH_JOB_RETRY_MAX_ATTEMPTS`, `HOSTMESH_JOB_RETRY_JITTER` and `HOSTMESH_JOB_RECHECK_DELAY`.
-- Base class `OneShotJob` for one-shot actions on the Redis queue, with the failure handling of spec section 8: a retryable failure backs off and fails after the attempt limit, a waiting job is rechecked without using up an attempt, a terminal failure fails at once, and a run that was interrupted counts as one attempt. A job says which class it hit by throwing `JobFailure`; any other exception is reported and treated as retryable. Failed jobs are also stored in `failed_jobs`.
+- Base class `OneShotJob` for one-shot actions on the Redis queue, with the failure handling of spec section 8: a retryable failure backs off and fails after the attempt limit, a waiting job is rechecked without using up an attempt, a terminal failure fails at once, and a run that was interrupted counts as one attempt. A job delivered a second time while its first run is inside the timeout waits and counts nothing. A job says which class it hit by throwing `JobFailure`; any other exception is reported and treated as retryable, and the row stores its class name only. Failed jobs are also stored in `failed_jobs`.
 - One-shot job `retry_reconcile` (`App\Application\Jobs\RetryReconcile`) and the application command `DispatchOneShotJob`, which writes the history row and pushes the job after the transaction commits. The job does nothing yet except leave its row: no managed resource exists before Slice 1, and no endpoint calls it.
 - Tests that keep Redis out of correctness: sessions, failed jobs and job batches stay in PostgreSQL, Redis is declared for the queue and the cache only, and the application uses no direct Redis call, lock, unique job, overlap guard or cache-backed attempt counter.
-- `worker` service in the development stack: it runs `php artisan queue:listen redis`, so queued jobs run during development. Run `make -C infrastructure/development up` once to start it. The smoke test checks that it is running.
+- `worker` service in the development stack: it runs `php artisan queue:listen redis`, so queued jobs run during development. Run `make -C infrastructure/development up` once to start it. The smoke test checks that its `queue:listen` process is running.
 - "Jobs" section in `control-plane/README.md`, with the failure classes and the rules for a new one-shot job.
 
 ---
@@ -140,7 +140,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Session configuration is fixed in `config/session.php`: database driver, `Secure`, `HttpOnly`, `SameSite=Lax`, host-only cookies. The `SESSION_*` env keys are no longer read.
 - Login responses of both API groups now carry `two_factor_enabled` on the account and `meta.second_factor` (`challenge`, `enrollment` or `none`).
 - Decision record 0013 (audit logging) amended: `request_id` and `user_agent` columns, a nullable `resource_id`, and how login and logout fail closed.
-- Laravel's database-queue table `jobs` is no longer created: queues run on Redis. An existing development database keeps the empty table until it is rebuilt with `php artisan migrate:fresh`.
+- Laravel's database-queue table `jobs` is no longer created: queues run on Redis. The migration that creates `job_history` drops it from an existing database.
 
 ---
 

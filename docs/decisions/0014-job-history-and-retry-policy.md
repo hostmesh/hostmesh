@@ -27,22 +27,26 @@ Checked on 2026-10-08 against the installed `laravel/framework` 13.34.0:
 - **Table `job_history`**, one row per operation, updated in place: `id` (UUIDv7), `type`, `resource_type`, `resource_id`, `generation` (nullable), `node_id` (nullable), `status`, `failure_class`, `message`, `attempts`, `started_at`, `finished_at`, `created_at`, `updated_at`. No foreign keys: a row outlives the resource and the node.
 - **Statuses:** `pending`, `running`, `waiting`, `retrying`, `succeeded`, `failed`.
 - **The row is created in the caller's transaction and the job is pushed after commit.** A push that Redis loses leaves a visible `pending` row.
-- **Jobs run with `tries = 0`.** The base class `OneShotJob` catches every exception and settles the outcome itself:
+- **Jobs run with `tries = 0`.** The base class `OneShotJob` catches every exception of the job's work and settles the outcome itself:
   - success: `succeeded`;
   - retryable: `attempts` + 1, then released with the policy's delay, or `failed` at the limit;
   - waiting: `waiting`, released with the recheck delay, `attempts` unchanged;
   - terminal: `failed` at once;
-  - a row found `running` when the job is picked up: the previous run was interrupted, which counts as one retryable attempt.
-- **A failure without a class is retryable** and is reported to the exception handler.
+  - a row found `running` when the job is picked up, after the job's timeout has passed: the previous run was interrupted, which counts as one retryable attempt;
+  - a row found `running` inside the job's timeout: the previous run may be alive (Redis delivered twice, or the job was pushed again). The job is released until the timeout has passed and nothing is counted. The age of the run is read from the row in PostgreSQL, so this is not a lock;
+  - a row that comes back with its attempts used up by a retryable failure: `failed` without another run, with the message it already holds.
+- **An exception that leaves `handle()`** (a wrong retry setting, PostgreSQL away) is not settled, because the row cannot be written. The queue delivers the job again after a `backoff` of 10 seconds, without limit, and Laravel reports each one.
+- **A failure without a class is retryable** and is reported to the exception handler. The row stores the exception's class name only, never its message.
 - **Delay:** `min(cap, base * 2^(attempts - 1))`, shortened by a random share of up to the jitter ratio (default 0.5). Defaults 10 s, 600 s, 8 attempts, recheck 120 s, all in `config/hostmesh.php` under `jobs`.
 - **A failed job is also stored in `failed_jobs`** (PostgreSQL) by Laravel. Re-pushing it does nothing: its row is finished. A new attempt is a new job and a new row.
 - **No locks.** The application uses no cache lock, unique job or overlap guard. A test enforces it. Section 24 permits best-effort locks; an allow-list is added when the first real use appears.
-- **Messages are stored.** A failure message must never contain a secret.
+- **Messages are stored.** A `JobFailure` message must never contain a secret. The message of any other exception is not stored, because its author did not write it for the row.
 
 ## Consequences
 
-- The spec and decision 0013 say `jobs`. Issue #SC carries the rename and the details the spec does not have.
-- Existing development databases keep Laravel's empty `jobs` table until they are rebuilt with `php artisan migrate:fresh`. It is harmless.
+- The spec and decision 0013 say `jobs`. Issue #73 carries the rename and the details the spec does not have.
+- The migration that creates `job_history` drops Laravel's `jobs` table if it is there, so a database migrated before this decision ends up like a new one.
+- A row is only as alive as its job in Redis. If Redis loses its data, a row stays `pending`, `running`, `waiting` or `retrying` with no job behind it. It is visible and nothing repairs it: there is no sweeper. One can be added when a scheduler exists.
 - One row per operation loses the message of every attempt but the last. If that history is wanted, a child table of attempts can be added without changing the row.
 - `waiting` has no deadline here. A job that waits forever is rechecked forever. The first real waiting job (domain verification, section 10) brings its own deadline.
 - Nothing calls `retry_reconcile` yet. The admin endpoint and its audit event come with the resources it acts on.

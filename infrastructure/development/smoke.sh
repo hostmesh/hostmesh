@@ -79,12 +79,19 @@ check_api_health() {
 
 # Queued jobs run in the worker service (spec section 24: Laravel queues on
 # Redis). Without it a dispatched job stays `pending` in job_history.
+# A running container is not enough: before `make install` it only waits
+# for vendor/ and .env. The check looks for the listener itself, by the
+# start of its command line, which the waiting shell does not have.
 check_worker() {
-    local name="The worker service is running"
-    if docker compose ps --status running --services 2>/dev/null | grep -qx worker; then
+    local name="The worker service runs queue:listen"
+    if ! docker compose ps --status running --services 2>/dev/null | grep -qx worker; then
+        fail "$name" "Is the stack up? Run: make up"
+    elif docker compose exec -T worker sh -c \
+        'for f in /proc/[0-9]*/cmdline; do tr "\0" " " < "$f" 2>/dev/null; echo; done | grep -q "^php artisan queue:listen"' \
+        >/dev/null 2>&1; then
         pass "$name"
     else
-        fail "$name" "Is the stack up? Run: make up"
+        fail "$name" "The worker is up but not listening. Run: make install, then: docker compose logs worker"
     fi
 }
 

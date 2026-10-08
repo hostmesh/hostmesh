@@ -19,6 +19,10 @@ return new class extends Migration
         // generation, on which node, with what result. One row per
         // operation. `resource_id` and `node_id` are not foreign keys: a
         // row outlives the resource and the node.
+        // A database migrated before this decision has Laravel's
+        // database-queue table. Queues run on Redis; nothing reads it.
+        Schema::dropIfExists('jobs');
+
         Schema::create('job_history', function (Blueprint $table): void {
             // UUIDv7 generated on insert, so the key is the order of writing.
             $table->uuid('id')->primary();
