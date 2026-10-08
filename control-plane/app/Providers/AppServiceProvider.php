@@ -6,7 +6,9 @@ use App\Application\Events\Audited;
 use App\Application\Listeners\RecordAuditEvent;
 use App\Application\Services\AuditContext;
 use App\Application\Services\LoginAddressHasher;
+use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Audit\AuditLog;
+use App\Domain\Audit\Policies\AuditEventPolicy;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\Policies\AdministratorPolicy;
 use App\Domain\Identity\Policies\UserPolicy;
@@ -74,6 +76,7 @@ class AppServiceProvider extends ServiceProvider
         // are the only place where authorization is decided.
         Gate::policy(Administrator::class, AdministratorPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(AuditEventRecord::class, AuditEventPolicy::class);
 
         // Decision 0013: every event that implements Audited is written to
         // the audit log, synchronously, inside the caller's transaction.

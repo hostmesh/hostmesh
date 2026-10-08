@@ -42,6 +42,7 @@ Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(functio
             Route::post('/two-factor/recovery-codes', TwoFactor\RecoveryCodesController::class)->middleware('throttle:two-factor')->name('two-factor.recovery-codes');
             Route::delete('/two-factor', TwoFactor\DisableController::class)->middleware('throttle:two-factor')->name('two-factor.disable');
         });
+        Route::get('/audit-events', Admin\Audit\ListAuditEventsController::class)->name('audit-events.index');
     });
 });
 
