@@ -68,3 +68,15 @@ Checked on 2026-10-07:
 - **Follow-ups:**
   - A `spec-change` issue (#69) updates section 21: `actor` becomes `actor_type` and `actor_id`, a keyed hash of the submitted login address is stored for failed logins, and the retention defaults are recorded.
   - Tamper evidence goes to the v0.2 backlog (section 38), together with the upstream Chronicle work listed above.
+
+## Amendment, 2026-10-08 (issue #27)
+
+Found while implementing. Approved by the owner on 2026-10-08.
+
+- **Two more columns.** `request_id` (UUID, nullable) ties an event to one HTTP request; the API returns the same value in the `X-Request-Id` response header. `user_agent` (at most 255 characters, nullable) is stored next to `ip_address` and treated the same way: the trigger allows clearing it, and the 90-day rule applies to both.
+- **`resource_id` is nullable.** A failed login for an unknown address has no account to point at.
+- **The keyed hash** of a submitted login address is HMAC-SHA256 under a key derived from `APP_KEY` with HKDF. Rotating `APP_KEY` ends the correlation with earlier attempts. It is stored for unknown addresses only: a known address is correlated by the account's ID.
+- **How commands write.** A command dispatches an application event inside its transaction, and one synchronous listener writes through `AuditLog`. The listener never runs on a queue.
+- **Session actions.** Login and logout change a session, not a row. If the event cannot be written, a login is undone (the session is logged out again) and a logout does not happen.
+- **Display names.** The read API returns `null` for the name of an account that is gone. The client shows the placeholder.
+- **Not built in #27:** the scheduled retention job and clearing `ip_address` when an account is erased. No account can be deleted yet. The trigger already encodes both exceptions.

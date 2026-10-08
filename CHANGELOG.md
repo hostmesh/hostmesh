@@ -122,6 +122,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `APP_URL` is no longer read. `control-plane/.env.example` carries `HOSTMESH_DOMAIN` instead; add it to an existing `.env`.
 - Session configuration is fixed in `config/session.php`: database driver, `Secure`, `HttpOnly`, `SameSite=Lax`, host-only cookies. The `SESSION_*` env keys are no longer read.
 - Login responses of both API groups now carry `two_factor_enabled` on the account and `meta.second_factor` (`challenge`, `enrollment` or `none`).
+- Decision record 0013 (audit logging) amended: `request_id` and `user_agent` columns, a nullable `resource_id`, and how login and logout fail closed.
 
 ---
 
