@@ -107,6 +107,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0014: job history in the table `job_history`, attempts counted in PostgreSQL, no Laravel Horizon.
 - Table `job_history` and the application service `JobHistory`: one row per operation with its type, resource, generation, node, status, failure class, last message, attempts and start and finish times (decision 0014).
 - `RetryPolicy` for one-shot jobs: exponential backoff from 10 seconds with jitter, capped at 10 minutes, 8 attempts, and a 2-minute recheck for waiting jobs. Every number is configurable through `HOSTMESH_JOB_RETRY_BASE_DELAY`, `HOSTMESH_JOB_RETRY_MAX_DELAY`, `HOSTMESH_JOB_RETRY_MAX_ATTEMPTS`, `HOSTMESH_JOB_RETRY_JITTER` and `HOSTMESH_JOB_RECHECK_DELAY`.
+- Base class `OneShotJob` for one-shot actions on the Redis queue, with the failure handling of spec section 8: a retryable failure backs off and fails after the attempt limit, a waiting job is rechecked without using up an attempt, a terminal failure fails at once, and a run that was interrupted counts as one attempt. A job says which class it hit by throwing `JobFailure`; any other exception is reported and treated as retryable. Failed jobs are also stored in `failed_jobs`.
 
 ---
 
