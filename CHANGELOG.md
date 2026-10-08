@@ -105,6 +105,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The audit log endpoint in the OpenAPI document and the typed client.
 - "Audit log" section in `control-plane/README.md`, with the rules for a new audited action.
 - Decision record 0014: job history in the table `job_history`, attempts counted in PostgreSQL, no Laravel Horizon.
+- Table `job_history` and the application service `JobHistory`: one row per operation with its type, resource, generation, node, status, failure class, last message, attempts and start and finish times (decision 0014).
 
 ---
 
@@ -133,6 +134,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Session configuration is fixed in `config/session.php`: database driver, `Secure`, `HttpOnly`, `SameSite=Lax`, host-only cookies. The `SESSION_*` env keys are no longer read.
 - Login responses of both API groups now carry `two_factor_enabled` on the account and `meta.second_factor` (`challenge`, `enrollment` or `none`).
 - Decision record 0013 (audit logging) amended: `request_id` and `user_agent` columns, a nullable `resource_id`, and how login and logout fail closed.
+- Laravel's database-queue table `jobs` is no longer created: queues run on Redis. An existing development database keeps the empty table until it is rebuilt with `php artisan migrate:fresh`.
 
 ---
 

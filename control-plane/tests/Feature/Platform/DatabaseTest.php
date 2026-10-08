@@ -27,5 +27,12 @@ it('reaches a real PostgreSQL server', function (): void {
 });
 
 it('applies the migrations', function (): void {
-    expect(Schema::hasTable('failed_jobs'))->toBeTrue();
+    expect(Schema::hasTable('failed_jobs'))->toBeTrue()
+        ->and(Schema::hasTable('job_history'))->toBeTrue();
+});
+
+// Decision 0014: queues run on Redis, so Laravel's database-queue table
+// does not exist. The history of jobs is `job_history`.
+it('has no database queue table', function (): void {
+    expect(Schema::hasTable('jobs'))->toBeFalse();
 });
