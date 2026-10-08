@@ -9,7 +9,7 @@ One command starts the services Hostmesh needs for local development, on the hos
 | `api.hostmesh.test`   | Laravel API         | The control plane    |
 | `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder          |
 
-The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane and a Node 24 service for the web workspace. Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM. A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)). The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet.
+The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane, a queue worker on the same image and a Node 24 service for the web workspace. Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM. A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)). The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet.
 
 ## Requirements
 
@@ -45,7 +45,7 @@ Run them as `make -C infrastructure/development <target>`, or as `make <target>`
 | `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                  |
 | `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                       |
 | `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile. Safe to repeat. |
-| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint, the `node` service's Node and pnpm versions and its Chromium build. Exits non-zero if anything fails.                      |
+| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint, the queue worker, the `node` service's Node and pnpm versions and its Chromium build. Exits non-zero if anything fails.    |
 | `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                      |
 | `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                   |
 
@@ -99,6 +99,15 @@ docker compose exec php php artisan route:list
 Tests use the `hostmesh_test` database and Redis database 15, never the development data. See [`control-plane/README.md`](../../control-plane/README.md).
 
 The control plane reads its hostnames from one setting, `HOSTMESH_DOMAIN=hostmesh.test`, in `control-plane/.env`. `make install` copies it from `.env.example` for a new checkout. An `.env` from before this setting existed needs the line added by hand; `APP_URL` is no longer read. For a production layout see [`infrastructure/nginx/`](../nginx/README.md).
+
+### Queue worker
+
+The `worker` service runs `php artisan queue:listen redis`. It starts a fresh PHP process for every job, so it picks up code changes without a restart. On a fresh checkout it waits until `make install` has created `vendor/` and `.env`.
+
+```bash
+docker compose logs --follow worker
+```
+A job that was dispatched but never ran shows as `pending` in the table `job_history`. The test suite does not use this worker: tests run jobs in their own process, on Redis database 15.
 
 ## Web workspace
 
