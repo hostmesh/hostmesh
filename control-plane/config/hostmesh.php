@@ -62,4 +62,19 @@ return [
         'portal' => $strictPolicy,
         'admin' => $strictPolicy,
     ],
+
+    // One-shot jobs (spec section 8, decision 0014). Delays are in seconds.
+    // A retryable failure waits base_delay, then twice as long each time,
+    // never longer than max_delay, and fails after max_attempts. Chance
+    // shortens a delay by up to the jitter share (0 to 1). A waiting job
+    // looks again after recheck_delay unless it names its own.
+    'jobs' => [
+        'retry' => [
+            'base_delay' => (int) env('HOSTMESH_JOB_RETRY_BASE_DELAY', 10),
+            'max_delay' => (int) env('HOSTMESH_JOB_RETRY_MAX_DELAY', 600),
+            'max_attempts' => (int) env('HOSTMESH_JOB_RETRY_MAX_ATTEMPTS', 8),
+            'jitter' => (float) env('HOSTMESH_JOB_RETRY_JITTER', 0.5),
+        ],
+        'recheck_delay' => (int) env('HOSTMESH_JOB_RECHECK_DELAY', 120),
+    ],
 ];

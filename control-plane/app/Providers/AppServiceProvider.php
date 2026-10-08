@@ -14,8 +14,11 @@ use App\Domain\Identity\Policies\AdministratorPolicy;
 use App\Domain\Identity\Policies\UserPolicy;
 use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
+use App\Domain\Provisioning\Jitter;
+use App\Domain\Provisioning\RetryPolicy;
 use App\Http\Middleware\UseSessionRealm;
 use App\Infrastructure\Audit\DatabaseAuditLog;
+use App\Infrastructure\Provisioning\RandomJitter;
 use App\Infrastructure\TwoFactor\Google2faTotp;
 use App\Support\Realm;
 use Dedoc\Scramble\OpenApiContext;
@@ -24,6 +27,7 @@ use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\Path;
 use Dedoc\Scramble\Support\Generator\Server;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Http\Request;
@@ -65,6 +69,22 @@ class AppServiceProvider extends ServiceProvider
             LoginAddressHasher::class,
             fn (Application $app): LoginAddressHasher => new LoginAddressHasher($app->make(Encrypter::class)->getKey()),
         );
+
+        // Spec section 8: every number is a configurable default. Built on
+        // each use, so a wrong setting fails where the policy is needed.
+        $this->app->bind(RetryPolicy::class, function (Application $app): RetryPolicy {
+            $config = $app->make(Repository::class);
+
+            return new RetryPolicy(
+                $config->integer('hostmesh.jobs.retry.base_delay'),
+                $config->integer('hostmesh.jobs.retry.max_delay'),
+                $config->integer('hostmesh.jobs.retry.max_attempts'),
+                $config->float('hostmesh.jobs.retry.jitter'),
+                $config->integer('hostmesh.jobs.recheck_delay'),
+            );
+        });
+
+        $this->app->bind(Jitter::class, RandomJitter::class);
     }
 
     /**

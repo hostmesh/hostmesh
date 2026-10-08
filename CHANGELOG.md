@@ -106,6 +106,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - "Audit log" section in `control-plane/README.md`, with the rules for a new audited action.
 - Decision record 0014: job history in the table `job_history`, attempts counted in PostgreSQL, no Laravel Horizon.
 - Table `job_history` and the application service `JobHistory`: one row per operation with its type, resource, generation, node, status, failure class, last message, attempts and start and finish times (decision 0014).
+- `RetryPolicy` for one-shot jobs: exponential backoff from 10 seconds with jitter, capped at 10 minutes, 8 attempts, and a 2-minute recheck for waiting jobs. Every number is configurable through `HOSTMESH_JOB_RETRY_BASE_DELAY`, `HOSTMESH_JOB_RETRY_MAX_DELAY`, `HOSTMESH_JOB_RETRY_MAX_ATTEMPTS`, `HOSTMESH_JOB_RETRY_JITTER` and `HOSTMESH_JOB_RECHECK_DELAY`.
 
 ---
 
