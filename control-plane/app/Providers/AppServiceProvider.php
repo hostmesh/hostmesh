@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Application\Events\Audited;
 use App\Application\Listeners\RecordAuditEvent;
 use App\Application\Services\AuditContext;
+use App\Application\Services\LoginAddressHasher;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\Policies\AdministratorPolicy;
@@ -21,6 +22,8 @@ use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\Path;
 use Dedoc\Scramble\Support\Generator\Server;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Encryption\Encrypter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -55,6 +58,11 @@ class AppServiceProvider extends ServiceProvider
 
         // One per request: the middleware fills it, the listener reads it.
         $this->app->scoped(AuditContext::class);
+
+        $this->app->singleton(
+            LoginAddressHasher::class,
+            fn (Application $app): LoginAddressHasher => new LoginAddressHasher($app->make(Encrypter::class)->getKey()),
+        );
     }
 
     /**
