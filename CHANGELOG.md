@@ -112,6 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tests that keep Redis out of correctness: sessions, failed jobs and job batches stay in PostgreSQL, Redis is declared for the queue and the cache only, and the application uses no direct Redis call, lock, unique job, overlap guard or cache-backed attempt counter.
 - `worker` service in the development stack: it runs `php artisan queue:listen redis`, so queued jobs run during development. Run `make -C infrastructure/development up` once to start it. The smoke test checks that its `queue:listen` process is running.
 - "Jobs" section in `control-plane/README.md`, with the failure classes and the rules for a new one-shot job.
+- Brand colors in the control plane's domain layer: `#rrggbb` parsing and the WCAG contrast check of a `primary` and `primary_foreground` pair against the default light and dark surfaces (4.5:1).
 
 ---
 
