@@ -34,7 +34,7 @@ final class AuditEventRecord extends Model
     /**
      * Display names of the actor and the resource. Not stored: the query
      * that lists events resolves them at read time, and they stay null
-     * when the account os gone.
+     * when the account is gone.
      */
     public ?string $actorName = null;
 

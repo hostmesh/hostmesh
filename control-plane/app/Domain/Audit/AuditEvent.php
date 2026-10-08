@@ -14,7 +14,7 @@ use Carbon\CarbonImmutable;
  * One entry of the audit log (decision 0013, spec section 21). It holds
  * identifiers only: never a name, an email address, a password, a secret,
  * a recovery code or a token. `metadata` says what changed; for a personal
- * field it says that is changed, not its values.
+ * field it says that it changed, not its values.
  */
 final readonly class AuditEvent
 {

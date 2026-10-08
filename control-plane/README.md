@@ -95,7 +95,7 @@ Security-relevant actions are written to `audit_events` ([decision 0013](../docs
 
 - **Append-only.** Triggers refuse `UPDATE`, `DELETE` and `TRUNCATE`. Two exceptions are built in: `ip_address` and `user_agent` can be set to null, and an event older than 12 months can be deleted.
 - **What an event holds:** `actor_type` (`administrator`, `user`, `node`, `system`) and `actor_id`, `action`, `resource` and `resource_id`, `metadata`, `ip_address`, `user_agent`, `request_id` and `created_at`. Identifiers only: never a name, an email address, a password, a secret or a recovery code. A failed login for an unknown address stores a keyed hash of the address in `metadata.email_hash`.
-- **Request ID.** Every API response carries `X-Request-Id`. The same value is stored with the events of that request.
+- **Request ID.** Every response from an API route carries `X-Request-Id`. A request that matches no route (404, 405) has none. The same value is stored with the events of that request.
 - **Reading.** `GET /api/v1/admin/audit-events`, with the permission `audit-event.view`. Names are looked up when the log is read and are null for an account that is gone.
 
 Rules for a new audited action:

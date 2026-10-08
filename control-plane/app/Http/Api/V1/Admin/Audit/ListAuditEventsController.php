@@ -16,6 +16,7 @@ final class ListAuditEventsController
      * List audit events
      *
      * The audit log, newest first. Filter by actor, resource, action and time; `from` and `to` are inclusive.
+     * A date without a time means midnight: `to=2026-10-08` leaves out the events of that day.
      * Pass `meta.next_cursor` as `cursor` for the next page. An event holds identifiers only: `actor.name` and
      * `resource.name` are looked up now and are null when the account no longer exists.
      * Needs the `audit-event.view` permission.
