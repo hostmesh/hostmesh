@@ -109,6 +109,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `RetryPolicy` for one-shot jobs: exponential backoff from 10 seconds with jitter, capped at 10 minutes, 8 attempts, and a 2-minute recheck for waiting jobs. Every number is configurable through `HOSTMESH_JOB_RETRY_BASE_DELAY`, `HOSTMESH_JOB_RETRY_MAX_DELAY`, `HOSTMESH_JOB_RETRY_MAX_ATTEMPTS`, `HOSTMESH_JOB_RETRY_JITTER` and `HOSTMESH_JOB_RECHECK_DELAY`.
 - Base class `OneShotJob` for one-shot actions on the Redis queue, with the failure handling of spec section 8: a retryable failure backs off and fails after the attempt limit, a waiting job is rechecked without using up an attempt, a terminal failure fails at once, and a run that was interrupted counts as one attempt. A job says which class it hit by throwing `JobFailure`; any other exception is reported and treated as retryable. Failed jobs are also stored in `failed_jobs`.
 - One-shot job `retry_reconcile` (`App\Application\Jobs\RetryReconcile`) and the application command `DispatchOneShotJob`, which writes the history row and pushes the job after the transaction commits. The job does nothing yet except leave its row: no managed resource exists before Slice 1, and no endpoint calls it.
+- Tests that keep Redis out of correctness: sessions, failed jobs and job batches stay in PostgreSQL, Redis is declared for the queue and the cache only, and the application uses no direct Redis call, lock, unique job, overlap guard or cache-backed attempt counter.
 
 ---
 
