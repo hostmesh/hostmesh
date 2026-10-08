@@ -4,6 +4,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Authorization\Role;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
@@ -150,3 +151,19 @@ it('covers every reported ability that has an endpoint', function (): void {
         // `update` gets its endpoint with the issue that adds one.
         ->and(array_values(array_diff(array_keys(REPORTED), array_keys(ENDPOINTS))))->toBe(['update']);
 });
+
+it('reports the abilities of an audit event as its policy decides', function (Role $role): void {
+    $administrator = Administrator::factory()->withTwoFactor()->withRoles($role)->create();
+    $browser = new Browser($this);
+    $browser->signIn(Browser::ADMIN, $administrator);
+
+    $events = $browser->get(Browser::ADMIN, '/api/v1/admin/audit-events')->assertOk()->json('data');
+
+    expect($events)->not->toBeEmpty();
+
+    foreach ($events as $event) {
+        expect($event['abilities'])->toBe([
+            'view' => Gate::forUser($administrator)->allows('view', new AuditEventRecord),
+        ]);
+    }
+})->with(['owner' => [Role::Owner], 'read-only' => [Role::ReadOnly]]);

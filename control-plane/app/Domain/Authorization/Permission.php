@@ -21,6 +21,7 @@ enum Permission: string
     case AdministratorUpdate = 'administrator.update';
     case UserView = 'user.view';
     case UserUpdate = 'user.update';
+    case AuditEventView = 'audit-event.view';
 
     public function isReadOnly(): bool
     {

@@ -4,6 +4,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Authorization\Role;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
@@ -123,4 +124,32 @@ it('denies an ability no policy defines', function (): void {
     $owner = administratorWith(Role::Owner);
 
     expect(Gate::forUser($owner)->allows('destroyEverything', $owner))->toBeFalse();
+});
+
+it('decides which administrator may read the audit log', function (?Role $role, bool $allowed): void {
+    $administrator = administratorWith($role);
+
+    expect(Gate::forUser($administrator)->allows('viewAny', AuditEventRecord::class))->toBe($allowed)
+        ->and(Gate::forUser($administrator)->allows('view', new AuditEventRecord))->toBe($allowed);
+})->with([
+    'owner' => [Role::Owner, true],
+    'read-only' => [Role::ReadOnly, true],
+    'no role' => [null, false],
+]);
+
+it('lets no customer and no guest read the audit log', function (): void {
+    $user = User::factory()->create();
+
+    expect(Gate::forUser($user)->allows('viewAny', AuditEventRecord::class))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('view', new AuditEventRecord))->toBeFalse()
+        ->and(Gate::forUser(null)->allows('viewAny', AuditEventRecord::class))->toBeFalse()
+        ->and(Gate::forUser(null)->allows('view', new AuditEventRecord))->toBeFalse();
+});
+
+it('lets nobody change or delete an audit event', function (): void {
+    $owner = administratorWith(Role::Owner);
+
+    foreach (['create', 'update', 'delete', 'restore', 'forceDelete'] as $ability) {
+        expect(Gate::forUser($owner)->allows($ability, new AuditEventRecord))->toBeFalse($ability);
+    }
 });

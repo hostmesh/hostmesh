@@ -11,6 +11,196 @@
         }
     ],
     "paths": {
+        "/admin/audit-events": {
+            "get": {
+                "operationId": "admin.audit-events.index",
+                "description": "The audit log, newest first. Filter by actor, resource, action and time; `from` and `to` are inclusive.\nA date without a time means midnight: `to=2026-10-08` leaves out the events of that day.\nPass `meta.next_cursor` as `cursor` for the next page. An event holds identifiers only: `actor.name` and\n`resource.name` are looked up now and are null when the account no longer exists.\nNeeds the `audit-event.view` permission.",
+                "summary": "List audit events",
+                "tags": [
+                    "ListAuditEvents"
+                ],
+                "parameters": [
+                    {
+                        "name": "actor_type",
+                        "in": "query",
+                        "schema": {
+                            "$ref": "#/components/schemas/ActorType"
+                        }
+                    },
+                    {
+                        "name": "actor_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "resource_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "schema": {
+                            "$ref": "#/components/schemas/AuditAction"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Compared with `from` only when there is one: on its own,\n`after_or_equal:from` would refuse every `to`.",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 1024
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `AuditEventResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AuditEventResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "next_cursor": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "The \"cursor\" that points to the next set of items."
+                                                },
+                                                "prev_cursor": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "The \"cursor\" that points to the previous set of items."
+                                                }
+                                            },
+                                            "required": [
+                                                "path",
+                                                "per_page",
+                                                "next_cursor",
+                                                "prev_cursor"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/admin/auth/csrf-cookie": {
             "get": {
                 "operationId": "admin.auth.csrf-cookie",
@@ -919,6 +1109,17 @@
     },
     "components": {
         "schemas": {
+            "ActorType": {
+                "type": "string",
+                "description": "Who did it (decision 0013). The value is stored in rows that are never rewritten, so it is a short stable name and never a class name. The two account types double as the `resource` name of an account.\n",
+                "enum": [
+                    "administrator",
+                    "user",
+                    "node",
+                    "system"
+                ],
+                "title": "ActorType"
+            },
             "AdministratorResource": {
                 "type": "object",
                 "properties": {
@@ -962,6 +1163,134 @@
                     "abilities"
                 ],
                 "title": "AdministratorResource"
+            },
+            "AuditAction": {
+                "type": "string",
+                "description": "What happened. A value is stored forever: add cases, never rename one.\n",
+                "enum": [
+                    "auth.login.succeeded",
+                    "auth.login.failed",
+                    "auth.logout",
+                    "auth.two_factor.enrollment_started",
+                    "auth.two_factor.confirmed",
+                    "auth.two_factor.disabled",
+                    "auth.two_factor.challenge_passed",
+                    "auth.two_factor.challenge_failed",
+                    "auth.two_factor.recovery_code_used",
+                    "auth.two_factor.recovery_codes_regenerated",
+                    "administrator.role_assigned",
+                    "administrator.role_revoked"
+                ],
+                "title": "AuditAction"
+            },
+            "AuditEventResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "action": {
+                        "type": "string"
+                    },
+                    "actor": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "id": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "resource": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "id": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "metadata": {
+                        "type": "string"
+                    },
+                    "ip_address": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "user_agent": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "request_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "abilities": {
+                        "type": "object",
+                        "properties": {
+                            "view": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "view"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "action",
+                    "actor",
+                    "resource",
+                    "metadata",
+                    "ip_address",
+                    "user_agent",
+                    "request_id",
+                    "created_at",
+                    "abilities"
+                ],
+                "title": "AuditEventResource"
             },
             "ChallengeRequest": {
                 "type": "object",

@@ -89,6 +89,23 @@ Rules for a new resource:
 
 `abilities` describes the policy only. Until a login has completed its second factor, every route still answers 403 with a `code`, whatever the abilities in the login response say.
 
+## Audit log
+
+Security-relevant actions are written to `audit_events` ([decision 0013](../docs/decisions/0013-audit-logging-approach.md)). It is a plain table: it gives no tamper evidence against someone who controls the database.
+
+- **Append-only.** Triggers refuse `UPDATE`, `DELETE` and `TRUNCATE`. Two exceptions are built in: `ip_address` and `user_agent` can be set to null, and an event older than 12 months can be deleted.
+- **What an event holds:** `actor_type` (`administrator`, `user`, `node`, `system`) and `actor_id`, `action`, `resource` and `resource_id`, `metadata`, `ip_address`, `user_agent`, `request_id` and `created_at`. Identifiers only: never a name, an email address, a password, a secret or a recovery code. A failed login for an unknown address stores a keyed hash of the address in `metadata.email_hash`.
+- **Request ID.** Every response from an API route carries `X-Request-Id`. A request that matches no route (404, 405) has none. The same value is stored with the events of that request.
+- **Reading.** `GET /api/v1/admin/audit-events`, with the permission `audit-event.view`. Names are looked up when the log is read and are null for an account that is gone.
+
+Rules for a new audited action:
+
+- Add a case to `App\Domain\Audit\AuditAction`. A value is stored forever: never rename one.
+- Add an event in `app/Application/Events` that implements `Audited` and builds its `AuditEvent` from identifiers.
+- Dispatch it from the application command, inside the transaction that makes the change. `RecordAuditEvent` writes it at once, and its exception must roll the change back. Never dispatch from a controller, and never queue the listener: `tests/Arch/AuditTest.php` fails for both.
+- Test three things: the stored event, that it holds no personal data or secret (`Tests\Support\AuditTrail::assertHoldsNone()`), and that the action does not happen when the log cannot be written (`$this->app->instance(AuditLog::class, InMemoryAuditLog::failing())`).
+- Do not use `Event::fake()` without arguments in a test of an audited action: it silences the audit log.
+
 ## Testing
 
 - Pest only, written test-first.

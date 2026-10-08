@@ -92,7 +92,8 @@ it('answers a wrong password and an unknown email identically', function (string
         $response = (new Browser($this))->logIn($origin, $email, 'wrong-password');
 
         $headers = $response->headers->all();
-        unset($headers['set-cookie'], $headers['date']);
+        // Different on every response by design, whatever the outcome.
+        unset($headers['set-cookie'], $headers['date'], $headers['x-request-id']);
         ksort($headers);
 
         return [$response->getStatusCode(), $response->getContent(), $headers];

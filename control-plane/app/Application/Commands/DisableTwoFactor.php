@@ -6,12 +6,14 @@ declare(strict_types=1);
 
 namespace App\Application\Commands;
 
+use App\Application\Events\TwoFactorDisabled;
 use App\Application\Exceptions\IncorrectPassword;
 use App\Application\Exceptions\InvalidTwoFactorCode;
 use App\Application\Services\SecondFactorSession;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Hashing\Hasher;
 use SensitiveParameter;
 use Throwable;
@@ -22,6 +24,7 @@ final readonly class DisableTwoFactor
         protected Totp $totp,
         protected Hasher $hasher,
         protected SecondFactorSession $session,
+        protected Dispatcher $events,
     ) {
         //
     }
@@ -51,6 +54,7 @@ final readonly class DisableTwoFactor
             }
 
             $locked->disableTwoFactor();
+            $this->events->dispatch(new TwoFactorDisabled($locked));
 
             return true;
         });
