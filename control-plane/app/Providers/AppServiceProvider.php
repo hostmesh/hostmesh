@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Domain\Audit\AuditLog;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\Policies\AdministratorPolicy;
 use App\Domain\Identity\Policies\UserPolicy;
 use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
 use App\Http\Middleware\UseSessionRealm;
+use App\Infrastructure\Audit\DatabaseAuditLog;
 use App\Infrastructure\TwoFactor\Google2faTotp;
 use App\Support\Realm;
 use Dedoc\Scramble\OpenApiContext;
@@ -42,6 +44,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->app->bind(Totp::class, Google2faTotp::class);
+
+        // Decision 0013: callers depend on the interface. Not a singleton,
+        // so a test can swap it between two requests.
+        $this->app->bind(AuditLog::class, DatabaseAuditLog::class);
     }
 
     /**
