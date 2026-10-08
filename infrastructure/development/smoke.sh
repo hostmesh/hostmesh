@@ -77,6 +77,17 @@ check_api_health() {
     fi
 }
 
+# Queued jobs run in the worker service (spec section 24: Laravel queues on
+# Redis). Without it a dispatched job stays `pending` in job_history.
+check_worker() {
+    local name="The worker service is running"
+    if docker compose ps --status running --services 2>/dev/null | grep -qx worker; then
+        pass "$name"
+    else
+        fail "$name" "Is the stack up? Run: make up"
+    fi
+}
+
 # The node service must run the versions the web workspace pins: Node from
 # web/.nvmrc and pnpm from the packageManager field of web/package.json.
 # pnpm is asked from / so that it reports the version built into the image
@@ -119,6 +130,7 @@ for host in "${HOSTNAMES[@]}"; do
     check_https "$host"
 done
 check_api_health
+check_worker
 check_node
 check_playwright
 
