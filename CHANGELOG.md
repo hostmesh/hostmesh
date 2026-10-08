@@ -103,6 +103,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Application commands `AssignAdministratorRole` and `RevokeAdministratorRole`, which change `administrator_roles` and write the audit event (`administrator.role_assigned`, `administrator.role_revoked`) in one transaction. They have no HTTP endpoint yet.
 - `GET /api/v1/admin/audit-events`: the audit log, newest first, cursor paginated and filtered by actor, resource, action and time. It needs the new permission `audit-event.view`, which the roles `owner` and `read-only` hold. Display names are resolved when the log is read and are null for an account that is gone.
 - The audit log endpoint in the OpenAPI document and the typed client.
+- "Audit log" section in `control-plane/README.md`, with the rules for a new audited action.
 
 ---
 
