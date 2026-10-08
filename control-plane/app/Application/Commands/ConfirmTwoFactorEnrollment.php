@@ -6,12 +6,14 @@ declare(strict_types=1);
 
 namespace App\Application\Commands;
 
+use App\Application\Events\TwoFactorConfirmed;
 use App\Application\Exceptions\InvalidTwoFactorCode;
 use App\Application\Services\SecondFactorSession;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\TwoFactor\RecoveryCodes;
 use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
+use Illuminate\Contracts\Events\Dispatcher;
 use SensitiveParameter;
 use Throwable;
 
@@ -21,6 +23,7 @@ final readonly class ConfirmTwoFactorEnrollment
         protected Totp $totp,
         protected RecoveryCodes $recoveryCodes,
         protected SecondFactorSession $session,
+        protected Dispatcher $events,
     ) {
         //
     }
@@ -44,6 +47,7 @@ final readonly class ConfirmTwoFactorEnrollment
 
             $codes = $this->recoveryCodes->generate();
             $locked->confirmTwoFactor(array_map($this->recoveryCodes->hash(...), $codes));
+            $this->events->dispatch(new TwoFactorConfirmed($locked));
 
             return $codes;
         });

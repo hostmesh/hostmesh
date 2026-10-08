@@ -6,12 +6,14 @@ declare(strict_types=1);
 
 namespace App\Application\Commands;
 
+use App\Application\Events\RecoveryCodesRegenerated;
 use App\Application\Exceptions\IncorrectPassword;
 use App\Application\Exceptions\InvalidTwoFactorCode;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\TwoFactor\RecoveryCodes;
 use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Hashing\Hasher;
 use SensitiveParameter;
 use Throwable;
@@ -22,6 +24,7 @@ final readonly class RegenerateRecoveryCodes
         protected Totp $totp,
         protected RecoveryCodes $recoveryCodes,
         protected Hasher $hasher,
+        protected Dispatcher $events,
     ) {
         //
     }
@@ -54,6 +57,7 @@ final readonly class RegenerateRecoveryCodes
 
             $codes = $this->recoveryCodes->generate();
             $locked->replaceRecoveryCodes(array_map($this->recoveryCodes->hash(...), $codes));
+            $this->events->dispatch(new RecoveryCodesRegenerated($locked));
 
             return $codes;
         });

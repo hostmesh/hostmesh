@@ -6,11 +6,13 @@ declare(strict_types=1);
 
 namespace App\Application\Commands;
 
+use App\Application\Events\TwoFactorEnrollmentStarted;
 use App\Application\Exceptions\TwoFactorAlreadyEnabled;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Events\Dispatcher;
 use Throwable;
 
 final readonly class StartTwoFactorEnrollment
@@ -18,6 +20,7 @@ final readonly class StartTwoFactorEnrollment
     public function __construct(
         protected Totp $totp,
         protected Repository $config,
+        protected Dispatcher $events,
     ) {
         //
     }
@@ -43,6 +46,7 @@ final readonly class StartTwoFactorEnrollment
             }
 
             $locked->beginTwoFactorEnrollment($secret);
+            $this->events->dispatch(new TwoFactorEnrollmentStarted($locked));
 
             return true;
         });
