@@ -111,6 +111,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - One-shot job `retry_reconcile` (`App\Application\Jobs\RetryReconcile`) and the application command `DispatchOneShotJob`, which writes the history row and pushes the job after the transaction commits. The job does nothing yet except leave its row: no managed resource exists before Slice 1, and no endpoint calls it.
 - Tests that keep Redis out of correctness: sessions, failed jobs and job batches stay in PostgreSQL, Redis is declared for the queue and the cache only, and the application uses no direct Redis call, lock, unique job, overlap guard or cache-backed attempt counter.
 - `worker` service in the development stack: it runs `php artisan queue:listen redis`, so queued jobs run during development. Run `make -C infrastructure/development up` once to start it. The smoke test checks that it is running.
+- "Jobs" section in `control-plane/README.md`, with the failure classes and the rules for a new one-shot job.
 
 ---
 

@@ -106,10 +106,39 @@ Rules for a new audited action:
 - Test three things: the stored event, that it holds no personal data or secret (`Tests\Support\AuditTrail::assertHoldsNone()`), and that the action does not happen when the log cannot be written (`$this->app->instance(AuditLog::class, InMemoryAuditLog::failing())`).
 - Do not use `Event::fake()` without arguments in a test of an audited action: it silences the audit log.
 
+## Jobs
+
+Desired state is authoritative; a job is a one-shot action that is not state (spec section 6). Jobs run on the Redis queue, and each one leaves a row in the PostgreSQL table `job_history` ([decision 0014](../docs/decisions/0014-job-history-and-retry-policy.md)).
+
+- **The row is the authority.** It holds `type`, `resource_type` and `resource_id`, `generation`, `node_id`, `status` (`pending`, `running`, `waiting`, `retrying`, `succeeded`, `failed`), `failure_class`, the last `message`, `attempts`, and `started_at` and `finished_at`. Redis only carries the work.
+- **Failure classes** (spec section 8). A job throws `App\Application\Exceptions\JobFailure`:
+
+  | Thrown                      | What happens                                                                                              |
+    |-----------------------------|-----------------------------------------------------------------------------------------------------------|
+  | `JobFailure::retryable()`   | `attempts` + 1, then a retry after 10, 20, 40 … seconds, at most 10 minutes. `failed` after 8 attempts    |
+  | `JobFailure::waiting()`     | `waiting`, looked at again after 2 minutes or after the seconds the job names. Never counts as an attempt |
+  | `JobFailure::terminal()`    | `failed` at once                                                                                          |
+  | anything else               | reported to the exception handler and treated as retryable                                                |
+
+  A delay is shortened by a random share of up to half. A run that was interrupted (worker killed, timeout) counts as one attempt. The numbers are defaults: see `jobs` in `config/hostmesh.php`.
+- **A failed job** is also stored in `failed_jobs`. Pushing it again does nothing, because its row is finished. A new attempt is a new job and a new row.
+- **Redis is never used for correctness.** No lock, unique job, overlap guard or cache-backed counter: `tests/Arch/RedisTest.php` reads the sources and fails for one.
+
+Rules for a new one-shot job:
+
+- Add a case to `App\Domain\Provisioning\JobType`. A value is stored: never rename one.
+- Extend `App\Application\Jobs\OneShotJob`. Implement `type()` and `perform()`, and nothing else: the base class owns `handle()`, the tries and the outcome.
+- Make `perform()` safe to run twice. Redis delivers at least once.
+- Keep one run under the job's `timeout` (60 seconds), which must stay below `retry_after` of the queue connection (90 seconds).
+- Never put a secret in a `JobFailure` message. It is stored and shown to administrators.
+- Dispatch it through `App\Application\Commands\DispatchOneShotJob`, inside the transaction that asks for it. Never call `dispatch()` on the job yourself: it would run without a row.
+- Test it on the real Redis queue with `Tests\Support\QueueRunner`, and move time with `$this->travel()`.
+
 ## Testing
 
 - Pest only, written test-first.
 - Tests run against real PostgreSQL (database `hostmesh_test`) and real Redis (database 15). There is no SQLite connection.
+- Jobs run at once under test (the `sync` connection). A test of retries or delays pushes to the real Redis queue through `Tests\Support\QueueRunner`, which gives every test a queue of its own.
 - `tests/Arch` holds the architecture rules. Eloquent write methods in `app/Http` are reported by PHPStan (`phpstan/http-no-database-writes.neon`), because `arch()` only sees class-level dependencies.
 - Coverage counts `app/` without `app/Providers`.
 
