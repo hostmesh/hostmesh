@@ -9,6 +9,7 @@ namespace App\Http\Api\V1\Customer\Auth;
 use App\Domain\Identity\User;
 use App\Http\Api\V1\Customer\UserResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 final class CurrentUserController
 {
@@ -22,6 +23,8 @@ final class CurrentUserController
         $user = $request->user('customer');
 
         abort_unless($user instanceof User, 401);
+
+        Gate::authorize('view', $user);
 
         return new UserResource($user);
     }

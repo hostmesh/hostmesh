@@ -390,6 +390,11 @@ export interface components {
             name: string;
             email: string;
             two_factor_enabled: boolean;
+            abilities: {
+                view: boolean;
+                update: boolean;
+                manage_two_factor: boolean;
+            };
         };
         /** ChallengeRequest */
         ChallengeRequest: {
@@ -422,6 +427,11 @@ export interface components {
             name: string;
             email: string;
             two_factor_enabled: boolean;
+            abilities: {
+                view: boolean;
+                update: boolean;
+                manage_two_factor: boolean;
+            };
         };
     };
     responses: {
@@ -443,6 +453,18 @@ export interface components {
         };
         /** @description Unauthenticated */
         AuthenticationException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Error overview. */
+                    message: string;
+                };
+            };
+        };
+        /** @description Authorization error */
+        AuthorizationException: {
             headers: {
                 [name: string]: unknown;
             };
@@ -570,6 +592,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             /** @description An error */
             409: {
                 headers: {
@@ -607,6 +630,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -662,6 +686,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -691,6 +716,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -715,6 +741,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
         };
     };
     "customer.auth.csrf-cookie": {
@@ -826,6 +853,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             /** @description An error */
             409: {
                 headers: {
@@ -863,6 +891,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -918,6 +947,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -947,6 +977,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -971,6 +1002,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
         };
     };
     "v1.health": {

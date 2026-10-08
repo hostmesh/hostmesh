@@ -8,6 +8,15 @@ namespace App\Http\Api\V1\Auth\TwoFactor;
 
 final class ChallengeRequest extends AccountRequest
 {
+    /**
+     * The challenge is the second step of a login, not a way to manage the
+     * second factor: like login and logout, it is not a policy's business.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     /** @return array<string, list<string>> */
     public function rules(): array
     {

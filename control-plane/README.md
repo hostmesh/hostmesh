@@ -70,6 +70,25 @@ Rules for new routes:
 - Tests drive the API through `Tests\Support\Browser`, which keeps a cookie jar and sends `Origin` and `X-XSRF-TOKEN` like a browser. CSRF verification is active in tests.
 - Put it inside the group's `two-factor` block. `tests/Feature/Auth/SecondFactorGateTest.php` reads the route list and fails for an admin route outside it; a route that must work before the second factor is added to that test's list on purpose.
 
+## Authorization
+
+Authorization is decided on the server, in policies, and nowhere else ([decision 0012](../docs/decisions/0012-rbac-approach.md)).
+
+- **Permissions** are the cases of `App\Domain\Authorization\Permission`, named `resource.action`. A permission that ends in `.view` changes nothing.
+- **Roles** are the cases of `App\Domain\Authorization\Role`: `owner` holds every permission, `read-only` holds every `.view` permission. Both enums are code. There is nothing to seed and nothing to cache.
+- **Role assignment** is data: the table `administrator_roles` (`administrator_id`, `role`). An administrator may hold several roles, and one without a role may only view their own account and manage their own second factor.
+- **Policies** live next to their model (`app/Domain/<Context>/Policies`) and are registered in `AppServiceProvider`. A method takes `Administrator|User` and branches on the type: an administrator is checked with `hasPermission()`, a customer's user against ownership. Controllers ask the Gate and never read roles or permissions; `tests/Arch/ResourcesTest.php` fails if anything in `Http` does.
+- Customers have no roles.
+
+Rules for a new resource:
+
+- Write its policy, register it, and add its table of who may do what to `tests/Feature/Authorization/PolicyTest.php`. Add a permission for each action an administrator can be allowed, in the same pull request.
+- Every route behind `two-factor` asks the Gate: `Gate::authorize()` in the controller, or `authorize()` of the form request, which runs before validation. `tests/Feature/Authorization/RouteAuthorizationTest.php` reads the route list and fails for a route that does not.
+- Its API Resource uses `App\Http\Api\V1\Concerns\ReportsAbilities` and returns `abilities`: one boolean for each method of the policy that takes a record, under the method's name in snake case (`manageTwoFactor` becomes `manage_two_factor`), each from `$this->allows($request, '<method>')`. Write the keys out, so that the OpenAPI document and the typed client list them.
+- Add the resource to `tests/Feature/Api/V1/AbilitiesTest.php`, which checks that every reported ability equals the policy's decision and that the endpoint behind it answers 403 exactly when the ability is false.
+
+`abilities` describes the policy only. Until a login has completed its second factor, every route still answers 403 with a `code`, whatever the abilities in the login response say.
+
 ## Testing
 
 - Pest only, written test-first.

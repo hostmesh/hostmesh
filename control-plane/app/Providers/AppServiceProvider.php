@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Domain\Identity\Administrator;
+use App\Domain\Identity\Policies\AdministratorPolicy;
+use App\Domain\Identity\Policies\UserPolicy;
 use App\Domain\Identity\TwoFactor\Totp;
+use App\Domain\Identity\User;
 use App\Http\Middleware\UseSessionRealm;
 use App\Infrastructure\TwoFactor\Google2faTotp;
 use App\Support\Realm;
@@ -13,6 +17,7 @@ use Dedoc\Scramble\Support\Generator\Path;
 use Dedoc\Scramble\Support\Generator\Server;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -44,6 +49,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Decision 0012: one policy per resource, registered here. Policies
+        // are the only place where authorization is decided.
+        Gate::policy(Administrator::class, AdministratorPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
+
         // Keeps the generated document identical on every machine: Scramble
         // builds the server URL from APP_URL and lists paths in route order.
         Scramble::configure()->withDocumentTransformers(function (OpenApi $document, OpenApiContext $context): void {

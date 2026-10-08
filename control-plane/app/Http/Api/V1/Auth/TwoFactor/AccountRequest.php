@@ -9,16 +9,20 @@ namespace App\Http\Api\V1\Auth\TwoFactor;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 
 /**
- * A request of the logged-in account of either realm. The realm middleware
- * has made the realm's guard the default one.
+ * A request of the logged-in account of either realm to manage its own
+ * second factor. The realm middleware has made the realm's guard the
+ * default one.
  */
 class AccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $account = $this->account();
+
+        return Gate::forUser($account)->allows('manageTwoFactor', $account);
     }
 
     /** @return array<string, list<string>> */

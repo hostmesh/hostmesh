@@ -180,6 +180,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             },
@@ -245,6 +248,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -339,6 +345,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -396,6 +405,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -429,6 +441,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -602,6 +617,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             },
@@ -667,6 +685,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -761,6 +782,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -818,6 +842,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -851,6 +878,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -903,13 +933,33 @@
                     },
                     "two_factor_enabled": {
                         "type": "boolean"
+                    },
+                    "abilities": {
+                        "type": "object",
+                        "properties": {
+                            "view": {
+                                "type": "boolean"
+                            },
+                            "update": {
+                                "type": "boolean"
+                            },
+                            "manage_two_factor": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "view",
+                            "update",
+                            "manage_two_factor"
+                        ]
                     }
                 },
                 "required": [
                     "id",
                     "name",
                     "email",
-                    "two_factor_enabled"
+                    "two_factor_enabled",
+                    "abilities"
                 ],
                 "title": "AdministratorResource"
             },
@@ -996,13 +1046,33 @@
                     },
                     "two_factor_enabled": {
                         "type": "boolean"
+                    },
+                    "abilities": {
+                        "type": "object",
+                        "properties": {
+                            "view": {
+                                "type": "boolean"
+                            },
+                            "update": {
+                                "type": "boolean"
+                            },
+                            "manage_two_factor": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "view",
+                            "update",
+                            "manage_two_factor"
+                        ]
                     }
                 },
                 "required": [
                     "id",
                     "name",
                     "email",
-                    "two_factor_enabled"
+                    "two_factor_enabled",
+                    "abilities"
                 ],
                 "title": "UserResource"
             }
@@ -1040,6 +1110,25 @@
             },
             "AuthenticationException": {
                 "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthorizationException": {
+                "description": "Authorization error",
                 "content": {
                     "application/json": {
                         "schema": {
