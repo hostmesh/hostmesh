@@ -45,7 +45,7 @@ jobs:
       - name: Install Incus
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends incus qemu-system dnsmasq-base
+          sudo apt-get install -y incus qemu-system
           sudo incus admin init --minimal
           sudo chmod 666 /var/lib/incus/unix.socket
           incus version
@@ -62,3 +62,8 @@ jobs:
         run: infrastructure/testing/poc/nodes.sh up
       - name: Probe one node
         run: incus exec hostmesh-node-1 -- bash -s < infrastructure/testing/poc/probe.sh
+      - name: Show the Incus daemon log
+        if: failure()
+        run: |
+          sudo tail -n 60 /var/log/incus/incusd.log || true
+          sudo journalctl -u incus --no-pager -n 40 || true
