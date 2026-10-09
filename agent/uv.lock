@@ -204,6 +204,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "hostmesh-testing" },
     { name = "hypothesis" },
     { name = "mypy" },
     { name = "pytest" },
@@ -218,12 +219,27 @@ requires-dist = [{ name = "httpx", specifier = ">=0.28.1,<1" }]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "hostmesh-testing", editable = "../infrastructure/testing" },
     { name = "hypothesis", specifier = ">=6.168.3" },
     { name = "mypy", specifier = ">=2.3.1" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "respx", specifier = ">=0.23.1" },
+    { name = "ruff", specifier = ">=0.16.9" },
+]
+
+[[package]]
+name = "hostmesh-testing"
+version = "0.1.0.dev0"
+source = { editable = "../infrastructure/testing" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=2.3.1" },
+    { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.16.9" },
 ]
 

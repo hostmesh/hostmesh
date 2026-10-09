@@ -2,8 +2,7 @@
 #
 # Agent checks. Run from the repository root with `make -C agent <target>`.
 
-.PHONY: install lint lint-fix typecheck test test-coverage check
-
+.PHONY: install lint lint-fix typecheck test test-coverage test-integration test-doubles check
 # --locked fails when uv.lock is out of date instead of rewriting it.
 UV_RUN := uv run --locked
 
@@ -26,5 +25,14 @@ test:
 
 test-coverage:
 		$(UV_RUN) pytest --cov
+
+# Needs Incus and the test nodes: infrastructure/testing/README.md.
+test-integration:
+		$(UV_RUN) pytest tests/integration -m integration
+
+# Needs the dev stack's pebble and challtestsrv services:
+# infrastructure/development/README.md.
+test-doubles:
+		$(UV_RUN) pytest tests/integration -m doubles
 
 check: lint typecheck test-coverage

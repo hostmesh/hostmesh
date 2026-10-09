@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+name = "hostmesh-testing"
+version = "0.1.0.dev0"
+description = "Hostmesh test-node harness: two disposable Debian 13 nodes on Incus (decision 0015)."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+]
+
+[build-system]
+requires = ["hatchling>=1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hostmesh_testing"]
+
+[tool.uv]
+required-version = ">=0.12.22,<0.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+# The agent's rule set (agent/pyproject.toml).
+select = [
+    "A", "ASYNC", "B", "BLE", "C4", "E", "F", "I", "INP", "N", "PIE", "PT", "PTH",
+    "RET", "RUF", "S", "SIM", "T20", "TID", "UP", "W",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]                      # pytest asserts
+"hostmesh_testing/__main__.py" = ["T201"]  # the command line prints its output
+
+[tool.ruff.lint.isort]
+known-first-party = ["hostmesh_testing", "tests"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+files = ["hostmesh_testing", "tests"]
+
+[tool.pytest]
+minversion = "9.0"
+testpaths = ["tests"]
+addopts = ["-ra"]
+strict = true
+filterwarnings = ["error"]
