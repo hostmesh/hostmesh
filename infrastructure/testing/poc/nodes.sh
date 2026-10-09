@@ -9,7 +9,7 @@
 #   nodes.sh destroy   delete both nodes
 #   nodes.sh status    list them
 #
-# HOSTMESH_NODE_TYPE   vm (default) or container
+# HOSTMESH_NODE_TYPE   container (default) or vm
 # HOSTMESH_NODE_IMAGE  default images:debian/13
 #
 # This is not the test harness. Issue #17 builds that.
@@ -24,7 +24,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 exec </dev/null
 
 NODES=(hostmesh-node-1 hostmesh-node-2)
-TYPE=${HOSTMESH_NODE_TYPE:-vm}
+TYPE=${HOSTMESH_NODE_TYPE:-container}
 IMAGE=${HOSTMESH_NODE_IMAGE:-images:debian/13}
 SNAPSHOT=clean
 MEMORY=2GiB

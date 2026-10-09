@@ -9,7 +9,7 @@ Evidence for [decision 0015](../../../docs/decisions/0015-debian-test-harness.md
 | Command | Effect |
 |---------|--------|
 | `./nodes.sh up` | Create or reset both nodes, then verify |
-| `HOSTMESH_NODE_TYPE=container ./nodes.sh up` | The same with system containers instead of virtual machines |
+| `HOSTMESH_NODE_TYPE=vm ./nodes.sh up` | The same with virtual machines instead of system containers |
 | `./nodes.sh status` | List the nodes |
 | `./nodes.sh destroy` | Delete both nodes |
 | `incus exec hostmesh-node-1 -- bash -s < probe.sh` | See "The probe" below |
