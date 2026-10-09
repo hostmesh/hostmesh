@@ -106,6 +106,20 @@ Rules for a new audited action:
 - Test three things: the stored event, that it holds no personal data or secret (`Tests\Support\AuditTrail::assertHoldsNone()`), and that the action does not happen when the log cannot be written (`$this->app->instance(AuditLog::class, InMemoryAuditLog::failing())`).
 - Do not use `Event::fake()` without arguments in a test of an audited action: it silences the audit log.
 
+## Branding
+
+One record holds the product name, the logos, the favicon, the brand colors and the links (spec section 28). It is a single row of the table `branding`, created by the first change. Until then every reader gets the defaults.
+
+- **Reading.** `App\Application\Queries\GetBranding` returns the read model `Branding`. Emails and invoices read it there, not from the table.
+- **Public endpoint.** `GET /api/v1/branding` has no session and sets no cookie. It carries `Cache-Control: public, max-age=300` and an `ETag`, and answers `304` to a matching `If-None-Match`.
+- **Admin endpoints.** `GET` and `PUT /api/v1/admin/branding`, with the permissions `branding.view` and `branding.update`. `PUT` replaces the name, colors and links: send every field.
+- **Colors** are `#rrggbb`: `primary` and `primary_foreground`, for light and dark. Null keeps the token default. A pair below WCAG AA (4.5:1) is saved and listed in `warnings`: the foreground on the primary, and the primary on the default `background` and `card`. The default surfaces are in `App\Domain\Branding\ColorMode` and mirror `web/packages/ui/src/styles/tokens.css`: change both together.
+- **Links** are `https` URLs: `support`, `terms`, `privacy`.
+- **Images.** `POST` and `DELETE /api/v1/admin/branding/images/{slot}` with slot `logo-light`, `logo-dark` or `favicon`; the file goes in the multipart field `file`. A logo is PNG, JPEG or WebP, at most 1024 KB and 2000×2000. The favicon is a square PNG, at most 256 KB and 512×512. SVG is refused until there is a sanitization decision.
+- **How an upload is checked.** `finfo` names the type of the bytes and `getimagesize()` measures them; both must agree. The client's file name and content type are never read. This is a header check, not a full decode: a stored file is harmless because the server names it (`<slot>/<start of its SHA-256>.<extension of the detected type>`) and serves it as the detected type with `X-Content-Type-Options: nosniff`.
+- **Storage.** The filesystem disk `branding` (`storage/app/branding`, see `config/filesystems.php`). It is not public: `GET /api/v1/branding/images/{slot}` serves the files. The URL names the slot and carries the version as `v`, so a URL from a cached response keeps working after a replacement. Back the directory up with the database.
+- **Audit.** `branding.updated` (metadata `fields`: the names of the changed columns), `branding.image_replaced` and `branding.image_removed` (metadata `slot`). Values are never recorded. A change that changes nothing writes no event.
+
 ## Jobs
 
 Desired state is authoritative; a job is a one-shot action that is not state (spec section 6). Jobs run on the Redis queue, and each one leaves a row in the PostgreSQL table `job_history` ([decision 0014](../docs/decisions/0014-job-history-and-retry-policy.md)).
@@ -145,4 +159,4 @@ Rules for a new one-shot job:
 
 ## Requirements
 
-PHP 8.5 with the extensions `pdo_pgsql`, `redis`, `intl`, `pcntl` and PCOV (or Xdebug) for coverage. See [decision 0004](../docs/decisions/0004-php-8-5-for-the-control-plane.md).
+PHP 8.5 with the extensions `pdo_pgsql`, `redis`, `intl`, `pcntl`, `fileinfo` and PCOV (or Xdebug) for coverage. See [decision 0004](../docs/decisions/0004-php-8-5-for-the-control-plane.md). `upload_max_filesize` and `post_max_size` must be at least 2M (the PHP default) for logo uploads.

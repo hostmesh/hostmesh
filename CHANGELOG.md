@@ -112,6 +112,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tests that keep Redis out of correctness: sessions, failed jobs and job batches stay in PostgreSQL, Redis is declared for the queue and the cache only, and the application uses no direct Redis call, lock, unique job, overlap guard or cache-backed attempt counter.
 - `worker` service in the development stack: it runs `php artisan queue:listen redis`, so queued jobs run during development. Run `make -C infrastructure/development up` once to start it. The smoke test checks that its `queue:listen` process is running.
 - "Jobs" section in `control-plane/README.md`, with the failure classes and the rules for a new one-shot job.
+- Brand colors in the control plane's domain layer: `#rrggbb` parsing and the WCAG contrast check of a `primary` and `primary_foreground` pair against the default light and dark surfaces (4.5:1).
+- Public `GET /api/v1/branding`: product name, light and dark logos, favicon, brand colors (`primary` and `primary_foreground` for light and dark) and the support, terms and privacy links, with defaults when nothing is configured. It carries `Cache-Control: public, max-age=300` and an `ETag`, and answers `304` to a matching `If-None-Match`. Stored in the new table `branding`.
+- Admin `GET /api/v1/admin/branding`, guarded by the new permissions `branding.view` and `branding.update` (the `read-only` role may view). The answer adds `warnings`, the brand colors that fail WCAG AA (4.5:1) against the default surfaces, and `abilities`.
+- Admin `PUT /api/v1/admin/branding` replaces the product name, the brand colors and the links. Colors must be `#rrggbb`, links `https` URLs of at most 2048 characters, the product name at most 60 characters without control characters. A color that fails WCAG AA is saved and reported in `warnings`. Every change writes the audit event `branding.updated` with the names of the changed fields; a save that changes nothing writes none.
+- Logo and favicon uploads: admin `POST` and `DELETE /api/v1/admin/branding/images/{slot}` (`logo-light`, `logo-dark`, `favicon`) and public `GET /api/v1/branding/images/{slot}`. Raster images only: a logo is PNG, JPEG or WebP, at most 1024 KB and 2000×2000; the favicon is a square PNG, at most 256 KB and 512×512. SVG is refused. The type is read from the bytes (`finfo` and `getimagesize()`), the file is stored on the new `branding` filesystem disk under a name derived from its content, and the client's file name and content type are never used. Changes write the audit events `branding.image_replaced` and `branding.image_removed`.
 
 ---
 
@@ -141,6 +146,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Login responses of both API groups now carry `two_factor_enabled` on the account and `meta.second_factor` (`challenge`, `enrollment` or `none`).
 - Decision record 0013 (audit logging) amended: `request_id` and `user_agent` columns, a nullable `resource_id`, and how login and logout fail closed.
 - Laravel's database-queue table `jobs` is no longer created: queues run on Redis. The migration that creates `job_history` drops it from an existing database.
+- The control plane now names the PHP extension `fileinfo` as a requirement (README and CI): branding uploads read the type of a file from its bytes.
 
 ---
 

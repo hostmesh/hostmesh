@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Authorization\Role;
+use App\Domain\Branding\BrandingRecord;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -166,4 +167,35 @@ it('reports the abilities of an audit event as its policy decides', function (Ro
             'view' => Gate::forUser($administrator)->allows('view', new AuditEventRecord),
         ]);
     }
+})->with(['owner' => [Role::Owner], 'read-only' => [Role::ReadOnly]]);
+
+it('reports the abilities of branding as its policy decides', function (Role $role): void {
+    $administrator = Administrator::factory()->withTwoFactor()->withRoles($role)->create();
+    $browser = new Browser($this);
+    $browser->signIn(Browser::ADMIN, $administrator);
+
+    $abilities = $browser->get(Browser::ADMIN, '/api/v1/admin/branding')->assertOk()->json('data.abilities');
+
+    expect($abilities)->toBe([
+        'view' => Gate::forUser($administrator)->allows('view', new BrandingRecord),
+        'update' => Gate::forUser($administrator)->allows('update', new BrandingRecord),
+    ]);
+})->with(['owner' => [Role::Owner], 'read-only' => [Role::ReadOnly]]);
+
+it('answers 403 on saving branding exactly when `update` is false', function (Role $role): void {
+    $administrator = Administrator::factory()->withTwoFactor()->withRoles($role)->create();
+    $browser = new Browser($this);
+    $browser->signIn(Browser::ADMIN, $administrator);
+
+    $abilities = $browser->get(Browser::ADMIN, '/api/v1/admin/branding')->assertOk()->json('data.abilities');
+    $status = $browser->put(Browser::ADMIN, '/api/v1/admin/branding', [
+        'product_name' => 'Acme Hosting',
+        'colors' => [
+            'light' => ['primary' => null, 'primary_foreground' => null],
+            'dark' => ['primary' => null, 'primary_foreground' => null],
+        ],
+        'links' => ['support' => null, 'terms' => null, 'privacy' => null],
+    ])->getStatusCode();
+
+    expect($status === 403)->toBe(! $abilities['update'], "PUT answered $status while `update` is ".json_encode($abilities['update']));
 })->with(['owner' => [Role::Owner], 'read-only' => [Role::ReadOnly]]);

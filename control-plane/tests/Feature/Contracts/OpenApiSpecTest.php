@@ -111,3 +111,48 @@ it('documents the health endpoint and its response', function (): void {
             'enum' => ['ok'],
         ]);
 });
+
+it('documents the public branding endpoint and its response', function (): void {
+    $operation = generateOpenApiDocument()['paths']['/branding']['get'];
+    $data = $operation['responses']['200']['content']['application/json']['schema']['properties']['data'];
+
+    expect($operation['summary'] ?? null)->toBe('Branding')
+        ->and($operation['security'])->toBe([])
+        ->and(array_keys($data['properties']))->toBe(['product_name', 'logos', 'favicon', 'colors', 'links'])
+        ->and(array_keys($data['properties']['colors']['properties']['dark']['properties']))->toBe(['primary', 'primary_foreground']);
+});
+
+it('documents saving branding', function (): void {
+    $operation = generateOpenApiDocument()['paths']['/admin/branding']['put'];
+
+    expect($operation['summary'] ?? null)->toBe('Update branding')
+        ->and($operation['requestBody']['content'])->toHaveKey('application/json')
+        ->and(array_keys($operation['responses']))->toContain(200, 403, 422);
+});
+
+it('documents the branding image endpoints', function (): void {
+    $paths = generateOpenApiDocument()['paths'];
+    $upload = $paths['/admin/branding/images/{slot}']['post'];
+
+    expect($upload['summary'] ?? null)->toBe('Upload a branding image')
+        ->and($upload['requestBody']['content'])->toHaveKey('multipart/form-data')
+        ->and($paths['/admin/branding/images/{slot}']['delete']['summary'] ?? null)->toBe('Remove a branding image')
+        ->and($paths['/branding/images/{slot}']['get']['summary'] ?? null)->toBe('Branding image')
+        ->and($paths['/branding/images/{slot}']['get']['security'])->toBe([]);
+});
+
+it('documents a branding image as the bytes of an image, not as JSON', function (): void {
+    $paths = generateOpenApiDocument()['paths'];
+    $content = $paths['/branding/images/{slot}']['get']['responses']['200']['content'];
+
+    expect(array_keys($content))->toBe(['image/png', 'image/jpeg', 'image/webp']);
+
+    foreach ($content as $mediaType) {
+        expect($mediaType['schema'])->toBe(['type' => 'string', 'format' => 'binary']);
+    }
+
+    // The upload answers 404 for an unknown slot, with the usual error body.
+    $notFound = $paths['/admin/branding/images/{slot}']['post']['responses']['404']['content']['application/json']['schema'];
+
+    expect(array_keys($notFound['properties']))->toBe(['message']);
+});

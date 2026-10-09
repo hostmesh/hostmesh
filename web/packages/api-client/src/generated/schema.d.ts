@@ -207,6 +207,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show branding
+         * @description The branding of this installation, with the colors that fail WCAG AA and what the current administrator may do.
+         *     Needs the `branding.view` permission.
+         */
+        get: operations["admin.branding.show"];
+        /**
+         * Update branding
+         * @description Replaces the product name, the brand colors and the links. Send every field: null clears a color or a link.
+         *     A color is `#rrggbb`; a link is an `https` URL. A color that fails WCAG AA (4.5:1) against the default
+         *     surfaces is saved all the same and listed in `warnings`. Logos and the favicon have endpoints of their own.
+         *     Needs the `branding.update` permission.
+         */
+        put: operations["admin.branding.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/branding/images/{slot}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a branding image
+         * @description Replaces the image of a slot: `logo-light`, `logo-dark` or `favicon`. Send the file as `file` in a multipart
+         *     form. A logo is a PNG, JPEG or WebP file of at most 1024 KB and 2000 by 2000 pixels. The favicon is a square
+         *     PNG file of at most 256 KB and 512 by 512 pixels. SVG is not accepted. The type is read from the file itself;
+         *     its name is ignored. Needs the `branding.update` permission.
+         */
+        post: operations["admin.branding.images.store"];
+        /**
+         * Remove a branding image
+         * @description Empties a slot: `logo-light`, `logo-dark` or `favicon`. The apps then show their built-in default.
+         *     Answers `200` for a slot that is already empty. Needs the `branding.update` permission.
+         */
+        delete: operations["admin.branding.images.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Branding
+         * @description The product name, logos, favicon, brand colors and links of this installation. Public and cacheable for five
+         *     minutes: send `If-None-Match` with the `ETag` of an earlier answer to get `304`. A logo, the favicon, a color
+         *     or a link that is null is not configured: keep your default.
+         */
+        get: operations["branding.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branding/images/{slot}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Branding image
+         * @description A logo or the favicon, as a PNG, JPEG or WebP file. Use the URLs of `GET /branding`: with their `v` the image
+         *     is immutable and may be cached for a year. Without `v`, or with the `v` of an earlier version, the current
+         *     image is sent and may be cached for five minutes. `404` when the slot is empty.
+         */
+        get: operations["branding.images.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customer/auth/csrf-cookie": {
         parameters: {
             query?: never;
@@ -431,7 +531,7 @@ export interface components {
          * @description What happened. A value is stored forever: add cases, never rename one.
          * @enum {string}
          */
-        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "administrator.role_assigned" | "administrator.role_revoked";
+        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "administrator.role_assigned" | "administrator.role_revoked" | "branding.updated" | "branding.image_replaced" | "branding.image_removed";
         /** AuditEventResource */
         AuditEventResource: {
             id: string;
@@ -455,6 +555,41 @@ export interface components {
                 view: boolean;
             };
         };
+        /** BrandingResource */
+        BrandingResource: {
+            product_name: string;
+            logos: {
+                light: string | null;
+                dark: string | null;
+            };
+            favicon: string | null;
+            colors: {
+                light: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+                dark: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+            };
+            links: {
+                support: string | null;
+                terms: string | null;
+                privacy: string | null;
+            };
+            warnings: {
+                mode: string;
+                color: string;
+                against: string;
+                ratio: number;
+                required: number;
+            }[];
+            abilities: {
+                view: boolean;
+                update: boolean;
+            };
+        };
         /** ChallengeRequest */
         ChallengeRequest: {
             code?: string;
@@ -469,6 +604,12 @@ export interface components {
          * @enum {string}
          */
         HealthStatus: "ok";
+        /**
+         * ImageSlot
+         * @description The images of the branding record (spec section 28). The value is part of the API.
+         * @enum {string}
+         */
+        ImageSlot: "logo-light" | "logo-dark" | "favicon";
         /** LoginRequest */
         LoginRequest: {
             /** Format: email */
@@ -479,6 +620,37 @@ export interface components {
         PasswordAndCodeRequest: {
             password: string;
             code: string;
+        };
+        /** StoreBrandingImageRequest */
+        StoreBrandingImageRequest: {
+            /** Format: binary */
+            file: string;
+        };
+        /** UpdateBrandingRequest */
+        UpdateBrandingRequest: {
+            /**
+             * @description At least one visible character and no control characters: the
+             *     name goes into page titles and email subjects.
+             */
+            product_name: string;
+            colors: {
+                light?: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+                dark?: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+            };
+            links: {
+                /** Format: uri */
+                support: string | null;
+                /** Format: uri */
+                terms: string | null;
+                /** Format: uri */
+                privacy: string | null;
+            };
         };
         /** UserResource */
         UserResource: {
@@ -494,6 +666,18 @@ export interface components {
         };
     };
     responses: {
+        /** @description Not found */
+        ModelNotFoundException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Error overview. */
+                    message: string;
+                };
+            };
+        };
         /** @description Validation error */
         ValidationException: {
             headers: {
@@ -856,6 +1040,200 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "admin.branding.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `BrandingResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BrandingResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "admin.branding.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBrandingRequest"];
+            };
+        };
+        responses: {
+            /** @description `BrandingResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BrandingResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.branding.images.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StoreBrandingImageRequest"];
+            };
+        };
+        responses: {
+            /** @description `BrandingResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BrandingResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description There is no such slot. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.branding.images.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `BrandingResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BrandingResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "branding.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The branding, or the defaults when nothing is configured. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            product_name: string;
+                            logos: {
+                                light: string | null;
+                                dark: string | null;
+                            };
+                            favicon: string | null;
+                            colors: {
+                                light: {
+                                    primary: string | null;
+                                    primary_foreground: string | null;
+                                };
+                                dark: {
+                                    primary: string | null;
+                                    primary_foreground: string | null;
+                                };
+                            };
+                            links: {
+                                support: string | null;
+                                terms: string | null;
+                                privacy: string | null;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "branding.images.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The slot ID */
+                slot: components["schemas"]["ImageSlot"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image. */
+            200: {
+                headers: {
+                    "X-Content-Type-Options"?: "nosniff";
+                    "Content-Security-Policy"?: "default-src 'none'";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "customer.auth.csrf-cookie": {

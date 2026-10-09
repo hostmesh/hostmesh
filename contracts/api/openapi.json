@@ -638,6 +638,426 @@
                 }
             }
         },
+        "/admin/branding": {
+            "get": {
+                "operationId": "admin.branding.show",
+                "description": "The branding of this installation, with the colors that fail WCAG AA and what the current administrator may do.\nNeeds the `branding.view` permission.",
+                "summary": "Show branding",
+                "tags": [
+                    "ShowBranding"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "admin.branding.update",
+                "description": "Replaces the product name, the brand colors and the links. Send every field: null clears a color or a link.\nA color is `#rrggbb`; a link is an `https` URL. A color that fails WCAG AA (4.5:1) against the default\nsurfaces is saved all the same and listed in `warnings`. Logos and the favicon have endpoints of their own.\nNeeds the `branding.update` permission.",
+                "summary": "Update branding",
+                "tags": [
+                    "UpdateBranding"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateBrandingRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/admin/branding/images/{slot}": {
+            "delete": {
+                "operationId": "admin.branding.images.destroy",
+                "description": "Empties a slot: `logo-light`, `logo-dark` or `favicon`. The apps then show their built-in default.\nAnswers `200` for a slot that is already empty. Needs the `branding.update` permission.",
+                "summary": "Remove a branding image",
+                "tags": [
+                    "DeleteBrandingImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "slot",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "admin.branding.images.store",
+                "description": "Replaces the image of a slot: `logo-light`, `logo-dark` or `favicon`. Send the file as `file` in a multipart\nform. A logo is a PNG, JPEG or WebP file of at most 1024 KB and 2000 by 2000 pixels. The favicon is a square\nPNG file of at most 256 KB and 512 by 512 pixels. SVG is not accepted. The type is read from the file itself;\nits name is ignored. Needs the `branding.update` permission.",
+                "summary": "Upload a branding image",
+                "tags": [
+                    "StoreBrandingImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "slot",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreBrandingImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "description": "There is no such slot.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/branding": {
+            "get": {
+                "operationId": "branding.show",
+                "description": "The product name, logos, favicon, brand colors and links of this installation. Public and cacheable for five\nminutes: send `If-None-Match` with the `ETag` of an earlier answer to get `304`. A logo, the favicon, a color\nor a link that is null is not configured: keep your default.",
+                "summary": "Branding",
+                "tags": [
+                    "Branding"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The branding, or the defaults when nothing is configured.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "product_name": {
+                                                    "type": "string"
+                                                },
+                                                "logos": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "light": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "dark": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "light",
+                                                        "dark"
+                                                    ]
+                                                },
+                                                "favicon": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "colors": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "light": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "primary": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ]
+                                                                },
+                                                                "primary_foreground": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "primary",
+                                                                "primary_foreground"
+                                                            ]
+                                                        },
+                                                        "dark": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "primary": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ]
+                                                                },
+                                                                "primary_foreground": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "primary",
+                                                                "primary_foreground"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "light",
+                                                        "dark"
+                                                    ]
+                                                },
+                                                "links": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "support": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "terms": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "privacy": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "support",
+                                                        "terms",
+                                                        "privacy"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "product_name",
+                                                "logos",
+                                                "favicon",
+                                                "colors",
+                                                "links"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/branding/images/{slot}": {
+            "get": {
+                "operationId": "branding.images.show",
+                "description": "A logo or the favicon, as a PNG, JPEG or WebP file. Use the URLs of `GET /branding`: with their `v` the image\nis immutable and may be cached for a year. Without `v`, or with the `v` of an earlier version, the current\nimage is sent and may be cached for five minutes. `404` when the slot is empty.",
+                "summary": "Branding image",
+                "tags": [
+                    "BrandingImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "slot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The slot ID",
+                        "schema": {
+                            "$ref": "#/components/schemas/ImageSlot"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The image.",
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            },
+                            "image/jpeg": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            },
+                            "image/webp": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Content-Type-Options": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "nosniff"
+                                }
+                            },
+                            "Content-Security-Policy": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "default-src 'none'"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                },
+                "security": []
+            }
+        },
         "/customer/auth/csrf-cookie": {
             "get": {
                 "operationId": "customer.auth.csrf-cookie",
@@ -1179,7 +1599,10 @@
                     "auth.two_factor.recovery_code_used",
                     "auth.two_factor.recovery_codes_regenerated",
                     "administrator.role_assigned",
-                    "administrator.role_revoked"
+                    "administrator.role_revoked",
+                    "branding.updated",
+                    "branding.image_replaced",
+                    "branding.image_removed"
                 ],
                 "title": "AuditAction"
             },
@@ -1292,6 +1715,175 @@
                 ],
                 "title": "AuditEventResource"
             },
+            "BrandingResource": {
+                "type": "object",
+                "properties": {
+                    "product_name": {
+                        "type": "string"
+                    },
+                    "logos": {
+                        "type": "object",
+                        "properties": {
+                            "light": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "dark": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "light",
+                            "dark"
+                        ]
+                    },
+                    "favicon": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "colors": {
+                        "type": "object",
+                        "properties": {
+                            "light": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            },
+                            "dark": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "light",
+                            "dark"
+                        ]
+                    },
+                    "links": {
+                        "type": "object",
+                        "properties": {
+                            "support": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "terms": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "privacy": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "support",
+                            "terms",
+                            "privacy"
+                        ]
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "mode": {
+                                    "type": "string"
+                                },
+                                "color": {
+                                    "type": "string"
+                                },
+                                "against": {
+                                    "type": "string"
+                                },
+                                "ratio": {
+                                    "type": "number"
+                                },
+                                "required": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "mode",
+                                "color",
+                                "against",
+                                "ratio",
+                                "required"
+                            ]
+                        }
+                    },
+                    "abilities": {
+                        "type": "object",
+                        "properties": {
+                            "view": {
+                                "type": "boolean"
+                            },
+                            "update": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "view",
+                            "update"
+                        ]
+                    }
+                },
+                "required": [
+                    "product_name",
+                    "logos",
+                    "favicon",
+                    "colors",
+                    "links",
+                    "warnings",
+                    "abilities"
+                ],
+                "title": "BrandingResource"
+            },
             "ChallengeRequest": {
                 "type": "object",
                 "properties": {
@@ -1325,6 +1917,16 @@
                     "ok"
                 ],
                 "title": "HealthStatus"
+            },
+            "ImageSlot": {
+                "type": "string",
+                "description": "The images of the branding record (spec section 28). The value is part of the API.\n",
+                "enum": [
+                    "logo-light",
+                    "logo-dark",
+                    "favicon"
+                ],
+                "title": "ImageSlot"
             },
             "LoginRequest": {
                 "type": "object",
@@ -1360,6 +1962,122 @@
                     "code"
                 ],
                 "title": "PasswordAndCodeRequest"
+            },
+            "StoreBrandingImageRequest": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream"
+                    }
+                },
+                "required": [
+                    "file"
+                ],
+                "title": "StoreBrandingImageRequest"
+            },
+            "UpdateBrandingRequest": {
+                "type": "object",
+                "properties": {
+                    "product_name": {
+                        "type": "string",
+                        "description": "At least one visible character and no control characters: the\nname goes into page titles and email subjects.",
+                        "pattern": "^(?=.*\\S)[^\\p{C}]+$",
+                        "maxLength": 60
+                    },
+                    "colors": {
+                        "type": "object",
+                        "properties": {
+                            "light": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            },
+                            "dark": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            }
+                        }
+                    },
+                    "links": {
+                        "type": "object",
+                        "properties": {
+                            "support": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            },
+                            "terms": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            },
+                            "privacy": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            }
+                        },
+                        "required": [
+                            "support",
+                            "terms",
+                            "privacy"
+                        ]
+                    }
+                },
+                "required": [
+                    "product_name",
+                    "colors",
+                    "links"
+                ],
+                "title": "UpdateBrandingRequest"
             },
             "UserResource": {
                 "type": "object",
@@ -1407,6 +2125,25 @@
             }
         },
         "responses": {
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
             "ValidationException": {
                 "description": "Validation error",
                 "content": {

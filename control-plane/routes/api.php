@@ -8,11 +8,24 @@ declare(strict_types=1);
 
 use App\Http\Api\V1\Admin;
 use App\Http\Api\V1\Auth\TwoFactor;
+use App\Http\Api\V1\BrandingController;
+use App\Http\Api\V1\BrandingImageController;
 use App\Http\Api\V1\Customer;
 use App\Http\Api\V1\HealthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
+
+// Spec section 28: public and cacheable. Laravel's `cache.headers` sets the
+// ETag from the body and answers 304 to a matching If-None-Match. It sits
+// outside both realm groups, so it has no session and sets no cookie.
+Route::get('/branding', BrandingController::class)
+    ->middleware('cache.headers:public;max_age=300;etag')
+    ->name('branding.show');
+
+// Its own caching: immutable for a year under the current `v`, five
+// minutes otherwise (App\Http\Api\V1\BrandingImageController).
+Route::get('/branding/images/{slot}', BrandingImageController::class)->name('branding.images.show');
 
 // Spec section 28: two realms. Each has its own SPA origin, guard, session
 // cookie and CSRF cookie, set up by the `realm` middleware
@@ -43,6 +56,12 @@ Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(functio
             Route::delete('/two-factor', TwoFactor\DisableController::class)->middleware('throttle:two-factor')->name('two-factor.disable');
         });
         Route::get('/audit-events', Admin\Audit\ListAuditEventsController::class)->name('audit-events.index');
+        Route::get('/branding', Admin\Branding\ShowBrandingController::class)->name('branding.show');
+        Route::put('/branding', Admin\Branding\UpdateBrandingController::class)->name('branding.update');
+        // {slot} is a plain string here, not the enum: the policy must answer
+        // before an unknown slot answers 404.
+        Route::post('/branding/images/{slot}', Admin\Branding\StoreBrandingImageController::class)->name('branding.images.store');
+        Route::delete('/branding/images/{slot}', Admin\Branding\DeleteBrandingImageController::class)->name('branding.images.destroy');
     });
 });
 
