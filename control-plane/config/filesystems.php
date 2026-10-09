@@ -47,6 +47,16 @@ return [
             'report' => false,
         ],
 
+        // Logos and the favicon of the branding record (spec section 28).
+        // Not public: the API serves them (`GET /api/v1/branding/images/{slot}`).
+        // `throw` is on, so a failed write stops the command that asked for it.
+        'branding' => [
+            'driver' => 'local',
+            'root' => storage_path('app/branding'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

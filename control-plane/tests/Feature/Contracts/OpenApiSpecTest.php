@@ -129,3 +129,14 @@ it('documents saving branding', function (): void {
         ->and($operation['requestBody']['content'])->toHaveKey('application/json')
         ->and(array_keys($operation['responses']))->toContain(200, 403, 422);
 });
+
+it('documents the branding image endpoints', function (): void {
+    $paths = generateOpenApiDocument()['paths'];
+    $upload = $paths['/admin/branding/images/{slot}']['post'];
+
+    expect($upload['summary'] ?? null)->toBe('Upload a branding image')
+        ->and($upload['requestBody']['content'])->toHaveKey('multipart/form-data')
+        ->and($paths['/admin/branding/images/{slot}']['delete']['summary'] ?? null)->toBe('Remove a branding image')
+        ->and($paths['/branding/images/{slot}']['get']['summary'] ?? null)->toBe('Branding image')
+        ->and($paths['/branding/images/{slot}']['get']['security'])->toBe([]);
+});

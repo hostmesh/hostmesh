@@ -721,6 +721,112 @@
                 }
             }
         },
+        "/admin/branding/images/{slot}": {
+            "delete": {
+                "operationId": "admin.branding.images.destroy",
+                "description": "Empties a slot: `logo-light`, `logo-dark` or `favicon`. The apps then show their built-in default.\nAnswers `200` for a slot that is already empty. Needs the `branding.update` permission.",
+                "summary": "Remove a branding image",
+                "tags": [
+                    "DeleteBrandingImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "slot",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "admin.branding.images.store",
+                "description": "Replaces the image of a slot: `logo-light`, `logo-dark` or `favicon`. Send the file as `file` in a multipart\nform. A logo is a PNG, JPEG or WebP file of at most 1024 KB and 2000 by 2000 pixels. The favicon is a square\nPNG file of at most 256 KB and 512 by 512 pixels. SVG is not accepted. The type is read from the file itself;\nits name is ignored. Needs the `branding.update` permission.",
+                "summary": "Upload a branding image",
+                "tags": [
+                    "StoreBrandingImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "slot",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreBrandingImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/branding": {
             "get": {
                 "operationId": "branding.show",
@@ -865,6 +971,60 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/branding/images/{slot}": {
+            "get": {
+                "operationId": "branding.images.show",
+                "description": "A logo or the favicon, as a PNG, JPEG or WebP file. Use the URLs of `GET /branding`: with their `v` the image\nis immutable and may be cached for a year. Without `v`, or with the `v` of an earlier version, the current\nimage is sent and may be cached for five minutes. `404` when the slot is empty.",
+                "summary": "Branding image",
+                "tags": [
+                    "BrandingImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "slot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The slot ID",
+                        "schema": {
+                            "$ref": "#/components/schemas/ImageSlot"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Content-Type-Options": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "nosniff"
+                                }
+                            },
+                            "Content-Security-Policy": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "default-src 'none'"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
                     }
                 },
                 "security": []
@@ -1412,7 +1572,9 @@
                     "auth.two_factor.recovery_codes_regenerated",
                     "administrator.role_assigned",
                     "administrator.role_revoked",
-                    "branding.updated"
+                    "branding.updated",
+                    "branding.image_replaced",
+                    "branding.image_removed"
                 ],
                 "title": "AuditAction"
             },
@@ -1728,6 +1890,16 @@
                 ],
                 "title": "HealthStatus"
             },
+            "ImageSlot": {
+                "type": "string",
+                "description": "The images of the branding record (spec section 28). The value is part of the API.\n",
+                "enum": [
+                    "logo-light",
+                    "logo-dark",
+                    "favicon"
+                ],
+                "title": "ImageSlot"
+            },
             "LoginRequest": {
                 "type": "object",
                 "properties": {
@@ -1762,6 +1934,20 @@
                     "code"
                 ],
                 "title": "PasswordAndCodeRequest"
+            },
+            "StoreBrandingImageRequest": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream"
+                    }
+                },
+                "required": [
+                    "file"
+                ],
+                "title": "StoreBrandingImageRequest"
             },
             "UpdateBrandingRequest": {
                 "type": "object",
@@ -1911,6 +2097,25 @@
             }
         },
         "responses": {
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
             "ValidationException": {
                 "description": "Validation error",
                 "content": {

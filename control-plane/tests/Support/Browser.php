@@ -10,6 +10,7 @@ use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
 use Database\Factories\Concerns\TwoFactorTestValues;
 use Illuminate\Cookie\CookieValuePrefix;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use PragmaRX\Google2FA\Google2FA;
 use Symfony\Component\HttpFoundation\Response;
@@ -127,6 +128,17 @@ final class Browser
     }
 
     /**
+     * A multipart form post, as a browser sends a file input.
+     *
+     * @param  array<string, UploadedFile>  $files
+     * @return TestResponse<Response>
+     */
+    public function upload(string $origin, string $uri, array $files): TestResponse
+    {
+        return $this->send('POST', $origin, $uri, [], $files);
+    }
+
+    /**
      * Any method, for tests that walk the route list.
      *
      * @param  array<string, mixed>  $data
@@ -199,14 +211,15 @@ final class Browser
 
     /**
      * @param  array<string, mixed>  $data
+     * @param  array<string, UploadedFile>  $files
      * @return TestResponse<Response>
      */
-    protected function send(string $method, string $origin, string $uri, array $data): TestResponse
+    protected function send(string $method, string $origin, string $uri, array $data, array $files = []): TestResponse
     {
         $server = [
             'HTTP_ORIGIN' => $origin,
             'HTTP_ACCEPT' => 'application/json',
-            'CONTENT_TYPE' => 'application/json',
+            'CONTENT_TYPE' => $files === [] ? 'application/json' : 'multipart/form-data',
         ];
 
         $token = $this->csrfToken ?? $this->cookies[self::CSRF_COOKIES[$origin] ?? ''] ?? false;
@@ -220,7 +233,7 @@ final class Browser
             $this->api.$uri,
             [],
             $this->cookies,
-            [],
+            $files,
             $server,
             $data === [] ? null : json_encode($data, JSON_THROW_ON_ERROR),
         );
