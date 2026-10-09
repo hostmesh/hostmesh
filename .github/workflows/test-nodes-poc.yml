@@ -45,7 +45,7 @@ jobs:
       - name: Install Incus
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends incus qemu-system
+          sudo apt-get install -y --no-install-recommends incus qemu-system dnsmasq-base
           sudo incus admin init --minimal
           sudo chmod 666 /var/lib/incus/unix.socket
           incus version
