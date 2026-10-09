@@ -3,8 +3,9 @@
 #
 # Proof of concept for decision 0015 (issue #16). Runs as root INSIDE a
 # test node and reports whether each thing later slices need works there
-# (spec sections 13 and 14): cgroup limits on a slice, nftables rules by
-# UID, the four services, and filesystem user quotas.
+# (spec sections 13 and 14): cgroup limits on a slice that hold, cgroup
+# delegation, nftables rules by UID, the four services, and filesystem
+# user quotas.
 #
 # It installs packages and changes the node: reset the node afterwards.
 # A FAIL is a result, not an error: the script always runs every probe
@@ -56,18 +57,65 @@ service_probe() {
     fi
 }
 
+SLICE=hostmesh-poc.slice
+SLICE_CGROUP=/sys/fs/cgroup/hostmesh.slice/hostmesh-poc.slice
+
+# The number after a key in one of the slice's cgroup event files.
+slice_event() {
+    awk -v key="$2" '$1 == key { print $2 }' "$SLICE_CGROUP/$1" 2>/dev/null
+}
+
 probe_slice_limits() {
-    # Spec section 13: an account slice carries memory and task limits.
+    # Spec section 13: an account slice carries the memory and task
+    # limits, and every unit of the account runs inside it. The limits
+    # are set on the slice itself, as the agent will set them.
     local out
-    # shellcheck disable=SC2016 # expands inside the unit, not here
-    out=$(systemd-run --quiet --wait --pipe --collect \
-        -p Slice=hostmesh-poc.slice -p MemoryMax=64M -p TasksMax=32 \
-        sh -c 'cg=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup); cat "$cg/memory.max" "$cg/pids.max"' 2>&1 | paste -sd' ')
-    if [ "$out" = "67108864 32" ]; then
+    systemctl start "$SLICE"
+    systemctl set-property --runtime "$SLICE" MemoryMax=64M MemorySwapMax=0 TasksMax=16
+    out=$(cat "$SLICE_CGROUP/memory.max" "$SLICE_CGROUP/pids.max" 2>&1 | paste -sd' ')
+    if [ "$out" = "67108864 16" ]; then
         pass slice-limits
     else
-        fail slice-limits "memory.max and pids.max are '${out}', expected '67108864 32'"
+        fail slice-limits "memory.max and pids.max of the slice are '${out}', expected '67108864 16'"
     fi
+}
+
+probe_tasks_limit_holds() {
+    # A unit in the slice that starts 40 processes must be refused some.
+    # shellcheck disable=SC2016 # expands inside the unit, not here
+    systemd-run --quiet --wait --collect -p Slice="$SLICE" \
+        sh -c 'for i in $(seq 1 40); do sleep 2 & done; wait' >/dev/null 2>&1
+    if [ "$(slice_event pids.events max)" -gt 0 ] 2>/dev/null; then
+        pass tasks-limit-holds
+    else
+        fail tasks-limit-holds "40 processes ran under TasksMax=16: pids.events max is '$(slice_event pids.events max)'"
+    fi
+}
+
+probe_memory_limit_holds() {
+    # A unit in the slice that holds 200 MB must be killed: `tail` keeps
+    # a line without an end in memory.
+    systemd-run --quiet --wait --collect -p Slice="$SLICE" \
+        sh -c 'head -c 200M /dev/zero | tail' >/dev/null 2>&1
+    if [ "$(slice_event memory.events oom_kill)" -gt 0 ] 2>/dev/null; then
+        pass memory-limit-holds
+    else
+        fail memory-limit-holds "200 MB were held under MemoryMax=64M: memory.events oom_kill is '$(slice_event memory.events oom_kill)'"
+    fi
+}
+
+probe_delegation() {
+    # cgroups v2 delegation: a unit with Delegate=yes owns its subtree,
+    # sees the memory and pids controllers there and can make a cgroup
+    # of its own. PHP-FPM masters and user sessions rely on it.
+    local out
+    # shellcheck disable=SC2016 # expands inside the unit, not here
+    out=$(systemd-run --quiet --wait --pipe --collect -p Slice="$SLICE" -p Delegate=yes \
+        sh -c 'cg=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup); cat "$cg/cgroup.controllers"; mkdir "$cg/hostmesh-poc-sub" && echo created' 2>&1 | paste -sd' ')
+    case "$out" in
+        *memory*pids*created | *pids*memory*created) pass delegation ;;
+        *) fail delegation "a delegated unit reported '${out}'" ;;
+    esac
 }
 
 probe_nftables() {
@@ -165,6 +213,9 @@ probe_quota() {
 apt-get update -qq >/dev/null 2>&1 || fail apt "apt-get update failed: the node has no network or no mirror"
 
 probe_slice_limits
+probe_tasks_limit_holds
+probe_memory_limit_holds
+probe_delegation
 probe_nftables
 service_probe nginx nginx.service nginx
 service_probe php-fpm php8.4-fpm.service php8.4-fpm

@@ -14,6 +14,8 @@ Evidence for [decision 0015](../../../docs/decisions/0015-debian-test-harness.md
 | `./nodes.sh destroy` | Delete both nodes |
 | `incus exec hostmesh-node-1 -- bash -s < probe.sh` | See "The probe" below |
 
+`destroy` keeps the downloaded image (`incus image list` shows it as `hostmesh-poc-<type>-<image>`). It is not refreshed: `incus image delete <alias>` makes the next `up` download the current build.
+
 `verify.sh` leaves a marker on each node, so running it twice without `nodes.sh up` in between fails its first check. That is deliberate: it shows that the reset works.
 
 ## Host setup (Fedora 44)
@@ -32,4 +34,4 @@ Membership of `incus-admin` is equivalent to root on the host. Log out and in fo
 
 ## The probe
 
-`probe.sh` runs inside a node and prints one `PASS` or `FAIL` line for each thing later slices need there: cgroup limits on a slice, nftables, Nginx, PHP-FPM, MariaDB, PowerDNS and filesystem user quotas. It installs packages and changes the node, so reset afterwards with `./nodes.sh up`. Its results for containers and virtual machines are in the decision record.
+`probe.sh` runs inside a node and prints one `PASS` or `FAIL` line for each thing later slices need there: cgroup limits on a slice and that they hold, cgroup delegation, nftables, Nginx, PHP-FPM, MariaDB, PowerDNS and filesystem user quotas. It installs packages and changes the node, so reset afterwards with `./nodes.sh up`. Its results for containers and virtual machines are in the decision record.

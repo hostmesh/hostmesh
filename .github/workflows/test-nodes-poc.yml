@@ -5,6 +5,13 @@ name: Test nodes (proof of concept)
 # on a hosted runner. Manual only. Issue #17 replaces this workflow.
 on:
   workflow_dispatch:
+  # Temporary: GitHub only dispatches a workflow by hand once it is on the
+  # default branch. Removed again in the next commit.
+  push:
+    branches:
+      - 16-debian-test-harness-spike
+    paths:
+      - ".github/workflows/test-nodes-poc.yml"
 
 permissions:
   contents: read
@@ -20,6 +27,8 @@ jobs:
         type: [container, vm]
     env:
       HOSTMESH_NODE_TYPE: ${{ matrix.type }}
+      # Containers need no QEMU, and `qemu-system` is a large download.
+      PACKAGES: ${{ matrix.type == 'vm' && 'incus qemu-system' || 'incus' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
       - name: Describe the runner
@@ -37,7 +46,8 @@ jobs:
       - name: Install Incus
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y incus qemu-system
+          # shellcheck disable=SC2086 # a list of package names
+          sudo apt-get install -y $PACKAGES
           sudo incus admin init --minimal
           sudo chmod 666 /var/lib/incus/unix.socket
           incus version

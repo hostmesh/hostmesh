@@ -27,6 +27,8 @@ NODES=(hostmesh-node-1 hostmesh-node-2)
 TYPE=${HOSTMESH_NODE_TYPE:-container}
 IMAGE=${HOSTMESH_NODE_IMAGE:-images:debian/13}
 SNAPSHOT=clean
+# The local copy of the image: one per node type and image name.
+LOCAL_IMAGE="hostmesh-poc-$TYPE-$(printf %s "$IMAGE" | tr -c 'A-Za-z0-9' '-')"
 MEMORY=2GiB
 CPUS=2
 # Seconds to wait for a node to answer and for systemd to finish booting.
@@ -58,6 +60,10 @@ type_of() {
     esac
 }
 
+has_snapshot() {
+    incus snapshot show "$1" "$SNAPSHOT" >/dev/null 2>&1
+}
+
 state_of() {
     incus list "^$1\$" -f csv -c s
 }
@@ -84,18 +90,21 @@ launch_flags() {
 
 fetch_image() {
     # Copies the image into the local store, so that `create` measures
-    # the nodes and not the download. A no-op when it is already there.
+    # the nodes and not the download. The copy is kept under a name of
+    # its own and is not refreshed: delete it to get a newer build.
+    if incus image info "$LOCAL_IMAGE" >/dev/null 2>&1; then
+        return 0
+    fi
     # shellcheck disable=SC2046
-    incus image copy --quiet "$IMAGE" local: --alias "hostmesh-poc-$TYPE" $(launch_flags) --auto-update=false 2>/dev/null \
-        || incus image info "hostmesh-poc-$TYPE" >/dev/null
+    incus image copy --quiet "$IMAGE" local: --alias "$LOCAL_IMAGE" $(launch_flags) --auto-update=false
 }
 
 create() {
     local node
     for node in "$@"; do
         # shellcheck disable=SC2046
-        incus launch --quiet "hostmesh-poc-$TYPE" "$node" $(launch_flags) \
-            -c limits.memory="$MEMORY" -c limits.cpu="$CPUS"
+        incus launch --quiet "$LOCAL_IMAGE" "$node" $(launch_flags) \
+            -c limits.memory="$MEMORY" -c limits.cpu="$CPUS" -c user.hostmesh-image="$IMAGE"
     done
     for node in "$@"; do
         wait_until_booted "$node"
@@ -141,6 +150,14 @@ up() {
             missing+=("$node")
         elif [ "$(type_of "$node")" != "$TYPE" ]; then
             die "$node exists as a $(type_of "$node"), not a $TYPE. Run 'nodes.sh destroy' first."
+        elif [ "$(incus config get "$node" user.hostmesh-image)" != "$IMAGE" ]; then
+            die "$node was created from '$(incus config get "$node" user.hostmesh-image)', not '$IMAGE'. Run 'nodes.sh destroy' first."
+        elif ! has_snapshot "$node"; then
+            # An earlier run was interrupted before the snapshot: there is
+            # no clean state to go back to, so the node is made again.
+            printf '%s has no %s snapshot: recreating it\n' "$node" "$SNAPSHOT"
+            incus delete --force "$node"
+            missing+=("$node")
         else
             present+=("$node")
         fi
