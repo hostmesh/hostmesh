@@ -8,6 +8,7 @@ namespace App\Http\Api\V1\Admin\Branding;
 
 use App\Application\Commands\StoreBrandingImage;
 use App\Domain\Identity\Administrator;
+use Dedoc\Scramble\Attributes\Response as ApiResponse;
 
 final class StoreBrandingImageController
 {
@@ -19,6 +20,7 @@ final class StoreBrandingImageController
      * PNG file of at most 256 KB and 512 by 512 pixels. SVG is not accepted. The type is read from the file itself;
      * its name is ignored. Needs the `branding.update` permission.
      */
+    #[ApiResponse(404, 'There is no such slot.', type: 'array{message: string}')]
     public function __invoke(StoreBrandingImageRequest $request, StoreBrandingImage $store): BrandingResource
     {
         $administrator = $request->user('admin');

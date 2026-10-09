@@ -140,3 +140,19 @@ it('documents the branding image endpoints', function (): void {
         ->and($paths['/branding/images/{slot}']['get']['summary'] ?? null)->toBe('Branding image')
         ->and($paths['/branding/images/{slot}']['get']['security'])->toBe([]);
 });
+
+it('documents a branding image as the bytes of an image, not as JSON', function (): void {
+    $paths = generateOpenApiDocument()['paths'];
+    $content = $paths['/branding/images/{slot}']['get']['responses']['200']['content'];
+
+    expect(array_keys($content))->toBe(['image/png', 'image/jpeg', 'image/webp']);
+
+    foreach ($content as $mediaType) {
+        expect($mediaType['schema'])->toBe(['type' => 'string', 'format' => 'binary']);
+    }
+
+    // The upload answers 404 for an unknown slot, with the usual error body.
+    $notFound = $paths['/admin/branding/images/{slot}']['post']['responses']['404']['content']['application/json']['schema'];
+
+    expect(array_keys($notFound['properties']))->toBe(['message']);
+});

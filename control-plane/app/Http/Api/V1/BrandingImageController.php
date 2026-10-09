@@ -8,6 +8,7 @@ namespace App\Http\Api\V1;
 
 use App\Application\Queries\GetBrandingImage;
 use App\Domain\Branding\ImageSlot;
+use Dedoc\Scramble\Attributes\Response as ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -22,6 +23,9 @@ final class BrandingImageController
      *
      * @unauthenticated
      */
+    #[ApiResponse(200, 'The image.', mediaType: 'image/png', format: 'binary')]
+    #[ApiResponse(200, 'The image.', mediaType: 'image/jpeg', format: 'binary')]
+    #[ApiResponse(200, 'The image.', mediaType: 'image/webp', format: 'binary')]
     public function __invoke(Request $request, ImageSlot $slot, GetBrandingImage $query): Response
     {
         $file = $query->handle($slot);

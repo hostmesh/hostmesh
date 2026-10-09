@@ -1123,6 +1123,17 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+            /** @description There is no such slot. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
             422: components["responses"]["ValidationException"];
         };
     };
@@ -1209,6 +1220,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description The image. */
             200: {
                 headers: {
                     "X-Content-Type-Options"?: "nosniff";
@@ -1216,7 +1228,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string | null;
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
                 };
             };
             404: components["responses"]["ModelNotFoundException"];

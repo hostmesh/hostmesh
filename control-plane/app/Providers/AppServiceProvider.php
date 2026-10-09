@@ -26,7 +26,10 @@ use App\Support\Realm;
 use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\Operation;
 use Dedoc\Scramble\Support\Generator\Path;
+use Dedoc\Scramble\Support\Generator\Response as OpenApiResponse;
+use Dedoc\Scramble\Support\Generator\Schema;
 use Dedoc\Scramble\Support\Generator\Server;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Config\Repository;
@@ -111,6 +114,25 @@ class AppServiceProvider extends ServiceProvider
             $document->servers = [new Server('/'.$context->config->apiPath()->serverPath())];
 
             usort($document->paths, fn (Path $a, Path $b): int => $a->path <=> $b->path);
+        });
+
+        // A response documented as a file (`format: binary`, set by a
+        // Response attribute on the controller) is not JSON as well: Scramble
+        // infers a JSON body from the return type and keeps it next to the file.
+        Scramble::configure()->withOperationTransformers(function (Operation $operation): void {
+            foreach ($operation->responses ?? [] as $response) {
+                if (! $response instanceof OpenApiResponse) {
+                    continue;
+                }
+
+                foreach ($response->content as $schema) {
+                    if ($schema instanceof Schema && $schema->type->format === 'binary') {
+                        unset($response->content['application/json']);
+
+                        break;
+                    }
+                }
+            }
         });
 
         // Login attempts (issue #24). Keyed by what the client sent, never
