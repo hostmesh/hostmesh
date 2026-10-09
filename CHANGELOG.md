@@ -146,6 +146,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Login responses of both API groups now carry `two_factor_enabled` on the account and `meta.second_factor` (`challenge`, `enrollment` or `none`).
 - Decision record 0013 (audit logging) amended: `request_id` and `user_agent` columns, a nullable `resource_id`, and how login and logout fail closed.
 - Laravel's database-queue table `jobs` is no longer created: queues run on Redis. The migration that creates `job_history` drops it from an existing database.
+- The control plane now names the PHP extension `fileinfo` as a requirement (README and CI): branding uploads read the type of a file from its bytes.
 
 ---
 
