@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Test nodes (proof of concept)
+
+# Evidence for decision 0015 (issue #16): how long two Debian 13 nodes take
+# on a hosted runner. Manual only. Issue #17 replaces this workflow.
+on:
+  workflow_dispatch:
+  # Temporary: GitHub only dispatches a workflow by hand once it is on the
+  # default branch. Removed before the pull request is ready for review.
+  push:
+    branches:
+      - 16-debian-test-harness-spike
+    paths:
+      - ".github/workflows/test-nodes-poc.yml"
+      - "infrastructure/testing/poc/**"
+
+permissions:
+  contents: read
+
+jobs:
+  nodes:
+    name: Two ${{ matrix.type }} nodes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [container, vm]
+    env:
+      HOSTMESH_NODE_TYPE: ${{ matrix.type }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Describe the runner
+        run: |
+          nproc
+          free -m
+          df -h /
+          ls -l /dev/kvm || true
+          grep -cE 'vmx|svm' /proc/cpuinfo || true
+      - name: Let the runner user open /dev/kvm
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install Incus
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends incus qemu-system
+          sudo incus admin init --minimal
+          sudo chmod 666 /var/lib/incus/unix.socket
+          incus version
+          incus storage list -f csv
+      # Docker on the runner sets the FORWARD policy to DROP, which cuts
+      # the Incus bridge off from the network.
+      - name: Let the Incus bridge through Docker's firewall
+        run: |
+          sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
+          sudo iptables -I DOCKER-USER -o incusbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      - name: Create two nodes and verify them
+        run: infrastructure/testing/poc/nodes.sh up
+      - name: Reset them and verify again
+        run: infrastructure/testing/poc/nodes.sh up
+      - name: Probe one node
+        run: incus exec hostmesh-node-1 -- bash -s < infrastructure/testing/poc/probe.sh
