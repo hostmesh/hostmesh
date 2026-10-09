@@ -7,6 +7,9 @@ declare(strict_types=1);
 namespace App\Application\Queries;
 
 use App\Domain\Branding\BrandingRecord;
+use App\Domain\Branding\ColorMode;
+use App\Domain\Branding\ContrastCheck;
+use App\Domain\Branding\ContrastWarning;
 
 /**
  * Branding as the application sees it (spec section 28): what the apps,
@@ -56,5 +59,19 @@ final readonly class Branding
             $record->terms_url,
             $record->privacy_url,
         );
+    }
+
+    /**
+     * The colors that fail WCAG AA against the default surfaces (spec
+     * sections 28 and 37). They warn: nothing refuses a save because of them.
+     *
+     * @return list<ContrastWarning>
+     */
+    public function contrastWarnings(): array
+    {
+        return [
+            ...ContrastCheck::warnings(ColorMode::Light, $this->primaryLight, $this->primaryForegroundLight),
+            ...ContrastCheck::warnings(ColorMode::Dark, $this->primaryDark, $this->primaryForegroundDark),
+        ];
     }
 }

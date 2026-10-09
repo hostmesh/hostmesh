@@ -24,9 +24,10 @@ trait ReportsAbilities
      * One entry of `abilities`: may the current user do this with the record?
      *
      * @param  string  $ability  a method of the record's policy, for example `view` or `manageTwoFactor`
+     * @param  object|null  $record  the record the policy is registered for, when the resource wraps a read model instead
      */
-    protected function allows(Request $request, string $ability): bool
+    protected function allows(Request $request, string $ability, ?object $record = null): bool
     {
-        return Gate::forUser($request->user())->allows($ability, $this->resource);
+        return Gate::forUser($request->user())->allows($ability, $record ?? $this->resource);
     }
 }

@@ -207,6 +207,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show branding
+         * @description The branding of this installation, with the colors that fail WCAG AA and what the current administrator may do.
+         *     Needs the `branding.view` permission.
+         */
+        get: operations["admin.branding.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/branding": {
         parameters: {
             query?: never;
@@ -475,6 +496,41 @@ export interface components {
             created_at: string;
             abilities: {
                 view: boolean;
+            };
+        };
+        /** BrandingResource */
+        BrandingResource: {
+            product_name: string;
+            logos: {
+                light: string | null;
+                dark: string | null;
+            };
+            favicon: string | null;
+            colors: {
+                light: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+                dark: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+            };
+            links: {
+                support: string | null;
+                terms: string | null;
+                privacy: string | null;
+            };
+            warnings: {
+                mode: string;
+                color: string;
+                against: string;
+                ratio: number;
+                required: number;
+            }[];
+            abilities: {
+                view: boolean;
+                update: boolean;
             };
         };
         /** ChallengeRequest */
@@ -873,6 +929,30 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["AdministratorResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "admin.branding.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `BrandingResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BrandingResource"];
                     };
                 };
             };

@@ -638,6 +638,42 @@
                 }
             }
         },
+        "/admin/branding": {
+            "get": {
+                "operationId": "admin.branding.show",
+                "description": "The branding of this installation, with the colors that fail WCAG AA and what the current administrator may do.\nNeeds the `branding.view` permission.",
+                "summary": "Show branding",
+                "tags": [
+                    "ShowBranding"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/branding": {
             "get": {
                 "operationId": "branding.show",
@@ -1440,6 +1476,175 @@
                     "abilities"
                 ],
                 "title": "AuditEventResource"
+            },
+            "BrandingResource": {
+                "type": "object",
+                "properties": {
+                    "product_name": {
+                        "type": "string"
+                    },
+                    "logos": {
+                        "type": "object",
+                        "properties": {
+                            "light": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "dark": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "light",
+                            "dark"
+                        ]
+                    },
+                    "favicon": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "colors": {
+                        "type": "object",
+                        "properties": {
+                            "light": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            },
+                            "dark": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "light",
+                            "dark"
+                        ]
+                    },
+                    "links": {
+                        "type": "object",
+                        "properties": {
+                            "support": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "terms": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "privacy": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "support",
+                            "terms",
+                            "privacy"
+                        ]
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "mode": {
+                                    "type": "string"
+                                },
+                                "color": {
+                                    "type": "string"
+                                },
+                                "against": {
+                                    "type": "string"
+                                },
+                                "ratio": {
+                                    "type": "number"
+                                },
+                                "required": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "mode",
+                                "color",
+                                "against",
+                                "ratio",
+                                "required"
+                            ]
+                        }
+                    },
+                    "abilities": {
+                        "type": "object",
+                        "properties": {
+                            "view": {
+                                "type": "boolean"
+                            },
+                            "update": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "view",
+                            "update"
+                        ]
+                    }
+                },
+                "required": [
+                    "product_name",
+                    "logos",
+                    "favicon",
+                    "colors",
+                    "links",
+                    "warnings",
+                    "abilities"
+                ],
+                "title": "BrandingResource"
             },
             "ChallengeRequest": {
                 "type": "object",

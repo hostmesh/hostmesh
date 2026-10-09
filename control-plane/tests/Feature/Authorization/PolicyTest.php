@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Authorization\Role;
+use App\Domain\Branding\BrandingRecord;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -151,5 +152,33 @@ it('lets nobody change or delete an audit event', function (): void {
 
     foreach (['create', 'update', 'delete', 'restore', 'forceDelete'] as $ability) {
         expect(Gate::forUser($owner)->allows($ability, new AuditEventRecord))->toBeFalse($ability);
+    }
+});
+
+it('decides which administrator may view and update branding', function (?Role $role, bool $view, bool $update): void {
+    $administrator = administratorWith($role);
+
+    expect(Gate::forUser($administrator)->allows('view', new BrandingRecord))->toBe($view)
+        ->and(Gate::forUser($administrator)->allows('update', new BrandingRecord))->toBe($update);
+})->with([
+    'owner' => [Role::Owner, true, true],
+    'read-only' => [Role::ReadOnly, true, false],
+    'no role' => [null, false, false],
+]);
+
+it('lets no customer and no guest view or update branding through the admin policy', function (): void {
+    $user = User::factory()->create();
+
+    foreach (['view', 'update'] as $ability) {
+        expect(Gate::forUser($user)->allows($ability, new BrandingRecord))->toBeFalse($ability)
+            ->and(Gate::forUser(null)->allows($ability, new BrandingRecord))->toBeFalse($ability);
+    }
+});
+
+it('lets nobody create or delete the branding record', function (): void {
+    $owner = administratorWith(Role::Owner);
+
+    foreach (['create', 'delete', 'restore', 'forceDelete'] as $ability) {
+        expect(Gate::forUser($owner)->allows($ability, new BrandingRecord))->toBeFalse($ability);
     }
 });

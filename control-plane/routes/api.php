@@ -51,6 +51,7 @@ Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(functio
             Route::delete('/two-factor', TwoFactor\DisableController::class)->middleware('throttle:two-factor')->name('two-factor.disable');
         });
         Route::get('/audit-events', Admin\Audit\ListAuditEventsController::class)->name('audit-events.index');
+        Route::get('/branding', Admin\Branding\ShowBrandingController::class)->name('branding.show');
     });
 });
 
