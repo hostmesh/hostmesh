@@ -120,6 +120,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Proof of concept for the Debian 13 test nodes in `infrastructure/testing/poc/`: `nodes.sh up` creates two nodes on Incus or resets them to a clean snapshot, then checks systemd, cgroups v2 and a transient unit with a slice and a private `/tmp`. Evidence for decision 0015; the harness itself follows in a later change.
 - Decision record 0015 (proposed): how the two disposable Debian 13 test nodes run locally and in CI, with the options compared, the measured times to create and reset them, and what runs on every pull request versus nightly.
 - Integration tests for the agent's test nodes (`agent/tests/integration/test_nodes.py`, pytest marker `integration`): both nodes boot with systemd, report cgroups v2, run Debian 13 and carry the `dns` capability, and a reset removes what a test left behind. `make -C agent test-integration` runs them; `make -C agent check` does not.
+- `hostmesh_testing.IncusCli`, the test harness's only way to start a process: it runs `incus` with an argument list, always with a closed standard input, and reports a missing `incus` or a timeout as a `HarnessError`.
 
 ---
 
