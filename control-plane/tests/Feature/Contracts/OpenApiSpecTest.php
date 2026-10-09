@@ -111,3 +111,13 @@ it('documents the health endpoint and its response', function (): void {
             'enum' => ['ok'],
         ]);
 });
+
+it('documents the public branding endpoint and its response', function (): void {
+    $operation = generateOpenApiDocument()['paths']['/branding']['get'];
+    $data = $operation['responses']['200']['content']['application/json']['schema']['properties']['data'];
+
+    expect($operation['summary'] ?? null)->toBe('Branding')
+        ->and($operation['security'])->toBe([])
+        ->and(array_keys($data['properties']))->toBe(['product_name', 'logos', 'favicon', 'colors', 'links'])
+        ->and(array_keys($data['properties']['colors']['properties']['dark']['properties']))->toBe(['primary', 'primary_foreground']);
+});

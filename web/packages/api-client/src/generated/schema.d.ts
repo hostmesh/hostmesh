@@ -207,6 +207,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Branding
+         * @description The product name, logos, favicon, brand colors and links of this installation. Public and cacheable for five
+         *     minutes: send `If-None-Match` with the `ETag` of an earlier answer to get `304`. A logo, the favicon, a color
+         *     or a link that is null is not configured: keep your default.
+         */
+        get: operations["branding.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customer/auth/csrf-cookie": {
         parameters: {
             query?: never;
@@ -856,6 +878,50 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "branding.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The branding, or the defaults when nothing is configured. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            product_name: string;
+                            logos: {
+                                light: string | null;
+                                dark: string | null;
+                            };
+                            favicon: string | null;
+                            colors: {
+                                light: {
+                                    primary: string | null;
+                                    primary_foreground: string | null;
+                                };
+                                dark: {
+                                    primary: string | null;
+                                    primary_foreground: string | null;
+                                };
+                            };
+                            links: {
+                                support: string | null;
+                                terms: string | null;
+                                privacy: string | null;
+                            };
+                        };
+                    };
+                };
+            };
         };
     };
     "customer.auth.csrf-cookie": {

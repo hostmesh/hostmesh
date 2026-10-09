@@ -113,6 +113,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `worker` service in the development stack: it runs `php artisan queue:listen redis`, so queued jobs run during development. Run `make -C infrastructure/development up` once to start it. The smoke test checks that its `queue:listen` process is running.
 - "Jobs" section in `control-plane/README.md`, with the failure classes and the rules for a new one-shot job.
 - Brand colors in the control plane's domain layer: `#rrggbb` parsing and the WCAG contrast check of a `primary` and `primary_foreground` pair against the default light and dark surfaces (4.5:1).
+- Public `GET /api/v1/branding`: product name, light and dark logos, favicon, brand colors (`primary` and `primary_foreground` for light and dark) and the support, terms and privacy links, with defaults when nothing is configured. It carries `Cache-Control: public, max-age=300` and an `ETag`, and answers `304` to a matching `If-None-Match`. Stored in the new table `branding`.
 
 ---
 

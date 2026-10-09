@@ -8,11 +8,19 @@ declare(strict_types=1);
 
 use App\Http\Api\V1\Admin;
 use App\Http\Api\V1\Auth\TwoFactor;
+use App\Http\Api\V1\BrandingController;
 use App\Http\Api\V1\Customer;
 use App\Http\Api\V1\HealthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
+
+// Spec section 28: public and cacheable. Laravel's `cache.headers` sets the
+// ETag from the body and answers 304 to a matching If-None-Match. It sits
+// outside both realm groups, so it has no session and sets no cookie.
+Route::get('/branding', BrandingController::class)
+    ->middleware('cache.headers:public;max_age=300;etag')
+    ->name('branding.show');
 
 // Spec section 28: two realms. Each has its own SPA origin, guard, session
 // cookie and CSRF cookie, set up by the `realm` middleware
