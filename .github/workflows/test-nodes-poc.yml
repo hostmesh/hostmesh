@@ -5,13 +5,6 @@ name: Test nodes (proof of concept)
 # on a hosted runner. Manual only. Issue #17 replaces this workflow.
 on:
   workflow_dispatch:
-  # Temporary: GitHub only dispatches a workflow by hand once it is on the
-  # default branch. Removed again in the next commit.
-  push:
-    branches:
-      - 16-debian-test-harness-spike
-    paths:
-      - ".github/workflows/test-nodes-poc.yml"
 
 permissions:
   contents: read

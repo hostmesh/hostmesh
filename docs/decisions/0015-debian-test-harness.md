@@ -10,7 +10,7 @@ The agent's integration tests run "against a real Debian 13 VM or system contain
 
 From sections 13, 14 and 37, a test node must offer:
 
-- systemd as PID 1 in the state `running`, on cgroups v2, with memory and task limits that hold on a slice;
+- systemd as PID 1 in the state `running`, on cgroups v2, with memory and task limits that hold on a slice, and cgroup delegation to a unit;
 - nftables rules that match by UID (outbound TCP port 25 is blocked for account UIDs);
 - Nginx, PHP-FPM, MariaDB and PowerDNS as ordinary Debian services;
 - filesystem user quotas, enforced hard;
@@ -32,11 +32,11 @@ Checked on 2026-10-09:
 
 Three options were run: Incus system containers and Incus virtual machines on the owner's machine and on a hosted runner, and Lima on the owner's machine. The other five were compared from their documentation and are marked "not tested".
 
-| Option | Debian 13 image | Kernel | systemd `running`, cgroups v2, slice limits | nftables by UID | Nginx, PHP-FPM, MariaDB, PowerDNS | User quotas | Reset | Hosted runner | macOS | License |
+| Option | Debian 13 image | Kernel | systemd `running`, cgroups v2, slice limits, delegation | nftables by UID | Nginx, PHP-FPM, MariaDB, PowerDNS | User quotas | Reset | Hosted runner | macOS | License |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Incus system container | daily, amd64 and arm64 | host's | yes | yes | yes | **no**: no loop devices | snapshot restore | install; no KVM needed | client only; server inside a Linux VM, not tested | Apache-2.0 |
 | Incus virtual machine | daily, amd64 and arm64 | own | yes | yes | yes | yes | snapshot restore | install; needs KVM, which is there | as above, plus nested virtualization, not tested | Apache-2.0 |
-| Lima | Debian's cloud image, amd64 and arm64 | own | yes | yes | yes | yes | delete and start; snapshots experimental and failed here | tarball and QEMU, not tested | native | Apache-2.0 |
+| Lima | Debian's cloud image, amd64 and arm64 | own | yes; enforcement and delegation not run | yes | yes | yes | delete and start; snapshots experimental and failed here | tarball and QEMU, not tested | native | Apache-2.0 |
 | Vagrant with libvirt | official box, amd64 only | own | not tested | not tested | not tested | not tested | `vagrant snapshot`, not tested | no Ubuntu 24.04 package | no | BUSL (2.4), MIT (2.3, 2023) |
 | Vagrant with VirtualBox | community boxes only | own | not tested | not tested | not tested | not tested | `vagrant snapshot`, not tested | not tested | yes | BUSL; VirtualBox GPL |
 | libvirt with Debian's cloud image | Debian's cloud image | own | not tested | not tested | not tested | not tested | qcow2 overlay, our own scripts | install; needs KVM | no | LGPL/GPL |
@@ -45,7 +45,7 @@ Three options were run: Incus system containers and Incus virtual machines on th
 
 Rejected:
 
-- **Lima.** It did everything a virtual machine must do (the probe below passed 7 of 7) and it is the only option that is native on macOS. But its snapshot command is experimental, and after `limactl snapshot apply` neither node answered within 30 seconds. The reset that works is delete and start: 25 seconds for two nodes, against 4 for Incus containers and 18 for Incus virtual machines. It has no containers, so it offers no fast tier. It stays the candidate for a macOS path.
+- **Lima.** It did everything a virtual machine must do (it passed the seven probes that existed when it was run) and it is the only option that is native on macOS. But its snapshot command is experimental, and after `limactl snapshot apply` neither node answered within 30 seconds. The reset that works is delete and start: 25 seconds for two nodes, against 4 for Incus containers and 18 for Incus virtual machines. It has no containers, so it offers no fast tier. It stays the candidate for a macOS path.
 - **Vagrant, with either provider.** The current version is not open source, the open-source line in the distributions is from 2023, Ubuntu 24.04 does not package it, and the official Debian 13 box covers one provider on one architecture. A new open-source project should not build on it.
 - **libvirt with the cloud image.** Everything is installed on the owner's machine already and it would work. But creating, addressing, waiting for and resetting a node would be our own scripts, which is what Incus provides in four commands. No macOS path.
 - **Docker or Podman running systemd.** The only option preinstalled on the runner. systemd in an application container needs special flags, there is no Debian image with systemd, and quotas need a privileged container, which stops being a boundary for the isolation tests. It gains nothing over an Incus container, which is built for this.
@@ -57,13 +57,15 @@ Two nodes, 2 GiB and 2 vCPUs each, Debian 13 image build 20261007. Seconds, from
 
 | | Incus container, here | Incus VM, here | Lima, here | Incus container, runner | Incus VM, runner |
 |---|---|---|---|---|---|
-| Image download (cold) | 5 | 12 | included below | 2 | 4 |
-| Create two nodes | 7 | 29 | 36 cold, 25 warm | 27 | 90 |
-| Reset two nodes | 4 (median of 3) | 18 (median of 5) | 25 (delete and start) | 4 (one run) | 44 (one run) |
+| Image download (cold) | 5 | 12 | included below | 5 | 11 |
+| Create two nodes | 7 | 29 | 36 cold, 25 warm | 25 | 99 |
+| Reset two nodes | 4 (median of 3) | 18 (median of 5) | 25 (delete and start) | 7 (one run) | 48 (one run) |
 | Verify (14 checks) | 1 | 1 | not run as a script | 1 | 2 |
-| Whole CI job | | | | 1 min 37 s | 3 min 41 s |
+| Whole CI job | | | | 1 min 33 s | 4 min 10 s |
 
 "Create" is launch, boot, stop, snapshot, start and boot again. "Reset" is stop, restore the snapshot, start and boot. The public-repository runner, with twice the vCPUs and RAM, was not measured.
+
+The runner columns are run 37943954220 of the committed workflow (commit ea7be30e), which installs `incus` for containers and `incus qemu-system` for virtual machines. They are one run each. Three earlier runs used other install lines: two failed in the install step, and in the third the container job, which then installed `qemu-system` too, spent ten minutes downloading it from a slow mirror and was cancelled. The earlier runs that did finish measured 27 and 90 seconds to create and 4 and 44 seconds to reset.
 
 `verify.sh` passed 14 of 14 checks for both Incus node types, here and on the runner: each node is clean, PID 1 is systemd, the system state is `running` (not `degraded`), it is Debian 13 on cgroups v2, and a transient unit with `Slice=hostmesh-poc.slice` and `PrivateTmp=yes` runs in `/hostmesh.slice/hostmesh-poc.slice/` and cannot see a file in the node's `/tmp`. The same scripts ran unchanged on Incus 6.0.0 and 6.23.
 
@@ -71,7 +73,10 @@ Two nodes, 2 GiB and 2 vCPUs each, Debian 13 image build 20261007. Seconds, from
 
 | Probe | Incus container | Incus VM | Lima |
 |---|---|---|---|
-| Slice limits: `MemoryMax=64M` and `TasksMax=32` read back from the unit's cgroup | PASS | PASS | PASS |
+| Slice limits: `MemoryMax=64M` and `TasksMax=16` set on the slice and read back from its cgroup | PASS | PASS | PASS, in an earlier form: set on a unit |
+| The task limit holds: a unit in the slice that starts 40 processes is refused some | PASS | PASS | not run |
+| The memory limit holds: a unit in the slice that holds 200 MB is killed | PASS | PASS | not run |
+| Delegation: a unit with `Delegate=yes` sees the memory and pids controllers and creates a cgroup of its own | PASS | PASS | not run |
 | nftables: reject TCP 25 for one UID, and the rule's counter moves | PASS | PASS | PASS |
 | Nginx active | PASS | PASS | PASS |
 | PHP-FPM 8.4 active | PASS | PASS | PASS |
@@ -79,28 +84,31 @@ Two nodes, 2 GiB and 2 vCPUs each, Debian 13 image build 20261007. Seconds, from
 | PowerDNS with a SQLite backend answers a zone's SOA | PASS | PASS | PASS |
 | User quota: a 1 MiB hard limit holds on ext4 | **FAIL** | PASS | PASS |
 
-The container fails the quota probe with "failed to setup loop device": it has no `/dev/loop*`. The Incus documentation lists no option for loop devices or user quotas in a container. Passing a block device in from the host with mount interception was not tried. The results were the same here and on the runner.
+The container fails the quota probe with "failed to setup loop device": it has no `/dev/loop*`. The Incus documentation lists no option for loop devices or user quotas in a container. Passing a block device in from the host with mount interception was not tried. The Incus results were the same here and on the runner: 9 of 10 in a container, 10 of 10 in a virtual machine. Lima was run before the three probes marked "not run" existed.
+
+A container uses the kernel of its host: 7.2 on the owner's machine and Ubuntu's on the runner, neither of them Debian 13's. What passes in the container tier is therefore true of those kernels. Only the virtual machine tier runs Debian's own kernel.
 
 ## Decision
 
 - **Incus runs the test nodes**, as two instances named `hostmesh-node-1` and `hostmesh-node-2` from the image `images:debian/13`, each with 2 GiB of RAM and 2 vCPUs.
-- **System containers are the default.** They run everything except filesystem user quotas, and two of them are created in under half a minute and reset in 4 seconds even on the small runner.
+- **System containers are the default.** They run everything except filesystem user quotas, and two of them are created in under half a minute and reset in 4 to 7 seconds even on the small runner.
 - **Virtual machines run the isolation suite** (spec section 37) and any test that needs a quota. They are the same command with another instance type. In a virtual machine the quota filesystem is an ext4 filesystem created with the quota feature, as in the probe. How a production node provides that filesystem is not decided here.
 - **Reset is a snapshot restore.** Each node is snapshotted once, stopped, as `clean`, after its first boot. A reset stops the node, restores `clean` and starts it.
 - **Every pull request** that touches the agent or the harness runs the integration tests on two containers. Budget: nodes ready within 60 seconds, a reset within 10 seconds.
 - **Nightly and before a release**, the full suite runs on two virtual machines, including the isolation suite. Budget: nodes ready within 150 seconds, a reset within 60 seconds.
-- **Virtual machines on pull requests are possible, not decided.** The measured job takes under four minutes on the smallest runner. Whether the isolation suite moves to pull requests is decided when its length is known and the repository is public.
-- **Supported Incus versions are 6.0 and newer.** The workflow names `ubuntu-24.04`, not `ubuntu-latest`.
+- **Virtual machines on pull requests are possible, not decided.** The measured job takes about four minutes on the smallest runner. Whether the isolation suite moves to pull requests is decided when its length is known and the repository is public.
+- **Tested with Incus 6.0.0 and 6.23.** The 7.x line was not run. The workflow names `ubuntu-24.04`, not `ubuntu-latest`.
 - **macOS is not supported yet.** Nothing in this decision depends on a Linux-only feature of the host other than Incus itself.
 
 ## Consequences
 
 - A contributor who wants to run integration tests locally installs Incus and, where firewalld is active, puts `incusbr0` into the `trusted` zone; without that a node gets no address. Docker on the same machine needed no change. Membership of `incus-admin` is equivalent to root on that machine, and the documentation of the harness must say so. Virtual machines need `/dev/kvm`.
 - Unit and contract tests stay as they are and need none of this.
-- The image is a daily build. Two runs a day apart may use different package versions. Issue #17 decides whether to pin an image fingerprint.
+- The image is a daily build. On a fresh runner, two runs a day apart may use different package versions; a local copy keeps the build it was downloaded with until it is deleted. Issue #17 decides whether to pin an image fingerprint.
 - Found while building the proof of concept, for issue #17:
   - `incus launch` and `incus snapshot create` read configuration from standard input when it is not a terminal and wait for it. A script must give them an empty one.
-  - On the runner, `apt-get install --no-install-recommends incus` leaves out `dnsmasq`, and virtual machines then fail QEMU's feature check. `apt install incus qemu-system` works, but `qemu-system` installs the emulators of every architecture: in one run that download took ten minutes on a slow mirror. A container job should not install QEMU, and a job with virtual machines should install less of it or cache it.
+  - On the runner, `apt-get install --no-install-recommends incus` leaves out `dnsmasq`, and `incus admin init` fails. With `dnsmasq-base` and `qemu-system` added but still without recommended packages, virtual machines fail with "QEMU failed to run feature checks"; which recommended package is missing was not found out. `apt install incus qemu-system` with recommended packages works, as the Incus documentation says.
+  - `qemu-system` installs the emulators of every architecture: in one run that download took ten minutes on a slow mirror. The workflow no longer installs it in the container job. Whether a job with virtual machines can install less of it is open.
   - The Debian image runs `systemd-resolved` on 127.0.0.53 and 127.0.0.54, port 53. PowerDNS must listen on the node's own address. Its package starts without a backend, and a zone created while it runs is refused until its zone cache refreshes.
   - Whether the runner needs the `DOCKER-USER` firewall rules for the Incus bridge is not known: they were applied before the first launch.
 - Issue #17 takes `nodes.sh` and `verify.sh` as a starting point and adds what they do not have: pytest fixtures that create, reset and address the nodes, the agent installed on them, the `dns` capability on both, the quota filesystem in virtual machines, and the lasting workflows. The proof of concept and its manual workflow `test-nodes-poc.yml` are removed or replaced there.
