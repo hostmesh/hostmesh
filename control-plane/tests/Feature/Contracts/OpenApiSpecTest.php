@@ -121,3 +121,11 @@ it('documents the public branding endpoint and its response', function (): void 
         ->and(array_keys($data['properties']))->toBe(['product_name', 'logos', 'favicon', 'colors', 'links'])
         ->and(array_keys($data['properties']['colors']['properties']['dark']['properties']))->toBe(['primary', 'primary_foreground']);
 });
+
+it('documents saving branding', function (): void {
+    $operation = generateOpenApiDocument()['paths']['/admin/branding']['put'];
+
+    expect($operation['summary'] ?? null)->toBe('Update branding')
+        ->and($operation['requestBody']['content'])->toHaveKey('application/json')
+        ->and(array_keys($operation['responses']))->toContain(200, 403, 422);
+});

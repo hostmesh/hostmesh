@@ -672,6 +672,53 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
+            },
+            "put": {
+                "operationId": "admin.branding.update",
+                "description": "Replaces the product name, the brand colors and the links. Send every field: null clears a color or a link.\nA color is `#rrggbb`; a link is an `https` URL. A color that fails WCAG AA (4.5:1) against the default\nsurfaces is saved all the same and listed in `warnings`. Logos and the favicon have endpoints of their own.\nNeeds the `branding.update` permission.",
+                "summary": "Update branding",
+                "tags": [
+                    "UpdateBranding"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateBrandingRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`BrandingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BrandingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
             }
         },
         "/branding": {
@@ -1364,7 +1411,8 @@
                     "auth.two_factor.recovery_code_used",
                     "auth.two_factor.recovery_codes_regenerated",
                     "administrator.role_assigned",
-                    "administrator.role_revoked"
+                    "administrator.role_revoked",
+                    "branding.updated"
                 ],
                 "title": "AuditAction"
             },
@@ -1714,6 +1762,108 @@
                     "code"
                 ],
                 "title": "PasswordAndCodeRequest"
+            },
+            "UpdateBrandingRequest": {
+                "type": "object",
+                "properties": {
+                    "product_name": {
+                        "type": "string",
+                        "description": "At least one visible character and no control characters: the\nname goes into page titles and email subjects.",
+                        "pattern": "^(?=.*\\S)[^\\p{C}]+$",
+                        "maxLength": 60
+                    },
+                    "colors": {
+                        "type": "object",
+                        "properties": {
+                            "light": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            },
+                            "dark": {
+                                "type": "object",
+                                "properties": {
+                                    "primary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    },
+                                    "primary_foreground": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^#[0-9a-fA-F]{6}$"
+                                    }
+                                },
+                                "required": [
+                                    "primary",
+                                    "primary_foreground"
+                                ]
+                            }
+                        }
+                    },
+                    "links": {
+                        "type": "object",
+                        "properties": {
+                            "support": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            },
+                            "terms": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            },
+                            "privacy": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            }
+                        },
+                        "required": [
+                            "support",
+                            "terms",
+                            "privacy"
+                        ]
+                    }
+                },
+                "required": [
+                    "product_name",
+                    "colors",
+                    "links"
+                ],
+                "title": "UpdateBrandingRequest"
             },
             "UserResource": {
                 "type": "object",

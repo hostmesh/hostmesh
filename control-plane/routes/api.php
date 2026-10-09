@@ -52,6 +52,7 @@ Route::prefix('admin')->name('admin.')->middleware('realm:admin')->group(functio
         });
         Route::get('/audit-events', Admin\Audit\ListAuditEventsController::class)->name('audit-events.index');
         Route::get('/branding', Admin\Branding\ShowBrandingController::class)->name('branding.show');
+        Route::put('/branding', Admin\Branding\UpdateBrandingController::class)->name('branding.update');
     });
 });
 

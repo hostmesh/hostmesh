@@ -220,7 +220,14 @@ export interface paths {
          *     Needs the `branding.view` permission.
          */
         get: operations["admin.branding.show"];
-        put?: never;
+        /**
+         * Update branding
+         * @description Replaces the product name, the brand colors and the links. Send every field: null clears a color or a link.
+         *     A color is `#rrggbb`; a link is an `https` URL. A color that fails WCAG AA (4.5:1) against the default
+         *     surfaces is saved all the same and listed in `warnings`. Logos and the favicon have endpoints of their own.
+         *     Needs the `branding.update` permission.
+         */
+        put: operations["admin.branding.update"];
         post?: never;
         delete?: never;
         options?: never;
@@ -474,7 +481,7 @@ export interface components {
          * @description What happened. A value is stored forever: add cases, never rename one.
          * @enum {string}
          */
-        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "administrator.role_assigned" | "administrator.role_revoked";
+        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "administrator.role_assigned" | "administrator.role_revoked" | "branding.updated";
         /** AuditEventResource */
         AuditEventResource: {
             id: string;
@@ -557,6 +564,32 @@ export interface components {
         PasswordAndCodeRequest: {
             password: string;
             code: string;
+        };
+        /** UpdateBrandingRequest */
+        UpdateBrandingRequest: {
+            /**
+             * @description At least one visible character and no control characters: the
+             *     name goes into page titles and email subjects.
+             */
+            product_name: string;
+            colors: {
+                light?: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+                dark?: {
+                    primary: string | null;
+                    primary_foreground: string | null;
+                };
+            };
+            links: {
+                /** Format: uri */
+                support: string | null;
+                /** Format: uri */
+                terms: string | null;
+                /** Format: uri */
+                privacy: string | null;
+            };
         };
         /** UserResource */
         UserResource: {
@@ -958,6 +991,35 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "admin.branding.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBrandingRequest"];
+            };
+        };
+        responses: {
+            /** @description `BrandingResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BrandingResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "branding.show": {

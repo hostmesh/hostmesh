@@ -112,6 +112,15 @@ final class Browser
      * @param  array<string, mixed>  $data
      * @return TestResponse<Response>
      */
+    public function put(string $origin, string $uri, array $data = []): TestResponse
+    {
+        return $this->send('PUT', $origin, $uri, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return TestResponse<Response>
+     */
     public function delete(string $origin, string $uri, array $data = []): TestResponse
     {
         return $this->send('DELETE', $origin, $uri, $data);

@@ -115,6 +115,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Brand colors in the control plane's domain layer: `#rrggbb` parsing and the WCAG contrast check of a `primary` and `primary_foreground` pair against the default light and dark surfaces (4.5:1).
 - Public `GET /api/v1/branding`: product name, light and dark logos, favicon, brand colors (`primary` and `primary_foreground` for light and dark) and the support, terms and privacy links, with defaults when nothing is configured. It carries `Cache-Control: public, max-age=300` and an `ETag`, and answers `304` to a matching `If-None-Match`. Stored in the new table `branding`.
 - Admin `GET /api/v1/admin/branding`, guarded by the new permissions `branding.view` and `branding.update` (the `read-only` role may view). The answer adds `warnings`, the brand colors that fail WCAG AA (4.5:1) against the default surfaces, and `abilities`.
+- Admin `PUT /api/v1/admin/branding` replaces the product name, the brand colors and the links. Colors must be `#rrggbb`, links `https` URLs of at most 2048 characters, the product name at most 60 characters without control characters. A color that fails WCAG AA is saved and reported in `warnings`. Every change writes the audit event `branding.updated` with the names of the changed fields; a save that changes nothing writes none.
 
 ---
 

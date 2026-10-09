@@ -48,6 +48,25 @@ final class BrandingRecord extends Model
         return self::query()->find(self::ID);
     }
 
+    /**
+     * The row under a row lock, created with the defaults when it does not
+     * exist yet. Call it inside the transaction that changes the row: two
+     * administrators saving at once then take turns.
+     */
+    public static function lockedForUpdate(): self
+    {
+        $now = now();
+
+        self::query()->insertOrIgnore([
+            'id' => self::ID,
+            'product_name' => self::DEFAULT_PRODUCT_NAME,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        return self::query()->lockForUpdate()->findOrFail(self::ID);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

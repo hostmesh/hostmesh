@@ -181,3 +181,21 @@ it('reports the abilities of branding as its policy decides', function (Role $ro
         'update' => Gate::forUser($administrator)->allows('update', new BrandingRecord),
     ]);
 })->with(['owner' => [Role::Owner], 'read-only' => [Role::ReadOnly]]);
+
+it('answers 403 on saving branding exactly when `update` is false', function (Role $role): void {
+    $administrator = Administrator::factory()->withTwoFactor()->withRoles($role)->create();
+    $browser = new Browser($this);
+    $browser->signIn(Browser::ADMIN, $administrator);
+
+    $abilities = $browser->get(Browser::ADMIN, '/api/v1/admin/branding')->assertOk()->json('data.abilities');
+    $status = $browser->put(Browser::ADMIN, '/api/v1/admin/branding', [
+        'product_name' => 'Acme Hosting',
+        'colors' => [
+            'light' => ['primary' => null, 'primary_foreground' => null],
+            'dark' => ['primary' => null, 'primary_foreground' => null],
+        ],
+        'links' => ['support' => null, 'terms' => null, 'privacy' => null],
+    ])->getStatusCode();
+
+    expect($status === 403)->toBe(! $abilities['update'], "PUT answered $status while `update` is ".json_encode($abilities['update']));
+})->with(['owner' => [Role::Owner], 'read-only' => [Role::ReadOnly]]);
