@@ -122,6 +122,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Integration tests for the agent's test nodes (`agent/tests/integration/test_nodes.py`, pytest marker `integration`): both nodes boot with systemd, report cgroups v2, run Debian 13 and carry the `dns` capability, and a reset removes what a test left behind. `make -C agent test-integration` runs them; `make -C agent check` does not.
 - `hostmesh_testing.IncusCli`, the test harness's only way to start a process: it runs `incus` with an argument list, always with a closed standard input, and reports a missing `incus` or a timeout as a `HarnessError`.
 - Test-node harness `hostmesh_testing` in `infrastructure/testing/` (decision 0015): `NodeHarness` creates two Debian 13 nodes on Incus (`hostmesh-node-1` and `hostmesh-node-2`, 2 GiB and 2 vCPUs each, as system containers or virtual machines), snapshots them as `clean`, resets them by restoring that snapshot, and destroys them; `Node.run` runs a command on a node from an argument list. Both nodes carry the `dns` capability as the Incus config key `user.hostmesh.capabilities`. Its lifecycle decisions are unit-tested against an in-memory Incus (`make -C infrastructure/testing check`).
+- One command for the test nodes: `make -C infrastructure/testing up` creates the two Debian 13 nodes or resets them, with `reset`, `status` and `destroy` beside it and `python -m hostmesh_testing exec <node> -- <command>` to run a command on one. `HOSTMESH_NODE_TYPE=vm` uses virtual machines. `infrastructure/testing/README.md` documents the host setup, the commands and the pytest fixtures.
 
 ---
 
@@ -153,6 +154,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Laravel's database-queue table `jobs` is no longer created: queues run on Redis. The migration that creates `job_history` drops it from an existing database.
 - The control plane now names the PHP extension `fileinfo` as a requirement (README and CI): branding uploads read the type of a file from its bytes.
 - Decision record 0015 (Debian 13 test nodes on Incus) is accepted.
+- The proof of concept in `infrastructure/testing/poc/` and its manual workflow `test-nodes-poc.yml` are removed: the harness in `infrastructure/testing/` replaces them.
 
 ---
 
