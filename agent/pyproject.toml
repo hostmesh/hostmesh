@@ -16,8 +16,12 @@ hostmesh-agent = "agent.cli:main"
 
 [dependency-groups]
 dev = [
+    "acme>=5.8.0",
+    "cryptography>=50.0.2",
+    "dnspython>=2.8.0",
     "hostmesh-testing",
     "hypothesis>=6.168.3",
+    "josepy>=2.2.0",
     "mypy>=2.3.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
