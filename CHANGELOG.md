@@ -159,6 +159,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0015 (Debian 13 test nodes on Incus) is accepted.
 - The proof of concept in `infrastructure/testing/poc/` and its manual workflow `test-nodes-poc.yml` are removed: the harness in `infrastructure/testing/` replaces them.
 - The `Agent` CI workflow also runs when `infrastructure/testing/` changes: the agent's development dependencies include the test harness.
+- `agent/README.md` documents the integration tests: the markers `integration` and `doubles`, the targets `test-integration` and `test-doubles`, and what each needs.
 
 ---
 
