@@ -12,6 +12,7 @@ on:
       - "infrastructure/testing/**"
       - "infrastructure/development/compose.yaml"
       - "infrastructure/development/Makefile"
+      - "infrastructure/development/.env.example"
       - ".github/workflows/integration.yml"
   schedule:
     # 02:17 UTC, off the hour: scheduled runs queue up at :00.
@@ -21,8 +22,10 @@ on:
 permissions:
   contents: read
 
+# A run started by a label has a group of its own: in the group of the
+# pushes it would cancel their run and then skip the jobs it cancelled.
 concurrency:
-  group: integration-${{ github.ref }}
+  group: integration-${{ github.ref }}-${{ github.event.action == 'labeled' && 'label' || 'code' }}
   cancel-in-progress: true
 
 env:
@@ -123,7 +126,12 @@ jobs:
 
   vms:
     name: Integration tests on virtual machines
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'vm-tests')
+    # On a pull request: only with the label `vm-tests`, and when a label is
+    # added, only when it is that one.
+    if: >-
+      github.event_name != 'pull_request'
+      || (contains(github.event.pull_request.labels.*.name, 'vm-tests')
+      && (github.event.action != 'labeled' || github.event.label.name == 'vm-tests'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:

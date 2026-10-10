@@ -3,6 +3,7 @@
 # Agent checks. Run from the repository root with `make -C agent <target>`.
 
 .PHONY: install lint lint-fix typecheck test test-coverage test-integration test-doubles check
+
 # --locked fails when uv.lock is out of date instead of rewriting it.
 UV_RUN := uv run --locked
 

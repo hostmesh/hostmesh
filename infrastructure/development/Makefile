@@ -10,33 +10,33 @@ export HOST_UID := $(shell id -u)
 export HOST_GID := $(shell id -g)
 
 up: .env
-	docker compose up --detach --wait --build
+		docker compose up --detach --wait --build
 
 # Only the ACME and DNS test doubles, for `make -C agent test-doubles`.
 doubles: .env
-	docker compose up --detach --wait pebble challtestsrv
+		docker compose up --detach --wait pebble challtestsrv
 
 down: .env
-	docker compose down
+		docker compose down
 
 reset: .env
-	docker compose down --volumes --remove-orphans
+		docker compose down --volumes --remove-orphans
 
 install:
-	docker compose exec -T php composer install --no-interaction
-	docker compose exec -T php sh -c 'test -f .env || cp .env.example .env'
-	docker compose exec -T php sh -c 'grep -q "^APP_KEY=base64:" .env || php artisan key:generate --ansi'
-	docker compose exec -T php php artisan migrate --force
-	docker compose exec -T node pnpm install --frozen-lockfile
+		docker compose exec -T php composer install --no-interaction
+		docker compose exec -T php sh -c 'test -f .env || cp .env.example .env'
+		docker compose exec -T php sh -c 'grep -q "^APP_KEY=base64:" .env || php artisan key:generate --ansi'
+		docker compose exec -T php php artisan migrate --force
+		docker compose exec -T node pnpm install --frozen-lockfile
 
 smoke:
-	./smoke.sh
+		./smoke.sh
 
 hosts:
-	./hosts.sh --apply
+		./hosts.sh --apply
 
 trust:
-	./trust.sh --apply
+		./trust.sh --apply
 
 .env:
-	cp .env.example .env
+		cp .env.example .env

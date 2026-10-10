@@ -12,7 +12,7 @@ One command starts the services Hostmesh needs for local development, on the hos
 The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane, a queue worker on the same image and a Node 24 service for the web workspace.
 Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM.
 A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)).
-Two test doubles run beside them: Pebble, an ACME test server, and its challenge test server, a mock DNS server (see "Test doubles")."
+Two test doubles run beside them: Pebble, an ACME test server, and its challenge test server, a mock DNS server (see "Test doubles").
 The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet.
 
 ## Requirements
@@ -21,7 +21,7 @@ The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet
 - Docker Engine with the Compose plugin (`docker compose version` works), and permission to run `docker`
 - GNU Make, Bash and curl
 - `sudo`, for the two one-time setup steps
-- Ports 80 and 443 free on `127.0.0.1`, and 8053,8055, 14000 and 15000 for the test doubles
+- Ports 80 and 443 free on `127.0.0.1`, and 8053, 8055, 14000 and 15000 for the test doubles
 
 Developed with Docker 29.8.2 and Docker Compose 5.5.1 on Fedora 44. CI runs it on Ubuntu.
 

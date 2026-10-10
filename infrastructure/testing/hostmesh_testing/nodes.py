@@ -74,6 +74,8 @@ class Node:
     name: str
     node_type: NodeType
     runner: Runner
+    clock: Callable[[], float] = time.monotonic
+    sleep: Callable[[float], None] = time.sleep
 
     def run(
         self,
@@ -97,19 +99,19 @@ class Node:
 
     def address(self, *, timeout: float = 30.0) -> str:
         """The node's IPv4 address on the Incus bridge."""
-        deadline = time.monotonic() + timeout
+        deadline = self.clock() + timeout
         while True:
             listed = _incus(self.runner, ["list", f"^{self.name}$", "-f", "csv", "-c", "4"]).stdout
             # One address prints as `10.0.0.2 (eth0)`, several as a quoted, multi-line cell.
             words = listed.replace('"', " ").split()
             if words:
                 return words[0]
-            if time.monotonic() >= deadline:
+            if self.clock() >= deadline:
                 raise HarnessError(
                     f"{self.name} has no IPv4 address after {timeout:g}s. "
                     "Where firewalld is active, is incusbr0 in the trusted zone?"
                 )
-            time.sleep(1.0)
+            self.sleep(1.0)
 
 
 def _kvm_writable() -> bool:
@@ -142,12 +144,15 @@ class NodeHarness:
 
     @property
     def nodes(self) -> tuple[Node, ...]:
-        return tuple(Node(name, self._config.node_type, self._runner) for name in NODE_NAMES)
+        return tuple(self._node(name) for name in NODE_NAMES)
 
     def node(self, name: str) -> Node:
         if name not in NODE_NAMES:
             raise HarnessError(f"unknown node '{name}': the nodes are {', '.join(NODE_NAMES)}")
-        return Node(name, self._config.node_type, self._runner)
+        return self._node(name)
+
+    def _node(self, name: str) -> Node:
+        return Node(name, self._config.node_type, self._runner, self._clock, self._sleep)
 
     def up(self) -> None:
         """Ends with two clean, running nodes: creates what is missing, resets the rest."""
@@ -207,6 +212,7 @@ class NodeHarness:
         """Sorts the node names into those to create and those to reset."""
         missing: list[str] = []
         present: list[str] = []
+        unusable: list[str] = []
         wanted = _INCUS_TYPES[self._config.node_type]
         for name in NODE_NAMES:
             described = self._describe(name)
@@ -226,11 +232,14 @@ class NodeHarness:
             if self._runner.run(["snapshot", "show", name, SNAPSHOT]).returncode != 0:
                 # An earlier run was interrupted before the snapshot: there is no
                 # clean state to go back to, so the node is made again.
-                if recreate:
-                    _incus(self._runner, ["delete", "--force", name])
+                unusable.append(name)
                 missing.append(name)
                 continue
             present.append(name)
+        # Only now, when no node was refused: a refusal deletes nothing.
+        if recreate:
+            for name in unusable:
+                _incus(self._runner, ["delete", "--force", name])
         return missing, present
 
     def _image_alias(self) -> str:

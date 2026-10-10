@@ -32,16 +32,16 @@ Checked on 2026-10-09:
 
 Three options were run: Incus system containers and Incus virtual machines on the owner's machine and on a hosted runner, and Lima on the owner's machine. The other five were compared from their documentation and are marked "not tested".
 
-| Option                            | Debian 13 image                       | Kernel | systemd `running`, cgroups v2, slice limits, delegation   | nftables by UID  | Nginx, PHP-FPM, MariaDB, PowerDNS  | User quotas                              | Reset                                                    | Hosted runner                      | macOS                                             | License                     |
-|-----------------------------------|---------------------------------------|--------|-----------------------------------------------------------|------------------|------------------------------------|------------------------------------------|----------------------------------------------------------|------------------------------------|---------------------------------------------------|-----------------------------|
-| Incus system container            | daily, amd64 and arm64                | host's | yes                                                       | yes              | yes                                | **no**: no loop devices                  | snapshot restore                                         | install; no KVM needed             | client only; server inside a Linux VM, not tested | Apache-2.0                  |
-| Incus virtual machine             | daily, amd64 and arm64                | own    | yes                                                       | yes              | yes                                | yes                                      | snapshot restore                                         | install; needs KVM, which is there | as above, plus nested virtualization, not tested  | Apache-2.0                  |
-| Lima                              | Debian's cloud image, amd64 and arm64 | own    | yes; enforcement and delegation not run                   | yes              | yes                                | yes                                      | delete and start; snapshots experimental and failed here | tarball and QEMU, not tested       | native                                            | Apache-2.0                  |
-| Vagrant with libvirt              | official box, amd64 only              | own    | not tested                                                | not tested       | not tested                         | not tested                               | `vagrant snapshot`, not tested                           | no Ubuntu 24.04 package            | no                                                | BUSL (2.4), MIT (2.3, 2023) |
-| Vagrant with VirtualBox           | community boxes only                  | own    | not tested                                                | not tested       | not tested                         | not tested                               | `vagrant snapshot`, not tested                           | not tested                         | yes                                               | BUSL; VirtualBox GPL        |
-| libvirt with Debian's cloud image | Debian's cloud image                  | own    | not tested                                                | not tested       | not tested                         | not tested                               | qcow2 overlay, our own scripts                           | install; needs KVM                 | no                                                | LGPL/GPL                    |
-| Docker or Podman running systemd  | none with systemd: build one          | host's | not tested                                                | not tested       | not tested                         | not tested; needs a privileged container | remove and run                                           | preinstalled                       | through a VM                                      | Apache-2.0                  |
-| systemd-nspawn                    | none: build with debootstrap or mkosi | host's | not tested                                                | not tested       | not tested                         | not tested                               | ephemeral mode                                           | install; root                      | no                                                | LGPL                        |
+| Option | Debian 13 image | Kernel | systemd `running`, cgroups v2, slice limits, delegation | nftables by UID | Nginx, PHP-FPM, MariaDB, PowerDNS | User quotas | Reset | Hosted runner | macOS | License |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Incus system container | daily, amd64 and arm64 | host's | yes | yes | yes | **no**: no loop devices | snapshot restore | install; no KVM needed | client only; server inside a Linux VM, not tested | Apache-2.0 |
+| Incus virtual machine | daily, amd64 and arm64 | own | yes | yes | yes | yes | snapshot restore | install; needs KVM, which is there | as above, plus nested virtualization, not tested | Apache-2.0 |
+| Lima | Debian's cloud image, amd64 and arm64 | own | yes; enforcement and delegation not run | yes | yes | yes | delete and start; snapshots experimental and failed here | tarball and QEMU, not tested | native | Apache-2.0 |
+| Vagrant with libvirt | official box, amd64 only | own | not tested | not tested | not tested | not tested | `vagrant snapshot`, not tested | no Ubuntu 24.04 package | no | BUSL (2.4), MIT (2.3, 2023) |
+| Vagrant with VirtualBox | community boxes only | own | not tested | not tested | not tested | not tested | `vagrant snapshot`, not tested | not tested | yes | BUSL; VirtualBox GPL |
+| libvirt with Debian's cloud image | Debian's cloud image | own | not tested | not tested | not tested | not tested | qcow2 overlay, our own scripts | install; needs KVM | no | LGPL/GPL |
+| Docker or Podman running systemd | none with systemd: build one | host's | not tested | not tested | not tested | not tested; needs a privileged container | remove and run | preinstalled | through a VM | Apache-2.0 |
+| systemd-nspawn | none: build with debootstrap or mkosi | host's | not tested | not tested | not tested | not tested | ephemeral mode | install; root | no | LGPL |
 
 Rejected:
 
@@ -55,13 +55,13 @@ Rejected:
 
 Two nodes, 2 GiB and 2 vCPUs each, Debian 13 image build 20261007. Seconds, from `infrastructure/testing/poc/nodes.sh up`. "Here" is the owner's machine: Fedora 44, 16 threads, 14 GB of RAM, Incus 6.23, storage driver btrfs. "Runner" is `ubuntu-24.04` in this repository while it is private: 2 vCPUs, 8 GB of RAM, Incus 6.0.0, storage driver dir.
 
-|                       | Incus container, here   | Incus VM, here   | Lima, here            | Incus container, runner   | Incus VM, runner  |
-|-----------------------|-------------------------|------------------|-----------------------|---------------------------|-------------------|
-| Image download (cold) | 5                       | 12               | included below        | 5                         | 11                |
-| Create two nodes      | 7                       | 29               | 36 cold, 25 warm      | 25                        | 99                |
-| Reset two nodes       | 4 (median of 3)         | 18 (median of 5) | 25 (delete and start) | 7 (one run)               | 48 (one run)      |
-| Verify (14 checks)    | 1                       | 1                | not run as a script   | 1                         | 2                 |
-| Whole CI job          |                         |                  |                       | 1 min 33 s                | 4 min 10 s        |
+| | Incus container, here | Incus VM, here | Lima, here | Incus container, runner | Incus VM, runner |
+|---|---|---|---|---|---|
+| Image download (cold) | 5 | 12 | included below | 5 | 11 |
+| Create two nodes | 7 | 29 | 36 cold, 25 warm | 25 | 99 |
+| Reset two nodes | 4 (median of 3) | 18 (median of 5) | 25 (delete and start) | 7 (one run) | 48 (one run) |
+| Verify (14 checks) | 1 | 1 | not run as a script | 1 | 2 |
+| Whole CI job | | | | 1 min 33 s | 4 min 10 s |
 
 "Create" is launch, boot, stop, snapshot, start and boot again. "Reset" is stop, restore the snapshot, start and boot. The public-repository runner, with twice the vCPUs and RAM, was not measured.
 
@@ -71,18 +71,18 @@ The runner columns are run 37943954220 of the committed workflow (commit ea7be30
 
 `probe.sh`, run inside one node:
 
-| Probe                                                                                                       | Incus container   | Incus VM   | Lima                                    |
-|-------------------------------------------------------------------------------------------------------------|-------------------|------------|-----------------------------------------|
-| Slice limits: `MemoryMax=64M` and `TasksMax=16` set on the slice and read back from its cgroup              | PASS              | PASS       | PASS, in an earlier form: set on a unit |
-| The task limit holds: a unit in the slice that starts 40 processes is refused some                          | PASS              | PASS       | not run                                 |
-| The memory limit holds: a unit in the slice that holds 200 MB is killed                                     | PASS              | PASS       | not run                                 |
-| Delegation: a unit with `Delegate=yes` sees the memory and pids controllers and creates a cgroup of its own | PASS              | PASS       | not run                                 |
-| nftables: reject TCP 25 for one UID, and the rule's counter moves                                           | PASS              | PASS       | PASS                                    |
-| Nginx active                                                                                                | PASS              | PASS       | PASS                                    |
-| PHP-FPM 8.4 active                                                                                          | PASS              | PASS       | PASS                                    |
-| MariaDB active                                                                                              | PASS              | PASS       | PASS                                    |
-| PowerDNS with a SQLite backend answers a zone's SOA                                                         | PASS              | PASS       | PASS                                    |
-| User quota: a 1 MiB hard limit holds on ext4                                                                | **FAIL**          | PASS       | PASS                                    |
+| Probe | Incus container | Incus VM | Lima |
+|---|---|---|---|
+| Slice limits: `MemoryMax=64M` and `TasksMax=16` set on the slice and read back from its cgroup | PASS | PASS | PASS, in an earlier form: set on a unit |
+| The task limit holds: a unit in the slice that starts 40 processes is refused some | PASS | PASS | not run |
+| The memory limit holds: a unit in the slice that holds 200 MB is killed | PASS | PASS | not run |
+| Delegation: a unit with `Delegate=yes` sees the memory and pids controllers and creates a cgroup of its own | PASS | PASS | not run |
+| nftables: reject TCP 25 for one UID, and the rule's counter moves | PASS | PASS | PASS |
+| Nginx active | PASS | PASS | PASS |
+| PHP-FPM 8.4 active | PASS | PASS | PASS |
+| MariaDB active | PASS | PASS | PASS |
+| PowerDNS with a SQLite backend answers a zone's SOA | PASS | PASS | PASS |
+| User quota: a 1 MiB hard limit holds on ext4 | **FAIL** | PASS | PASS |
 
 The container fails the quota probe with "failed to setup loop device": it has no `/dev/loop*`. The Incus documentation lists no option for loop devices or user quotas in a container. Passing a block device in from the host with mount interception was not tried. The Incus results were the same here and on the runner: 9 of 10 in a container, 10 of 10 in a virtual machine. Lima was run before the three probes marked "not run" existed.
 

@@ -24,6 +24,8 @@ def _resolver() -> dns.resolver.Resolver:
 
 def test_a_record_added_through_the_api_resolves(challenge_api: httpx.Client) -> None:
     resolver = _resolver()
+    # A run that was killed before its cleanup must not fail the next one.
+    challenge_api.post("/clear-a", json={"host": _HOST}).raise_for_status()
     # Without this the test would pass against a server that answers every name.
     with pytest.raises((dns.resolver.NoAnswer, dns.resolver.NXDOMAIN)):
         resolver.resolve(_HOST, "A")

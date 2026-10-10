@@ -160,6 +160,19 @@ def test_up_refuses_a_node_made_from_another_image() -> None:
         _harness(fake, Config(image="images:debian/14")).up()
 
 
+def test_up_deletes_nothing_when_it_refuses_another_node() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    fake.instances[NODE_1].snapshots.clear()
+    fake.instances[NODE_2].config[IMAGE_KEY] = "images:debian/12"
+    fake.calls.clear()
+
+    with pytest.raises(HarnessError, match=f"{NODE_2} was created from.*Run 'destroy' first"):
+        _harness(fake).up()
+
+    assert fake.verbs() == []
+
+
 def test_virtual_machines_need_a_writable_kvm_device() -> None:
     fake = FakeIncus()
 
@@ -295,6 +308,20 @@ def test_a_node_without_an_address_names_the_usual_cause() -> None:
 
     with pytest.raises(HarnessError, match=f"{NODE_1} has no IPv4 address.*incusbr0"):
         Node(NODE_1, "container", fake).address(timeout=0.0)
+
+
+def test_waiting_for_an_address_runs_on_the_harness_clock() -> None:
+    fake = FakeIncus()
+    clock = FakeClock()
+    harness = NodeHarness(fake, clock=clock, sleep=clock.sleep)
+    harness.up()
+    fake.address = ""
+    before = clock.now
+
+    with pytest.raises(HarnessError, match=f"{NODE_1} has no IPv4 address after 2s"):
+        harness.node(NODE_1).address(timeout=2.0)
+
+    assert clock.now - before == 2.0
 
 
 def test_the_environment_chooses_type_and_image() -> None:
