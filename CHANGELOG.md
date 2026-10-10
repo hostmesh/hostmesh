@@ -121,6 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Decision record 0015 (proposed): how the two disposable Debian 13 test nodes run locally and in CI, with the options compared, the measured times to create and reset them, and what runs on every pull request versus nightly.
 - Integration tests for the agent's test nodes (`agent/tests/integration/test_nodes.py`, pytest marker `integration`): both nodes boot with systemd, report cgroups v2, run Debian 13 and carry the `dns` capability, and a reset removes what a test left behind. `make -C agent test-integration` runs them; `make -C agent check` does not.
 - `hostmesh_testing.IncusCli`, the test harness's only way to start a process: it runs `incus` with an argument list, always with a closed standard input, and reports a missing `incus` or a timeout as a `HarnessError`.
+- Test-node harness `hostmesh_testing` in `infrastructure/testing/` (decision 0015): `NodeHarness` creates two Debian 13 nodes on Incus (`hostmesh-node-1` and `hostmesh-node-2`, 2 GiB and 2 vCPUs each, as system containers or virtual machines), snapshots them as `clean`, resets them by restoring that snapshot, and destroys them; `Node.run` runs a command on a node from an argument list. Both nodes carry the `dns` capability as the Incus config key `user.hostmesh.capabilities`. Its lifecycle decisions are unit-tested against an in-memory Incus (`make -C infrastructure/testing check`).
 
 ---
 
