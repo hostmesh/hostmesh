@@ -16,7 +16,12 @@ hostmesh-agent = "agent.cli:main"
 
 [dependency-groups]
 dev = [
+    "acme>=5.8.0",
+    "cryptography>=50.0.2",
+    "dnspython>=2.8.0",
+    "hostmesh-testing",
     "hypothesis>=6.168.3",
+    "josepy>=2.2.0",
     "mypy>=2.3.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
@@ -34,6 +39,10 @@ packages = ["agent"]
 
 [tool.uv]
 required-version = ">=0.12.22,<0.13"
+
+# The test-node harness (decision 0015). Integration tests only.
+[tool.uv.sources]
+hostmesh-testing = { path = "../infrastructure/testing", editable = true }
 
 [tool.ruff]
 line-length = 100
@@ -94,6 +103,11 @@ strict = true
 filterwarnings = ["error"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Neither is in testpaths: `make check` never runs them.
+markers = [
+    "integration: needs the two Debian 13 test nodes (make -C agent test-integration)",
+    "doubles: needs Pebble and the challenge test server (make -C agent test-doubles)",
+]
 
 [tool.coverage.run]
 branch = true

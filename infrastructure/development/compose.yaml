@@ -131,6 +131,43 @@ services:
       timeout: 3s
       retries: 30
 
+  # Test doubles (spec section 37): ACME and DNS tests must never reach a
+  # production service. Pebble is Let's Encrypt's ACME test server. It
+  # validates challenges by asking challtestsrv, a mock DNS server whose
+  # records are set through an HTTP management API. Neither keeps state
+  # across a restart, and Pebble makes a new root certificate every time.
+  pebble:
+    image: ghcr.io/letsencrypt/pebble:2.10.1
+    command:
+      - -config
+      - test/config/pebble-config.json
+      - -strict
+      - -dnsserver
+      - challtestsrv:8053
+    environment:
+      # Validate at once instead of after a random delay of up to 15 seconds.
+      PEBBLE_VA_NOSLEEP: "1"
+      # By default Pebble rejects 5% of valid nonces to exercise clients.
+      PEBBLE_WFE_NONCEREJECT: "0"
+    ports:
+      - "127.0.0.1:14000:14000" # ACME directory: https://localhost:14000/dir
+      - "127.0.0.1:15000:15000" # Management: https://localhost:15000/roots/0
+    depends_on:
+      - challtestsrv
+
+  challtestsrv:
+    image: ghcr.io/letsencrypt/pebble-challtestsrv:2.10.1
+    # No default answers: a name resolves only after a test added it.
+    command:
+      - -defaultIPv4
+      - ""
+      - -defaultIPv6
+      - ""
+    ports:
+      - "127.0.0.1:8055:8055" # Management API
+      - "127.0.0.1:8053:8053/udp" # DNS
+      - "127.0.0.1:8053:8053/tcp"
+
 volumes:
   postgres_data:
   redis_data:

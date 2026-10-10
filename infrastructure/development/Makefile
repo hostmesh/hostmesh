@@ -3,7 +3,7 @@
 # Local development stack. Run from the repository root with
 # `make -C infrastructure/development <target>`.
 
-.PHONY: up down reset install smoke hosts trust
+.PHONY: up doubles down reset install smoke hosts trust
 
 # The php service runs as the host user (see compose.yaml).
 export HOST_UID := $(shell id -u)
@@ -11,6 +11,10 @@ export HOST_GID := $(shell id -g)
 
 up: .env
 		docker compose up --detach --wait --build
+
+# Only the ACME and DNS test doubles, for `make -C agent test-doubles`.
+doubles: .env
+		docker compose up --detach --wait pebble challtestsrv
 
 down: .env
 		docker compose down

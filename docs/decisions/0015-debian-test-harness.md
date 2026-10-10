@@ -1,6 +1,6 @@
 # 0015. Debian 13 test nodes on Incus: containers on every pull request, virtual machines for isolation
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-09
 - Issue: Spike: Debian 13 test-node harness (#16)
 
