@@ -1,0 +1,172 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Integration tests
+
+# Decision 0015: two system containers on every pull request that touches
+# the agent or the harness; two virtual machines every night, on demand,
+# and on a pull request that carries the label `vm-tests`.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - "agent/**"
+      - "infrastructure/testing/**"
+      - "infrastructure/development/compose.yaml"
+      - "infrastructure/development/Makefile"
+      - ".github/workflows/integration.yml"
+  schedule:
+    # 02:17 UTC, off the hour: scheduled runs queue up at :00.
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Must satisfy required-version in agent/pyproject.toml.
+  UV_VERSION: "0.12.22"
+
+jobs:
+  harness:
+    name: Harness checks
+    # Adding a label re-runs nothing but the virtual machines.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # 10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          working-directory: infrastructure/testing
+          enable-cache: true
+          cache-python: true
+      - name: Ruff, mypy and pytest
+        run: |
+          make -C infrastructure/testing install
+          make -C infrastructure/testing check
+
+  containers:
+    name: Integration tests on containers
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # 10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          working-directory: agent
+          enable-cache: true
+          cache-python: true
+      # With recommended packages: without them `incus admin init` fails
+      # for want of dnsmasq (decision 0015). Containers need no QEMU.
+      - name: Install Incus
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y incus
+          sudo incus admin init --minimal
+          sudo chmod 666 /var/lib/incus/unix.socket
+          incus version
+      # Docker on the runner sets the FORWARD policy to DROP, which cuts
+      # the Incus bridge off from the network.
+      - name: Let the Incus bridge through Docker's firewall
+        run: |
+          sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
+          sudo iptables -I DOCKER-USER -o incusbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      - name: Install the agent's dependencies
+        run: make -C agent install
+      # Budget (decision 0015): ready within 60 seconds, reset within 10.
+      # Printed, not enforced: one slow mirror must not fail a pull request.
+      - name: Create two nodes
+        run: uv run --locked --directory agent python -m hostmesh_testing up
+      - name: Reset them
+        run: uv run --locked --directory agent python -m hostmesh_testing up
+      - name: Integration tests
+        run: make -C agent test-integration
+      - name: Show the nodes and the Incus daemon log
+        if: failure()
+        run: |
+          incus list || true
+          sudo tail -n 60 /var/log/incus/incusd.log || true
+          sudo journalctl -u incus --no-pager -n 40 || true
+
+  doubles:
+    name: ACME and DNS test doubles
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # 10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          working-directory: agent
+          enable-cache: true
+          cache-python: true
+      - name: Start Pebble and the challenge test server
+        run: make -C infrastructure/development doubles
+      - name: Install the agent's dependencies
+        run: make -C agent install
+      - name: Tests against the doubles
+        run: make -C agent test-doubles
+      - name: Show service logs
+        if: failure()
+        working-directory: infrastructure/development
+        run: docker compose logs --no-color pebble challtestsrv
+
+  vms:
+    name: Integration tests on virtual machines
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'vm-tests')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      HOSTMESH_NODE_TYPE: vm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # 10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          working-directory: agent
+          enable-cache: true
+          cache-python: true
+      - name: Let the runner user open /dev/kvm
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # With recommended packages (decision 0015): without them virtual
+      # machines fail with "QEMU failed to run feature checks".
+      - name: Install Incus and QEMU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y incus qemu-system
+          sudo incus admin init --minimal
+          sudo chmod 666 /var/lib/incus/unix.socket
+          incus version
+      - name: Let the Incus bridge through Docker's firewall
+        run: |
+          sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
+          sudo iptables -I DOCKER-USER -o incusbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      - name: Install the agent's dependencies
+        run: make -C agent install
+      # Budget (decision 0015): ready within 150 seconds, reset within 60.
+      - name: Create two nodes
+        run: uv run --locked --directory agent python -m hostmesh_testing up
+      - name: Reset them
+        run: uv run --locked --directory agent python -m hostmesh_testing up
+      - name: Integration tests
+        run: make -C agent test-integration
+      - name: Show the nodes and the Incus daemon log
+        if: failure()
+        run: |
+          incus list || true
+          sudo tail -n 60 /var/log/incus/incusd.log || true
+          sudo journalctl -u incus --no-pager -n 40 || true

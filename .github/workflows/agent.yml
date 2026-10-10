@@ -7,6 +7,7 @@ on:
       - "agent/**"
       - "contracts/agent-protocol/**"
       - ".github/workflows/agent.yml"
+      - "infrastructure/testing/**"
   # Runs on main too, so pull requests can restore the uv cache.
   push:
     branches:
@@ -15,6 +16,7 @@ on:
       - "agent/**"
       - "contracts/agent-protocol/**"
       - ".github/workflows/agent.yml"
+      - "infrastructure/testing/**"
 
 permissions:
   contents: read
@@ -48,6 +50,6 @@ jobs:
         run: make lint
       - name: mypy
         run: make typecheck
-      # Unit and contract tests only. Integration tests need the Debian test nodes.
+      # Unit and contract tests only. The integration tests run in integration.yml.
       - name: pytest with the 85% coverage gate
         run: make test-coverage

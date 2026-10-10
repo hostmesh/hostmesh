@@ -125,6 +125,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - One command for the test nodes: `make -C infrastructure/testing up` creates the two Debian 13 nodes or resets them, with `reset`, `status` and `destroy` beside it and `python -m hostmesh_testing exec <node> -- <command>` to run a command on one. `HOSTMESH_NODE_TYPE=vm` uses virtual machines. `infrastructure/testing/README.md` documents the host setup, the commands and the pytest fixtures.
 - Two tests for the ACME and DNS test doubles in the agent's suite (pytest marker `doubles`, `make -C agent test-doubles`): one obtains a certificate for `cert.example.test` from Pebble with a DNS-01 challenge, one adds an A record through the challenge test server's management API and resolves it. `acme`, `josepy`, `cryptography` and `dnspython` are development dependencies of the agent only.
 - ACME and DNS test doubles in the development stack: `pebble` (Let's Encrypt's ACME test server, 2.10.1) on `https://localhost:14000/dir` and `challtestsrv` (its mock DNS server with an HTTP management API) on `127.0.0.1:8053` and `http://localhost:8055`. `make -C infrastructure/development doubles` starts only these two, the smoke test checks them from the host and from the `php` service, and the development guide documents their use from the agent's and the control plane's test suites.
+- CI workflow `Integration tests`: on pull requests that touch the agent, the harness or the development stack's Compose file, it runs the harness's own checks, the agent's integration tests on two Debian 13 system containers, and the tests against the ACME and DNS test doubles. The same integration tests run on two virtual machines every night, on manual dispatch, and on a pull request labelled `vm-tests`.
 
 ---
 
@@ -157,6 +158,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The control plane now names the PHP extension `fileinfo` as a requirement (README and CI): branding uploads read the type of a file from its bytes.
 - Decision record 0015 (Debian 13 test nodes on Incus) is accepted.
 - The proof of concept in `infrastructure/testing/poc/` and its manual workflow `test-nodes-poc.yml` are removed: the harness in `infrastructure/testing/` replaces them.
+- The `Agent` CI workflow also runs when `infrastructure/testing/` changes: the agent's development dependencies include the test harness.
 
 ---
 
