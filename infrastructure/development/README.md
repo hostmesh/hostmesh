@@ -9,7 +9,11 @@ One command starts the services Hostmesh needs for local development, on the hos
 | `api.hostmesh.test`   | Laravel API         | The control plane    |
 | `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder          |
 
-The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane, a queue worker on the same image and a Node 24 service for the web workspace. Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM. A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)). The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet.
+The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane, a queue worker on the same image and a Node 24 service for the web workspace.
+Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM.
+A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)).
+Two test doubles run beside them: Pebble, an ACME test server, and its challenge test server, a mock DNS server (see "Test doubles")."
+The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet.
 
 ## Requirements
 
@@ -17,7 +21,7 @@ The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PH
 - Docker Engine with the Compose plugin (`docker compose version` works), and permission to run `docker`
 - GNU Make, Bash and curl
 - `sudo`, for the two one-time setup steps
-- Ports 80 and 443 free on `127.0.0.1`
+- Ports 80 and 443 free on `127.0.0.1`, and 8053,8055, 14000 and 15000 for the test doubles
 
 Developed with Docker 29.8.2 and Docker Compose 5.5.1 on Fedora 44. CI runs it on Ubuntu.
 
@@ -39,15 +43,16 @@ The smoke test must end with `All checks passed`. Then open <https://app.hostmes
 
 Run them as `make -C infrastructure/development <target>`, or as `make <target>` from this directory.
 
-| Target    | What it does                                                                                                                                                                                                          |
-|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `up`      | Creates `.env` from `.env.example` if it is missing, builds the images whose Dockerfile changed, starts the stack and waits until every service is healthy.                                                           |
-| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                  |
-| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                       |
-| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile. Safe to repeat. |
-| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint, the queue worker, the `node` service's Node and pnpm versions and its Chromium build. Exits non-zero if anything fails.    |
-| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                      |
-| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                   |
+| Target    | What it does                                                                                                                                                                                                                                          |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `up`      | Creates `.env` from `.env.example` if it is missing, builds the images whose Dockerfile changed, starts the stack and waits until every service is healthy.                                                                                           |
+| `doubles` | Starts only `pebble` and `challtestsrv`, the ACME and DNS test doubles. Enough for `make -C agent test-doubles`.                                                                                                                                      |
+| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                                                  |
+| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                                                       |
+| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile. Safe to repeat.                                 |
+| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint, the queue worker, the `node` service's Node and pnpm versions and its Chromium build, and the ACME and DNS test doubles. Exits non-zero if anything fails. |
+| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                                                      |
+| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                                                   |
 
 ## What `hosts` and `trust` change on your machine
 
@@ -126,6 +131,45 @@ docker compose exec node pnpm generate:api               # regenerate the typed 
 ```
 
 See [`web/README.md`](../../web/README.md).
+
+## Test doubles
+
+ACME and DNS tests must never reach a production service (spec section 37). Two services stand in for them:
+
+| Service        | What it is                                                                               | From your machine                                                      | From the `php` service                                        |
+|----------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------|---------------------------------------------------------------|
+| `pebble`       | [Pebble](https://github.com/letsencrypt/pebble) 2.10.1, Let's Encrypt's ACME test server | `https://localhost:14000/dir`; management on `https://localhost:15000` | `https://pebble:14000/dir`; `https://pebble:15000`            |
+| `challtestsrv` | Pebble's challenge test server: a mock DNS server with an HTTP management API            | DNS on `127.0.0.1:8053` (UDP and TCP); API on `http://localhost:8055`  | DNS on `challtestsrv:8053`; API on `http://challtestsrv:8055` |
+
+Pebble validates every challenge by asking `challtestsrv`, so a test decides what Pebble sees:
+
+```bash
+# An A record, and the DNS server's answer.
+curl -d '{"host":"www.example.test","addresses":["192.0.2.10"]}' http://localhost:8055/add-a
+dig @127.0.0.1 -p 8053 +short www.example.test A
+curl -d '{"host":"www.example.test"}' http://localhost:8055/clear-a
+
+# A DNS-01 answer. The host needs its trailing dot.
+curl -d '{"host":"_acme-challenge.cert.example.test.","value":"<token>"}' http://localhost:8055/set-txt
+```
+
+The other endpoints (AAAA, CNAME, CAA, SERVFAIL, HTTP-01 and TLS-ALPN-01 answers, request history) are in the [challenge test server's README](https://github.com/letsencrypt/pebble/blob/v2.10.1/cmd/pebble-challtestsrv/README.md). A name that no test added does not resolve: the server runs without default answers.
+
+Things to know:
+
+- **Nothing is kept.** Records, accounts and certificates are gone after a restart, and Pebble makes a new root certificate each time: fetch it from `/roots/0` on the management port, do not store it.
+- **Pebble's API uses a certificate from a CA inside its image**, valid for `localhost`, `pebble` and `127.0.0.1`. Copy it out with `docker compose cp pebble:/test/certs/pebble.minica.pem <path>` and give it to the client as its CA file. Never add it to a trust store and never commit it: its private key is public.
+- **A test cleans up the records it added**, because the server is shared by every test that runs against the stack.
+- Pebble runs with `PEBBLE_VA_NOSLEEP=1` and `PEBBLE_WFE_NONCEREJECT=0`: it validates at once and does not reject valid nonces at random.
+- Pebble connects to port 5002 for HTTP-01 and 5001 for TLS-ALPN-01, not 80 and 443. HTTP-01 against a real node needs another Pebble configuration; that comes with Slice 3.
+
+### From the agent's test suite
+
+The agent's tests run on your machine. `make -C agent test-doubles` runs the tests marked `doubles`; `make -C infrastructure/development doubles` starts just the two services they need. `agent/tests/support/doubles.py` holds the addresses and `fetch_pebble_ca`; the fixtures `pebble_ca` and `challenge_api` are in `agent/tests/integration/conftest.py`. `test_acme_double.py` and `test_dns_double.py` there are the examples to copy.
+
+### From the control plane's test suite
+
+Pest runs inside the `php` service, which reaches both doubles by service name (the right-hand column above); the smoke test checks that. Pebble's CA is not in that container: copy it into the test's temporary directory with the `docker compose cp` command above, run from the host, or fetch it once in the test setup. There is no control plane code, configuration or test that uses the doubles yet. The resolver and the ACME client the control plane uses are chosen in Slice 3, and their tests then point them at these addresses.
 
 ## PostgreSQL and Redis
 

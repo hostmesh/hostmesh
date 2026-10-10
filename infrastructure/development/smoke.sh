@@ -3,8 +3,9 @@
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
 # placeholder hostname over HTTPS, the API's health endpoint, the versions
-# of the node service and its Chromium build, using the system resolver and
-# trust store. Runs every check and exits non-zero if any of them failed.
+# of the node service and its Chromium build, the ACME and DNS test doubles,
+# using the system resolver and trust store.
+# Runs every check and exits non-zero if any of them failed.
 
 set -u
 
@@ -131,6 +132,50 @@ check_playwright() {
     fi
 }
 
+# Pebble is Let's Encrypt's ACME test server (spec section 37). Its API
+# certificate comes from a CA inside its image, which is copied out for
+# this one request and never trusted system-wide.
+check_pebble() {
+    local name="Pebble serves its ACME directory on https://localhost:14000/dir"
+    local ca out
+    ca=$(mktemp)
+    if docker compose cp pebble:/test/certs/pebble.minica.pem "$ca" >/dev/null 2>&1 \
+        && out=$(curl --silent --fail --max-time 10 --cacert "$ca" https://localhost:14000/dir 2>&1) \
+        && printf '%s' "$out" | grep -q '"newOrder"'; then
+        pass "$name"
+    else
+        fail "$name" "Is the stack up? Run: make up"
+    fi
+    rm -f "$ca"
+}
+
+# The challenge test server is a mock DNS server with an HTTP management
+# API. The check adds a record and removes it again.
+check_challtestsrv() {
+    local name="The challenge test server's management API accepts a DNS record"
+    if curl --silent --fail --max-time 10 --output /dev/null \
+        --data '{"host":"smoke.hostmesh.test","addresses":["192.0.2.1"]}' http://localhost:8055/add-a \
+        && curl --silent --fail --max-time 10 --output /dev/null \
+            --data '{"host":"smoke.hostmesh.test"}' http://localhost:8055/clear-a; then
+        pass "$name"
+    else
+        fail "$name" "Is the stack up? Run: make up"
+    fi
+}
+
+# The control plane's tests run in the php service and reach the doubles
+# by service name.
+check_doubles_from_php() {
+    local name="The php service reaches pebble:14000 and challtestsrv:8055"
+    if docker compose exec -T php php -r \
+        'exit(@fsockopen("pebble", 14000, $e, $s, 5) && @fsockopen("challtestsrv", 8055, $e, $s, 5) ? 0 : 1);' \
+        >/dev/null 2>&1; then
+        pass "$name"
+    else
+        fail "$name" "Is the stack up? Run: make up"
+    fi
+}
+
 check_postgres
 check_redis
 for host in "${HOSTNAMES[@]}"; do
@@ -140,6 +185,9 @@ check_api_health
 check_worker
 check_node
 check_playwright
+check_pebble
+check_challtestsrv
+check_doubles_from_php
 
 if [ "$failures" -gt 0 ]; then
     printf '\n%d check(s) failed\n' "$failures"
