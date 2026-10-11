@@ -15,7 +15,7 @@ Agents authenticate with client certificates (mutual TLS, spec section 5). A CDN
 
 ## Content Security Policy
 
-Both static apps ship a strict policy: no inline script or style, and `connect-src` limited to the API origin. The policy is defined once, in `control-plane/config/hostmesh.php`. `control-plane/tests/Feature/Platform/ContentSecurityPolicyTest.php` fails when the header in the example differs from it, so change the config first and copy the new value here.
+Both static apps ship a strict policy: no inline script or style, and `connect-src` limited to the API origin. `img-src` also names the API origin, because the logos and the favicon of the branding configuration are server by the API. The policy is defined once, in `control-plane/config/hostmesh.php`. `control-plane/tests/Feature/Platform/ContentSecurityPolicyTest.php` fails when the header in the example differs from it, so change the config first and copy the new value here.
 
 To print the header value for your domain:
 
