@@ -144,6 +144,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CI workflow `Hygiene`, on every pull request and on `main`, without a path filter so that its jobs can be required: `Hygiene tool checks` (ruff, mypy, pytest of `infrastructure/hygiene/`), `License scan` (the allowlist, and `THIRD_PARTY_NOTICES` being up to date) and `SPDX identifiers`.
 - `.github/dependabot.yml`: weekly version updates for Composer (`control-plane/`), npm (`web/`), uv (`agent/`, `infrastructure/testing/`, `infrastructure/hygiene/`) and GitHub Actions. Minor and patch releases are grouped into one pull request per ecosystem, and titles start with `chore`.
 - CONTRIBUTING: an alias and a `prepare-commit-msg` hook that sign off every commit, how to repair a missing sign-off, and the checkpoint of decision 0002 before the first outside contribution.
+- The DCO check and the license scan were each proven to fail: a throwaway pull request with an unsigned commit that added a GPL-licensed dependency failed `Signed-off-by check` and `License scan`. The repository settings that make the checks required are listed in the pull request that introduced them.
 
 ---
 
