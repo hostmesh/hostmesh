@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 name: Spec change
 description: The specification is wrong, unclear or incomplete
 labels: ["spec-change"]

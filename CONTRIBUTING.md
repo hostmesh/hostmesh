@@ -35,7 +35,8 @@ Significant decisions are recorded as short documents in `docs/decisions/` (copy
 
 - Hostmesh is licensed under Apache-2.0. By contributing, you agree your contribution is licensed under it.
 - Every commit must carry a `Signed-off-by: Name <email>` line (use `git commit -s`). It certifies the [Developer Certificate of Origin 1.1](https://developercertificate.org/). A check on pull requests enforces it.
-- New source files start with an SPDX identifier, for example `// SPDX-License-Identifier: Apache-2.0` (use the comment style of the language).
+- New source files start with an SPDX identifier, for example `// SPDX-License-Identifier: Apache-2.0` (use the comment style of the language), within the first 10 lines. A check on pull requests enforces it: `make -C infrastructure/hygiene spdx`. Vendor, generated, lock and third-party-derived files are exempt and keep their own header; the exemptions and their reasons are in `infrastructure/hygiene/spdx.toml`. A file that combines Hostmesh's code with MIT code it was derived from says `Apache-2.0 AND MIT` and names the origin.
+- Dependencies must carry a license on the allowlist. A check on pull requests enforces it; see `infrastructure/hygiene/README.md` for the list and for how an exception is recorded.
 - The name "Hostmesh" and its logos are not licensed by Apache-2.0.
 
 ## Security

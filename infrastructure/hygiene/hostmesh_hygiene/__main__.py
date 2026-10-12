@@ -17,6 +17,7 @@ from hostmesh_hygiene.inventory import (
 from hostmesh_hygiene.notices import render
 from hostmesh_hygiene.policy import Policy, PolicyError, load_policy, normalize_name
 from hostmesh_hygiene.scan import scan
+from hostmesh_hygiene.spdx import SpdxConfigError, check, load_config, tracked_files
 
 HERE = Path(__file__).resolve().parents[1]
 REPO_ROOT = HERE.parents[1]
@@ -30,7 +31,8 @@ _README = "infrastructure/hygiene/README.md"
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="hostmesh_hygiene",
-        description="License hygiene: the dependency license scan and THIRD_PARTY_NOTICES.",
+        description="License hygiene: the dependency license scan, THIRD_PARTY_NOTICES "
+        "and SPDX identifiers.",
     )
     commands = parser.add_subparsers(dest="command", required=True)
     licenses = commands.add_parser(
@@ -45,6 +47,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     notices.add_argument(
         "--check", action="store_true", help="write nothing; fail when the file is out of date"
     )
+    spdx = commands.add_parser("spdx", help="fail on a source file without an SPDX identifier")
+    spdx.add_argument("--config", type=Path, default=HERE / "spdx.toml")
+    spdx.add_argument("--repo-root", type=Path, default=REPO_ROOT)
     arguments = parser.parse_args(argv)
 
     try:
@@ -53,7 +58,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return _licenses(arguments)
             case "notices":
                 return _notices(arguments)
-    except (InventoryError, PolicyError, OSError) as error:
+            case "spdx":
+                return _spdx(arguments)
+    except (InventoryError, PolicyError, SpdxConfigError, OSError) as error:
         print(f"hostmesh_hygiene: {error}", file=sys.stderr)
         return 2
     return 2
@@ -146,6 +153,23 @@ def _notices(arguments: argparse.Namespace) -> int:
         file=sys.stderr,
     )
     return 1
+
+
+def _spdx(arguments: argparse.Namespace) -> int:
+    config = load_config(arguments.config)
+    files = tracked_files(arguments.repo_root)
+    problems = check(files, arguments.repo_root, config)
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    if problems:
+        print(
+            f"SPDX check failed: {len(problems)} problem(s). Add the identifier in the "
+            f"language's comment style, or see {_README}.",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"SPDX check passed: {len(files)} tracked files.")
+    return 0
 
 
 if __name__ == "__main__":

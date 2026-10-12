@@ -6,12 +6,13 @@ The dependency license scan, the generated `THIRD_PARTY_NOTICES` and the SPDX id
 
 `make -C infrastructure/hygiene install`, once. The scan and the notices also read what the other projects have installed, so they need the development stack running with its dependencies (`make -C infrastructure/development up`) and `make install` in `agent/` and `infrastructure/testing/`. uv 0.12 on the host, as for the agent.
 
-| Task                                              | Command                                         |
-|---------------------------------------------------|-------------------------------------------------|
-| The tool's own checks (ruff, mypy strict, pytest) | `make -C infrastructure/hygiene check`          |
-| License scan                                      | `make -C infrastructure/hygiene licenses`       |
-| Regenerate `THIRD_PARTY_NOTICES`                  | `make -C infrastructure/hygiene notices`        |
-| Check that it is current                          | `make -C infrastructure/hygiene notices-check`  |
+| Task                                              | Command                                        |
+|---------------------------------------------------|------------------------------------------------|
+| The tool's own checks (ruff, mypy strict, pytest) | `make -C infrastructure/hygiene check`         |
+| License scan                                      | `make -C infrastructure/hygiene licenses`      |
+| Regenerate `THIRD_PARTY_NOTICES`                  | `make -C infrastructure/hygiene notices`       |
+| Check that it is current                          | `make -C infrastructure/hygiene notices-check` |
+| SPDX identifier check                             | `make -C infrastructure/hygiene spdx`          |
 
 ## The license scan
 
@@ -73,3 +74,19 @@ The file is generated and never edited. It prints no version numbers, so it chan
 Generate it on Linux x86-64, the platform of CI and of the development stack's containers: a package manager on another platform may install a different set of optional packages.
 
 `NOTICE` is the short, hand-written attribution file that Apache-2.0 section 4(d) refers to. It points here.
+
+## SPDX identifiers
+
+Every authored source file carries `SPDX-License-Identifier: Apache-2.0` in its first 10 lines, in the comment style of its language (spec section 36). The check reads `git ls-files`, so it sees exactly what is committed or staged, and needs nothing installed but this project.
+
+[`spdx.toml`](spdx.toml) says which files are source files (by suffix, or by name for `Makefile`, `Dockerfile` and `Caddyfile`) and which are exempt:
+
+- **Third-party-derived** files keep the header they came with: the shadcn-vue CLI's output in `web/packages/ui/src/components/ui/`, and the files of the Laravel application skeleton that Hostmesh only configures.
+- **Generated** files (`web/packages/api-client/src/generated/`) and **lock** files.
+- `vendor/` and `node_modules/` are not tracked, so they never come up.
+
+An exempt file that says `Apache-2.0` fails the check, and so does an exemption that matches no file. Formats without comments (JSON) and prose (Markdown) need no identifier.
+
+A file that started as third-party code and is now mostly Hostmesh's says `Apache-2.0 AND MIT` and names where it came from in the next comment line.
+
+To add a file type, add its suffix to `extensions`; the check then tells you which existing files lack the identifier.

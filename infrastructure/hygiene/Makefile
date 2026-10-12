@@ -3,7 +3,7 @@
 # License hygiene. Run from the repository root with
 # `make -C infrastructure/hygiene <target>`.
 
-.PHONY: install lint lint-fix typecheck test check collect licenses notices notices-check
+.PHONY: install lint lint-fix typecheck test check collect licenses notices notices-check spdx
 
 # --locked fails when uv.lock is out of date instead of rewriting it.
 UV_RUN := uv run --locked
@@ -57,3 +57,7 @@ notices: collect
 
 notices-check: collect
 	$(HYGIENE) notices --check
+
+# Needs nothing but git and this project's environment.
+spdx:
+	$(HYGIENE) spdx
