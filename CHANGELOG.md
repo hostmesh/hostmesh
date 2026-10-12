@@ -145,6 +145,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `.github/dependabot.yml`: weekly version updates for Composer (`control-plane/`), npm (`web/`), uv (`agent/`, `infrastructure/testing/`, `infrastructure/hygiene/`) and GitHub Actions. Minor and patch releases are grouped into one pull request per ecosystem, and titles start with `chore`.
 - CONTRIBUTING: an alias and a `prepare-commit-msg` hook that sign off every commit, how to repair a missing sign-off, and the checkpoint of decision 0002 before the first outside contribution.
 - The DCO check and the license scan were each proven to fail: a throwaway pull request with an unsigned commit that added a GPL-licensed dependency failed `Signed-off-by check` and `License scan`. The repository settings that make the checks required are listed in the pull request that introduced them.
+- `TRADEMARKS.md`, the trademark policy: what may be done with the Hostmesh name without asking (truthful references, compatibility and "based on" statements, running it under an operator's own brand, distributing it unchanged), what needs permission (naming a product or a changed version "Hostmesh", implying endorsement, using the name in domains, package names and accounts), and how to ask. The README links to it.
 
 ---
 
