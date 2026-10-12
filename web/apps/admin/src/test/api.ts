@@ -14,8 +14,11 @@ export function noContent(): Response {
   return new Response(null, { status: 204 })
 }
 
+// A request to another origin gets its whole URL as the key, so that it
+// matches no entry and is named in the 500.
 function key(request: Request): string {
-  return `${request.method} ${request.url.slice(API.length).split('?')[0] ?? ''}`
+  const url = request.url.split('?')[0] ?? ''
+  return `${request.method} ${url.startsWith(`${API}/`) ? url.slice(API.length) : url}`
 }
 
 /**

@@ -24,7 +24,7 @@ export default defineConfig({
     // The page the tests run on: the API host and the CSRF cookie derive from it.
     environmentOptions: {
       jsdom: {
-        url: 'https://app.hostmest.test/',
+        url: 'https://app.hostmesh.test/',
       },
     },
     include: ['src/**/*.test.ts'],
