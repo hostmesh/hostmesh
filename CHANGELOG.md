@@ -132,6 +132,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Admin app: the login screen and the two-factor challenge screen (authenticator code or recovery code). Fields are labelled, errors from the API appear on their field, a failed submit moves focus to the first invalid field, and a `redirect` parameter is followed only to a path inside the app.
 - Admin app: the two-factor enrollment screen. It shows the QR code of the provisioning URI (drawn in the app from `uqr`'s matrix, new in the catalog) and the key, confirms with a code, and shows the recovery codes once before going on.
 - Customer portal: brand colors from `GET /api/v1/branding` are applied at run time as overrides of `--primary` and `--primary-foreground` on the root element, for the current color mode, so a basic rebrand needs no rebuild. A color that is not configured, and a branding request that fails, leave the token defaults. The portal also takes its page title and favicon from branding.
+- Admin app: the branding screen at `/branding`. A vee-validate form with a Zod schema that mirrors the API's rules (product name, `#rrggbb` colors for light and dark, `https` links; an empty field clears the value), errors of the API on their fields, and the API's contrast warnings listed in words; a warning never blocks a save. The screen is read-only without the `update` ability and says so when the administrator may not view branding. A save updates the header at once.
 
 ---
 

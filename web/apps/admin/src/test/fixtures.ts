@@ -60,3 +60,9 @@ export function guestRoutes(): Record<string, Response> {
 export function signedInRoutes(): Record<string, Response> {
   return { 'GET /branding': json(brandingBody), 'GET /admin/auth/user': json(userBody) }
 }
+
+export const brandingResource = {
+  ...brandingBody.data,
+  warnings: [{ mode: 'dark', color: 'primary_foreground', against: 'primary', ratio: 2.134, required: 4.5 }],
+  abilities: { view: true, update: true },
+} satisfies components['schemas']['BrandingResource']

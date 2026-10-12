@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from './api'
 import { json, mockApi, noContent } from './test/api'
 import { mountApp } from './test/app'
-import { brandingBody, guestRoutes, loginBody, pending, signedInRoutes, unauthenticated } from './test/fixtures'
+import { brandingBody, brandingResource, guestRoutes, loginBody, pending, signedInRoutes, unauthenticated } from './test/fixtures'
 import { submitted } from './test/view'
 
 afterEach(() => {
@@ -98,6 +98,22 @@ describe('the guard', () => {
     await router.push('/')
 
     expect(mock.sent('GET /admin/auth/user')).toHaveLength(1)
+  })
+
+  it('opens the branding screen for a logged-in user', async () => {
+    mockApi({ ...signedInRoutes(), 'GET /admin/branding': json({ data: brandingResource }) })
+    const { router, wrapper } = await mountApp('/branding')
+
+    expect(router.currentRoute.value.name).toBe('branding')
+    expect(wrapper.get('main h1').text()).toBe('Branding')
+    expect(wrapper.get('nav a[href="/branding"]').text()).toBe('Branding')
+  })
+
+  it('remembers the branding screen for a guest', async () => {
+    mockApi(guestRoutes())
+    const { router } = await mountApp('/branding')
+
+    expect(router.currentRoute.value.fullPath).toBe('/login?redirect=/branding')
   })
 })
 

@@ -9,6 +9,7 @@ import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
 import TwoFactorChallengeView from './views/TwoFactorChallengeView.vue'
 import TwoFactorEnrollmentView from './views/TwoFactorEnrollmentView.vue'
+import BrandingView from './views/branding/BrandingView.vue'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -30,6 +31,7 @@ export function createAppRouter(history: RouterHistory): Router {
     history,
     routes: [
       { path: '/', name: 'home', component: HomeView },
+      { path: '/branding', name: 'branding', component: BrandingView },
       { path: '/login', name: 'login', component: LoginView, meta: { requires: 'guest' } },
       {
         path: '/two-factor',
