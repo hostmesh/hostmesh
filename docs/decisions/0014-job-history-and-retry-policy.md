@@ -39,7 +39,7 @@ Checked on 2026-10-08 against the installed `laravel/framework` 13.34.0:
 - **A failure without a class is retryable** and is reported to the exception handler. The row stores the exception's class name only, never its message.
 - **Delay:** `min(cap, base * 2^(attempts - 1))`, shortened by a random share of up to the jitter ratio (default 0.5). Defaults 10 s, 600 s, 8 attempts, recheck 120 s, all in `config/hostmesh.php` under `jobs`.
 - **A failed job is also stored in `failed_jobs`** (PostgreSQL) by Laravel. Re-pushing it does nothing: its row is finished. A new attempt is a new job and a new row.
-- **No locks.** The application uses no cache lock, unique job or overlap guard. A test enforces it. Section 24 permits best-effort locks; an allow-list is added when the first real use appears.
+- **No locks.** The application uses no cache lock, unique job or overlap guard. A test enforces it. Section 24 permitted best-effort locks when this was decided; spec revision 10 (issue #73) removed them, so a lock now needs a spec change first.
 - **Messages are stored.** A `JobFailure` message must never contain a secret. The message of any other exception is not stored, because its author did not write it for the row.
 
 ## Consequences
