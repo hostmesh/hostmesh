@@ -18,7 +18,7 @@ RUN npm install --global pnpm@12.8.1 \
 # entry of the catalog in web/pnpm-workspace.yaml. The smoke test compares
 # them. The browser lives outside the home directory and is readable by any
 # user, because the container runs as the host user.
-ENV PLAYWRIGHT_VERSION=1.63.0 \
+ENV PLAYWRIGHT_VERSION=1.64.0 \
     PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 
 RUN npx --yes playwright@${PLAYWRIGHT_VERSION} install --with-deps --only-shell chromium \
