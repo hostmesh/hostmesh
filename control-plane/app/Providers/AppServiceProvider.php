@@ -23,6 +23,7 @@ use App\Domain\Provisioning\Jitter;
 use App\Domain\Provisioning\RetryPolicy;
 use App\Http\Middleware\UseSessionRealm;
 use App\Infrastructure\Audit\DatabaseAuditLog;
+use App\Infrastructure\OpenApi\IncompleteOpenApiDocument;
 use App\Infrastructure\Provisioning\RandomJitter;
 use App\Infrastructure\TwoFactor\Google2faTotp;
 use App\Support\Realm;
@@ -34,6 +35,7 @@ use Dedoc\Scramble\Support\Generator\Path;
 use Dedoc\Scramble\Support\Generator\Response as OpenApiResponse;
 use Dedoc\Scramble\Support\Generator\Schema;
 use Dedoc\Scramble\Support\Generator\Server;
+use Dedoc\Scramble\Support\Generator\Types\UnknownType;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
@@ -111,9 +113,29 @@ class AppServiceProvider extends ServiceProvider
         // the audit log, synchronously, inside the caller's transaction.
         Event::listen(Audited::class, RecordAuditEvent::class);
 
+        // A document that could not be built in full is not written (issue
+        // #63). Left alone, Scramble exports what it has: a request whose
+        // rules it could not read loses its body, and a type it could not
+        // infer becomes an empty schema or a string. It reports both as
+        // diagnostics, and the transformer below refuses a document that has
+        // any. Set here, not as options of the command, so that
+        // `composer openapi` and the contract test cannot disagree.
+        Scramble::throwOnError();
+
+        // Once: the rules are static, and the tests boot many applications.
+        if (! Scramble::getSchemaValidator()->hasRules()) {
+            Scramble::preventSchema(UnknownType::class, throw: false);
+        }
+
         // Keeps the generated document identical on every machine: Scramble
         // builds the server URL from APP_URL and lists paths in route order.
         Scramble::configure()->withDocumentTransformers(function (OpenApi $document, OpenApiContext $context): void {
+            $diagnostics = $context->diagnostics->all();
+
+            if ($diagnostics->isNotEmpty()) {
+                throw IncompleteOpenApiDocument::from($diagnostics);
+            }
+
             $document->servers = [new Server('/'.$context->config->apiPath()->serverPath())];
 
             usort($document->paths, fn (Path $a, Path $b): int => $a->path <=> $b->path);

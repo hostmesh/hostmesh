@@ -4,10 +4,14 @@
 
 declare(strict_types=1);
 
+use App\Infrastructure\OpenApi\IncompleteOpenApiDocument;
+use Dedoc\Scramble\OpenApiVisitor\SchemaEnforceVisitor;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
+use Tests\Fixtures\OpenApi\ThrowingRulesController;
+use Tests\Fixtures\OpenApi\UnknownTypeController;
 
 use function Pest\Laravel\get;
 
@@ -22,6 +26,11 @@ function committedOpenApiPath(): string
 function generateOpenApi(): string
 {
     $path = (string) tempnam(sys_get_temp_dir(), 'openapi-');
+
+    // Scramble checks a component schema once per PHP process. `composer
+    // openapi` is one process and one generation; here every test generates,
+    // and each must check every component again.
+    (new ReflectionProperty(SchemaEnforceVisitor::class, 'handledReferences'))->setValue(null, []);
 
     try {
         expect(Artisan::call('scramble:export', ['--path' => $path]))->toBe(0);
@@ -155,4 +164,90 @@ it('documents a branding image as the bytes of an image, not as JSON', function 
     $notFound = $paths['/admin/branding/images/{slot}']['post']['responses']['404']['content']['application/json']['schema'];
 
     expect(array_keys($notFound['properties']))->toBe(['message']);
+});
+
+// Issue #62: the operation ID is the route name. An unnamed route gets an ID
+// that Scramble derives from the controller's namespace and class, and that
+// ID changes when another controller of the same name appears.
+it('gives every operation its route name as the operation ID', function (): void {
+    $paths = generateOpenApiDocument()['paths'];
+    $checked = 0;
+
+    foreach (Route::getRoutes() as $route) {
+        if (! str_starts_with($route->uri(), 'api/v1/')) {
+            continue;
+        }
+
+        $path = substr($route->uri(), strlen('api/v1'));
+
+        foreach (array_diff($route->methods(), ['HEAD']) as $method) {
+            $where = "{$method} {$path}";
+            $operation = $paths[$path][strtolower($method)] ?? null;
+
+            expect($route->getName())->not->toBeNull("{$where} has no route name. Name it in routes/api.php: the name is its operation ID.")
+                ->and($operation)->not->toBeNull("{$where} is missing from the document.")
+                ->and($operation['operationId'] ?? null)->toBe($route->getName(), "{$where} has an operation ID that is not its route name.");
+
+            $checked++;
+        }
+    }
+
+    expect($checked)->toBeGreaterThan(20);
+});
+
+it('gives no two operations the same ID', function (): void {
+    $ids = [];
+
+    foreach (generateOpenApiDocument()['paths'] as $operations) {
+        foreach ($operations as $operation) {
+            $ids[] = $operation['operationId'];
+        }
+    }
+
+    expect($ids)->toBe(array_values(array_unique($ids)));
+});
+
+// Issue #63: a document that could not be built in full is not written.
+// The settings are in AppServiceProvider, so `composer openapi` and these
+// tests cannot disagree.
+it('fails when the request documentation of an operation cannot be built', function (): void {
+    Route::post('/api/v1/throwing-rules', ThrowingRulesController::class)->name('throwing-rules');
+
+    expect(fn (): string => generateOpenApi())->toThrow(IncompleteOpenApiDocument::class, 'ThrowingRulesRequest::rules()');
+});
+
+it('fails when a type cannot be inferred', function (): void {
+    Route::get('/api/v1/unknown-type', UnknownTypeController::class)->name('unknown-type');
+
+    expect(fn (): string => generateOpenApi())->toThrow(IncompleteOpenApiDocument::class, 'Schema `UnknownType` is not allowed');
+});
+
+it('names every problem and writes no document', function (): void {
+    Route::post('/api/v1/throwing-rules', ThrowingRulesController::class)->name('throwing-rules');
+    Route::get('/api/v1/unknown-type', UnknownTypeController::class)->name('unknown-type');
+    $path = (string) tempnam(sys_get_temp_dir(), 'openapi-');
+
+    try {
+        Artisan::call('scramble:export', ['--path' => $path]);
+
+        $message = 'no exception';
+    } catch (IncompleteOpenApiDocument $exception) {
+        $message = $exception->getMessage();
+    } finally {
+        $written = (string) file_get_contents($path);
+        @unlink($path);
+    }
+
+    expect($message)->toContain('ThrowingRulesRequest', 'UnknownType', 'unknown-type/get', 'When generation fails')
+        ->and($written)->toBe('');
+});
+
+// Found by the check above: the document said `string`.
+it('documents the metadata of an audit event as an object of scalar values', function (): void {
+    $schema = generateOpenApiDocument()['components']['schemas']['AuditEventResource']['properties']['metadata'];
+
+    expect($schema)->toBe([
+        'type' => 'object',
+        'additionalProperties' => ['type' => ['boolean', 'integer', 'string', 'null']],
+    ]);
 });

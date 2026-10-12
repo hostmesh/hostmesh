@@ -1497,7 +1497,7 @@
         },
         "/health": {
             "get": {
-                "operationId": "v1.health",
+                "operationId": "health",
                 "description": "Reports that the application booted and can answer. It checks no dependency.",
                 "summary": "Liveness check",
                 "tags": [
@@ -1666,7 +1666,15 @@
                         ]
                     },
                     "metadata": {
-                        "type": "string"
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": [
+                                "boolean",
+                                "integer",
+                                "string",
+                                "null"
+                            ]
+                        }
                     },
                     "ip_address": {
                         "type": [

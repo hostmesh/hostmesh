@@ -39,6 +39,7 @@ final class AuditEventResource extends JsonResource
                 'id' => $event->resource_id,
                 'name' => $event->resourceName,
             ],
+            /** @var array<string, bool|int|string|null> */
             'metadata' => (object) $event->metadata,
             'ip_address' => $event->ip_address,
             'user_agent' => $event->user_agent,

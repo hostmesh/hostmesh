@@ -43,6 +43,39 @@ Run it after any change to a route, a request, a response or an API enum, and co
 
 The document is the same on every machine: the server URL is the relative `/api/v1`, the title and version are fixed in `config/scramble.php`, and paths are sorted. Scramble's documentation pages are switched off, because the control plane serves no UI. See [decision 0006](../docs/decisions/0006-openapi-generated-with-scramble.md).
 
+### Operation IDs
+
+The operation ID of an endpoint is its route name, and every route under `/api/v1` has one. The typed client's operation names come from these IDs, so they are part of the contract.
+
+- A route in the admin realm starts with `admin.`, one in the customer realm with `customer.`. The route groups in `routes/api.php` add the prefix. A public route has no prefix: `health`, `branding.show`.
+- After the prefix: the resource in the plural, as in the path, then the action: `admin.audit-events.index`, `admin.branding.images.store`. For a resource, use Laravel's action names (`index`, `show`, `store`, `update`, `destroy`); for anything else, the verb (`admin.auth.login`, `admin.auth.two-factor.confirm`).
+- Never rename a route to tidy up. A new name is a breaking change for every client.
+
+A route without a name would get an ID that Scramble derives from the controller's class, and that ID changes when a second controller with the same class name appears elsewhere. `OpenApiSpecTest.php` fails for a route without a name and for an operation whose ID is not its route name.
+
+### When generation fails
+
+`composer openapi` writes nothing and exits with an error when Scramble could not describe part of the API. On its own, Scramble would export what it has: a request without its body, or a field typed as a string that is not one. The message lists every problem with its code and place:
+
+```
+The OpenAPI document was not written: Scramble reported 2 problems.
+- [VR001] StoreWebsiteRequest::rules() call failed (Source at app/Http/..., Message Call to a member function on null)
+- [SE001] Schema `UnknownType` is not allowed (Located at /components/schemas/WebsiteResource/type/properties/settings)
+```
+
+- **`VR001`, `VR002`: the rules of a `FormRequest` could not be read.** Scramble calls `rules()` without a request, so there is no user, no route parameter and no input. Keep `rules()` free of them: put what depends on the request in `authorize()`, in `after()` or in a rule object, or guard it (`$this->user()?->id`). The rules Scramble reads are the documentation of the request body.
+- **`SE001`, `UnknownType`: a type could not be inferred.** The message names the property. The usual causes are a cast (`(object) $map`), a value typed `mixed`, and a method without a return type. Say what it is where it is returned, with a PHPDoc on the array item:
+
+  ```php
+  /** @var array<string, bool|int|string|null> */
+  'metadata' => (object) $event->metadata,
+  ```
+
+  or give the method that produces the value a return type.
+- **An exception with another class** comes from Scramble or from the code it analysed, and is not caught: read the trace.
+
+Fix the cause. Do not work around it by removing the route from the document. The settings are in `AppServiceProvider` (`Scramble::throwOnError()`, the `UnknownType` rule and the check of Scramble's diagnostics), not options of the command, so the contract test and CI fail in the same way.
+
 ## Hostnames and authentication
 
 `HOSTMESH_DOMAIN` is the only hostname setting. `app.`, `admin.`, `api.` and `agent.` under it are derived by `App\Support\Hostnames`, and `HostnameServiceProvider` writes the API URL, the CORS origins and the cookie domain. Never add another hostname setting or literal to `config/`: `tests/Feature/Platform/HostnamesTest.php` fails if you do.

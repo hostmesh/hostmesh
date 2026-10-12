@@ -146,6 +146,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CONTRIBUTING: an alias and a `prepare-commit-msg` hook that sign off every commit, how to repair a missing sign-off, and the checkpoint of decision 0002 before the first outside contribution.
 - The DCO check and the license scan were each proven to fail: a throwaway pull request with an unsigned commit that added a GPL-licensed dependency failed `Signed-off-by check` and `License scan`. The repository settings that make the checks required are listed in the pull request that introduced them.
 - `TRADEMARKS.md`, the trademark policy: what may be done with the Hostmesh name without asking (truthful references, compatibility and "based on" statements, running it under an operator's own brand, distributing it unchanged), what needs permission (naming a product or a changed version "Hostmesh", implying endorsement, using the name in domains, package names and accounts), and how to ask. The README links to it.
+- OpenAPI generation fails instead of writing an incomplete document. `composer openapi` now exits with an error that lists every problem when Scramble cannot read the rules of a `FormRequest` or cannot infer a type; before, it exported the request without its body or the field as a string. The settings are in `AppServiceProvider`, so the contract test and CI share them. `control-plane/README.md` says what to do for each kind of problem.
+- A contract test that fails when a route under `/api/v1` has no name or when an operation's ID is not its route name, and the convention for operation IDs in `control-plane/README.md`.
 
 ---
 
@@ -187,6 +189,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `web/README.md` describes the session client, how each app is put together (stores, guard, layouts, test helpers) and the rules for forms and abilities.
 - `NOTICE` names the Laravel application skeleton (MIT) next to shadcn-vue and points to `THIRD_PARTY_NOTICES`.
 - The version comment next to every pinned GitHub Action is now the exact tag name (`# v7.0.1` instead of `# 7.0.1`), so that Dependabot updates it together with the commit SHA.
+- The operation ID of `GET /api/v1/health` is now `health` (the route name) instead of `v1.health`, which Scramble derived from the controller's class. The typed client's `operations["v1.health"]` becomes `operations["health"]`.
 
 ---
 
@@ -194,3 +197,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `UserSpec` in the agent now rejects paths that start with `//` (the same directory as `/` on Linux, which slipped past the root check), `/` as a shell, `:` and control characters in the name, home and shell, an empty name, and a name starting with `-`.
 - `ensure_user` now refuses a home whose parent is missing or is not a directory before changing anything. It used to create the user first and fail afterwards, leaving the account behind on every run.
+- The OpenAPI document described `metadata` of an audit event as a string. It is an object whose values are booleans, integers, strings or null, which is what the API has always returned. The typed client's `metadata: string` becomes a map.
