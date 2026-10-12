@@ -34,7 +34,18 @@ Significant decisions are recorded as short documents in `docs/decisions/` (copy
 ## License and sign-off
 
 - Hostmesh is licensed under Apache-2.0. By contributing, you agree your contribution is licensed under it.
-- Every commit must carry a `Signed-off-by: Name <email>` line (use `git commit -s`). It certifies the [Developer Certificate of Origin 1.1](https://developercertificate.org/). A check on pull requests enforces it.
+- Every commit must carry a `Signed-off-by: Name <email>` line (use `git commit -s`). It certifies the [Developer Certificate of Origin 1.1](https://developercertificate.org/). The check "Signed-off-by check" on pull requests enforces it and skips commits authored by bots.
+- Git has no setting that signs off every commit. Two conveniences, both local to your clone:
+  - an alias: `git config alias.ci 'commit -s'`, then `git ci`;
+  - or a hook that adds the line whenever it is missing, which also covers commits made by tools. Save this as `.git/hooks/prepare-commit-msg` and make it executable:
+
+    ```sh
+    #!/bin/sh
+    git interpret-trailers --in-place --if-exists doNothing \
+      --trailer "Signed-off-by: $(git config user.name) <$(git config user.email)>" "$1"
+    ```
+- Forgot it? `git commit --amend -s --no-edit` for the last commit, `git rebase --signoff main` for the whole branch.
+- Before the first contribution from outside the project is merged, the maintainers confirm that the DCO is still the right policy or switch to a CLA (decision 0002).
 - New source files start with an SPDX identifier, for example `// SPDX-License-Identifier: Apache-2.0` (use the comment style of the language), within the first 10 lines. A check on pull requests enforces it: `make -C infrastructure/hygiene spdx`. Vendor, generated, lock and third-party-derived files are exempt and keep their own header; the exemptions and their reasons are in `infrastructure/hygiene/spdx.toml`. A file that combines Hostmesh's code with MIT code it was derived from says `Apache-2.0 AND MIT` and names the origin.
 - Dependencies must carry a license on the allowlist. A check on pull requests enforces it; see `infrastructure/hygiene/README.md` for the list and for how an exception is recorded.
 - The name "Hostmesh" and its logos are not licensed by Apache-2.0.

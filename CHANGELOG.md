@@ -142,6 +142,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - SPDX identifier check: `make -C infrastructure/hygiene spdx` fails when a tracked source file lacks `SPDX-License-Identifier` in its first 10 lines. Vendor, generated, lock and third-party-derived files are exempt by an explicit pattern with a reason in `infrastructure/hygiene/spdx.toml`; an exempt file that claims Apache-2.0, or an exemption that matches nothing, fails the check.
 - SPDX identifiers on the four issue templates, and `Apache-2.0 AND MIT` on the three control-plane files that grew out of the Laravel skeleton (`AppServiceProvider.php`, `bootstrap/app.php`, `bootstrap/providers.php`).
 - CI workflow `Hygiene`, on every pull request and on `main`, without a path filter so that its jobs can be required: `Hygiene tool checks` (ruff, mypy, pytest of `infrastructure/hygiene/`), `License scan` (the allowlist, and `THIRD_PARTY_NOTICES` being up to date) and `SPDX identifiers`.
+- `.github/dependabot.yml`: weekly version updates for Composer (`control-plane/`), npm (`web/`), uv (`agent/`, `infrastructure/testing/`, `infrastructure/hygiene/`) and GitHub Actions. Minor and patch releases are grouped into one pull request per ecosystem, and titles start with `chore`.
+- CONTRIBUTING: an alias and a `prepare-commit-msg` hook that sign off every commit, how to repair a missing sign-off, and the checkpoint of decision 0002 before the first outside contribution.
 
 ---
 
@@ -182,6 +184,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The development stack now serves both apps: `admin.hostmesh.test` and `app.hostmesh.test` are proxied to Vite's dev servers in the `node` service (`pnpm dev`, hot reload) instead of answering with a placeholder. `make install` restarts the service and waits for both servers; the smoke test expects them to answer.
 - `web/README.md` describes the session client, how each app is put together (stores, guard, layouts, test helpers) and the rules for forms and abilities.
 - `NOTICE` names the Laravel application skeleton (MIT) next to shadcn-vue and points to `THIRD_PARTY_NOTICES`.
+- The version comment next to every pinned GitHub Action is now the exact tag name (`# v7.0.1` instead of `# 7.0.1`), so that Dependabot updates it together with the commit SHA.
 
 ---
 
