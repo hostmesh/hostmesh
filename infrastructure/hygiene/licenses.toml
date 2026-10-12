@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The license policy for dependencies (spec section 36, decision 0001).
+# `make -C infrastructure/hygiene licenses` and the "License scan" job of
+# .github/workflows/hygiene.yml enforce it. How to add an exception:
+# infrastructure/hygiene/README.md.
+
+# A dependency passes when its SPDX expression can be met with these alone.
+# MPL-2.0 is for dependencies only: file-level copyleft, compatible with
+# shipping them unmodified. Hostmesh's own code is Apache-2.0.
+allowed = [
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Apache-2.0",
+    "ISC",
+    "0BSD",
+    "CC0-1.0",
+    "Unlicense",
+    "MPL-2.0",
+]
+
+# Python packages that name their license with a trove classifier instead of
+# an SPDX identifier. "BSD License" does not say which BSD; both are allowed.
+[aliases]
+"Apache Software License" = "Apache-2.0"
+"BSD License" = "BSD-3-Clause"
+"ISC License (ISCL)" = "ISC"
+"MIT License" = "MIT"
+"Mozilla Public License 2.0 (MPL 2.0)" = "MPL-2.0"
+
+# One entry per package: the license it was granted for, and why. An entry
+# that matches no installed package fails the scan.
+
+[[exceptions]]
+ecosystem = "npm"
+package = "@csstools/color-helpers"
+license = "MIT-0"
+reason = "MIT without the attribution condition; strictly more permissive than MIT. Development only (jsdom)."
+
+[[exceptions]]
+ecosystem = "npm"
+package = "@csstools/css-syntax-patches-for-csstree"
+license = "MIT-0"
+reason = "MIT without the attribution condition; strictly more permissive than MIT. Development only (jsdom)."
+
+[[exceptions]]
+ecosystem = "npm"
+package = "glob"
+license = "BlueOak-1.0.0"
+reason = "Blue Oak Model License 1.0.0: permissive, with a patent grant, Apache-2.0 compatible. Development only."
+
+[[exceptions]]
+ecosystem = "npm"
+package = "lru-cache"
+license = "BlueOak-1.0.0"
+reason = "Blue Oak Model License 1.0.0: permissive, with a patent grant, Apache-2.0 compatible. Development only."
+
+[[exceptions]]
+ecosystem = "npm"
+package = "minimatch"
+license = "BlueOak-1.0.0"
+reason = "Blue Oak Model License 1.0.0: permissive, with a patent grant, Apache-2.0 compatible. Development only."
+
+[[exceptions]]
+ecosystem = "npm"
+package = "minipass"
+license = "BlueOak-1.0.0"
+reason = "Blue Oak Model License 1.0.0: permissive, with a patent grant, Apache-2.0 compatible. Development only."
+
+[[exceptions]]
+ecosystem = "npm"
+package = "path-scurry"
+license = "BlueOak-1.0.0"
+reason = "Blue Oak Model License 1.0.0: permissive, with a patent grant, Apache-2.0 compatible. Development only."
+
+[[exceptions]]
+ecosystem = "npm"
+package = "argparse"
+license = "Python-2.0"
+reason = "A port of Python's argparse under the PSF license: permissive, attribution only. Development only (ESLint's js-yaml)."
+
+[[exceptions]]
+ecosystem = "python"
+package = "cffi"
+license = "MIT-0"
+reason = "MIT without the attribution condition; strictly more permissive than MIT. Development only (cryptography, for the ACME tests)."
+
+[[exceptions]]
+ecosystem = "python"
+package = "typing-extensions"
+license = "PSF-2.0"
+reason = "PSF License 2.0: permissive, attribution only. Ships with the agent (anyio, a dependency of httpx)."

@@ -137,6 +137,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - License hygiene tooling in `infrastructure/hygiene/`, a uv project like the test-node harness (`make -C infrastructure/hygiene check`). Its first part evaluates SPDX license expressions (`AND`, `OR`, `WITH`, parentheses) against a set of allowed identifiers.
 - The license policy format, `licenses.toml`: an allowlist of SPDX identifiers, aliases for packages that declare a license by an old name, exceptions for single packages (each with a mandatory reason), and the third-party source code that lives in the repository.
 - The hygiene tool reads the package listings of all three ecosystems: `composer licenses`, `pnpm --recursive licenses list` and the metadata of the Python packages installed in each uv project. A listing that is missing or empty is an error, not a pass.
+- Dependency license scan: `make -C infrastructure/hygiene licenses` checks every Composer, npm and Python dependency against the allowlist in `infrastructure/hygiene/licenses.toml` (MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, 0BSD, CC0-1.0, Unlicense, and MPL-2.0 for dependencies) and fails on anything else. Exceptions are per package, name the one license they cover and carry a reason; an exception that matches nothing fails the scan. `infrastructure/hygiene/README.md` has the procedure and lists the services that run as separate processes and are not linked (PowerDNS, MariaDB and others).
 
 ---
 
