@@ -1,0 +1,115 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Hygiene
+
+# No path filter: these jobs are required status checks, and a required
+# check that never runs blocks its pull request.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hygiene-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Must satisfy required-version in infrastructure/hygiene/pyproject.toml
+  UV_VERSION: "0.12.22"
+
+jobs:
+  tools:
+    name: Hygiene tool checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          working-directory: infrastructure/hygiene
+          enable-cache: true
+          cache-python: true
+      - name: Ruff, mypy and pytest
+        run : |
+          make -C infrastructure/hygiene install
+          make -C infrastructure/hygiene check
+
+  spdx:
+    name: SPDX identifiers
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          working-directory: infrastructure/hygiene
+          enable-cache: true
+          cache-python: true
+      - name: Install the hygiene tool
+        run: make -C infrastructure/hygiene install
+      - name: SPDX identifiers on authored source files
+        run: make -C infrastructure/hygiene spdx
+
+  licenses:
+    name: License scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # The listings come from the runner's own Composer and pnpm, not from
+      # the development stack's containers.
+      COMPOSER_COMMAND: composer --working-dir=../../control-plane
+      PNPM_COMMAND: pnpm --dir ../../web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.5"
+          extensions: pdo_pgsql, redis, intl, pcntl, fileinfo
+          coverage: none
+          tools: composer:v2
+      # --no-scripts: the scan reads what is installed and runs no application code.
+      - name: Install the control plane's dependencies
+        working-directory: control-plane
+        run: composer install --no-interaction --no-progress --prefer-dist --no-scripts
+
+      # Installs the pnpm version named by packageManager in web/package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: web/package.json
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install the web workspace's dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          working-directory: infrastructure/hygiene
+          enable-cache: true
+          cache-python: true
+      - name: Install the three Python projects
+        run: |
+          make -C agent install
+          make -C infrastructure/testing install
+          make -C infrastructure/hygiene install
+
+      - name: License scan against the allowlist
+        run: make -C infrastructure/hygiene licenses COMPOSER="$COMPOSER_COMMAND" PNPM="$PNPM_COMMAND"
+      - name: THIRD_PARTY_NOTICES is up to date
+        run: make -C infrastructure/hygiene notices-check COMPOSER="$COMPOSER_COMMAND" PNPM="$PNPM_COMMAND"
