@@ -192,6 +192,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The operation ID of `GET /api/v1/health` is now `health` (the route name) instead of `v1.health`, which Scramble derived from the controller's class. The typed client's `operations["v1.health"]` becomes `operations["health"]`.
 - Dependabot no longer proposes versions the web workspace holds back on purpose: majors of `@vueuse/core` and `@types/node`, anything but patches of `typescript`, and `vue-tsc` 3.3.12, which fails the type check. `playwright` is left out of the grouped update and gets a pull request of its own, because its version must change together with the `node` image.
 - The control plane refuses `brianium/paratest` 7.26.1 (a `conflict` entry in `composer.json`): it breaks `pest --parallel` under Pest 5.3.1. `control-plane/README.md` lists dependencies that are held back and when each entry can go.
+- The web workspace forces one version of `@types/node` and `jsdom` for the whole dependency graph (`overrides` in `web/pnpm-workspace.yaml`). They are optional peers of Vitest and Vite; after an update, packages that do not list them kept the old version, the workspace held two copies of Vitest, and `expect.element` lost its type in the tests of `@hostmesh/ui`. The `vue-demi` entry of `allowBuilds` is gone with the package: `reka-ui` 2.11 no longer depends on it.
 
 ---
 
