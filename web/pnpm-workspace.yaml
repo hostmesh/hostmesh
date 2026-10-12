@@ -3,10 +3,13 @@ packages:
   - apps/*
   - packages/*
 
-# vue-demi (through reka-ui's @floating-ui/vue) has an install script, which
-# pnpm runs only when it is allowed here.
-allowBuilds:
-  vue-demi: true
+# Optional peers of Vitest and Vite. A package that does not list them gets
+# whatever the lockfile had, and after an update the workspace then holds
+# two copies of Vitest: the browser matchers (`expect.element`) are typed on
+# one and the tests import the other. One version for the whole graph.
+overrides:
+  "@types/node": "catalog:"
+  jsdom: "catalog:"
 
 # One version of every shared dependency for the whole workspace
 # (decision 0007). Packages refer to an entry with "catalog:".
