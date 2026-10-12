@@ -63,7 +63,8 @@ jobs:
     timeout-minutes: 15
     env:
       # The listings come from the runner's own Composer and pnpm, not from
-      # the development stack's containers.
+      # the development stack's containers. The Makefile reads both names
+      # from the environment.
       COMPOSER_COMMAND: composer --working-dir=../../control-plane
       PNPM_COMMAND: pnpm --dir ../../web
     steps:
@@ -110,6 +111,6 @@ jobs:
           make -C infrastructure/hygiene install
 
       - name: License scan against the allowlist
-        run: make -C infrastructure/hygiene licenses COMPOSER="$COMPOSER_COMMAND" PNPM="$PNPM_COMMAND"
+        run: make -C infrastructure/hygiene licenses
       - name: THIRD_PARTY_NOTICES is up to date
-        run: make -C infrastructure/hygiene notices-check COMPOSER="$COMPOSER_COMMAND" PNPM="$PNPM_COMMAND"
+        run: make -C infrastructure/hygiene notices-check
