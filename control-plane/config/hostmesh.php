@@ -8,7 +8,7 @@ $strictPolicy = [
     'default-src' => ["'none'"],
     'script-src' => ["'self'"],
     'style-src' => ["'self'"],
-    // {api}: logos and the favicon are served by the API (spec section 28, "Branding).
+    // {api}: logos and the favicon are served by the API (spec section 28, "Branding").
     'img-src' => ["'self'", 'data:', '{api}'],
     'font-src' => ["'self'"],
     // {api} is replaced by the API origin (App\Support\ContentSecurityPolicy).
