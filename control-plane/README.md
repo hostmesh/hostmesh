@@ -72,6 +72,7 @@ The OpenAPI document was not written: Scramble reported 2 problems.
   ```
 
   or give the method that produces the value a return type.
+- **`MD001`: the table of a model could not be read.** Scramble reads column types from the database. Run the migrations on the database the command uses (`php artisan migrate`); CI does so before it regenerates the document.
 - **An exception with another class** comes from Scramble or from the code it analysed, and is not caught: read the trace.
 
 Fix the cause. Do not work around it by removing the route from the document. The settings are in `AppServiceProvider` (`Scramble::throwOnError()`, the `UnknownType` rule and the check of Scramble's diagnostics), not options of the command, so the contract test and CI fail in the same way.
