@@ -495,7 +495,7 @@ export interface paths {
          * Liveness check
          * @description Reports that the application booted and can answer. It checks no dependency.
          */
-        get: operations["v1.health"];
+        get: operations["health"];
         put?: never;
         post?: never;
         delete?: never;
@@ -546,7 +546,9 @@ export interface components {
                 id: string | null;
                 name: string | null;
             };
-            metadata: string;
+            metadata: {
+                [key: string]: boolean | number | string | null;
+            };
             ip_address: string | null;
             user_agent: string | null;
             request_id: string | null;
@@ -1497,7 +1499,7 @@ export interface operations {
             403: components["responses"]["AuthorizationException"];
         };
     };
-    "v1.health": {
+    health: {
         parameters: {
             query?: never;
             header?: never;

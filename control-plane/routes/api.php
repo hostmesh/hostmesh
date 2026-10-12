@@ -14,7 +14,9 @@ use App\Http\Api\V1\Customer;
 use App\Http\Api\V1\HealthController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', HealthController::class);
+// Every route has a name: it is the operation ID in the OpenAPI document
+// (control-plane/README.md, "Operation IDs").
+Route::get('/health', HealthController::class)->name('health');
 
 // Spec section 28: public and cacheable. Laravel's `cache.headers` sets the
 // ETag from the body and answers 304 to a matching If-None-Match. It sits
