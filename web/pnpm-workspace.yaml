@@ -22,7 +22,7 @@ catalog:
   "@vue/test-utils": ^2.5.1
   # 14.x, the major reka-ui depends on, so the bundle holds one copy
   # (decision 0009). Raise it when reka-ui moves to 15.
-  "@vueuse/core": ^14.4.0
+  "@vueuse/core": ^15.0.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
   eslint: ^10.11.0
