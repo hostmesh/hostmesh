@@ -91,3 +91,42 @@ ecosystem = "python"
 package = "typing-extensions"
 license = "PSF-2.0"
 reason = "PSF License 2.0: permissive, attribution only. Ships with the agent (anyio, a dependency of httpx)."
+
+# Third-party source code that lives in this repository. THIRD_PARTY_NOTICES
+# reproduces each license file; spdx.toml excludes the same paths from the
+# SPDX identifier check.
+
+[[vendored]]
+name = "shadcn-vue"
+license = "MIT"
+source = "https://github.com/unovue/shadcn-vue"
+paths = [
+    "web/packages/ui/src/components/ui/",
+    "web/packages/ui/src/lib/utils.ts",
+    "web/packages/ui/src/styles/variants.css",
+    "parts of web/packages/ui/src/styles/index.css, web/packages/ui/src/styles/tokens.css and web/packages/ui/src/components/data-table/DataTable.vue",
+]
+license_file = "web/packages/ui/src/components/ui/LICENSE"
+
+# The application skeleton has no license file of its own; its composer.json
+# declares MIT. laravel/framework's license text is among the Composer
+# packages.
+[[vendored]]
+name = "laravel/laravel (application skeleton)"
+license = "MIT"
+source = "https://github.com/laravel/laravel"
+paths = [
+    "control-plane/artisan",
+    "control-plane/public/index.php",
+    "control-plane/tests/TestCase.php",
+    "control-plane/config/app.php",
+    "control-plane/config/cache.php",
+    "control-plane/config/database.php",
+    "control-plane/config/filesystems.php",
+    "control-plane/config/logging.php",
+    "control-plane/config/mail.php",
+    "control-plane/config/queue.php",
+    "control-plane/config/services.php",
+    "control-plane/database/migrations/0001_01_01_000000_create_jobs_table.php",
+    "parts of control-plane/app/Providers/AppServiceProvider.php, control-plane/bootstrap/app.php and control-plane/bootstrap/providers.php",
+]

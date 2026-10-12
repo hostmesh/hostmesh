@@ -3,7 +3,7 @@
 # License hygiene. Run from the repository root with
 # `make -C infrastructure/hygiene <target>`.
 
-.PHONY: install lint lint-fix typecheck test check collect licenses
+.PHONY: install lint lint-fix typecheck test check collect licenses notices notices-check
 
 # --locked fails when uv.lock is out of date instead of rewriting it.
 UV_RUN := uv run --locked
@@ -49,3 +49,11 @@ collect:
 # agent/, infrastructure/testing/ and here.
 licenses: collect
 	$(HYGIENE) licenses
+
+# Rewrites THIRD_PARTY_NOTICES at the repository root. Run it after a
+# production dependency was added, removed or changed its license.
+notices: collect
+	$(HYGIENE) notices
+
+notices-check: collect
+	$(HYGIENE) notices --check

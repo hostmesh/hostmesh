@@ -8,3 +8,10 @@ This product includes source code from shadcn-vue
 (https://github.com/unovue/shadcn-vue) in web/packages/ui.
 Copyright (c) 2023 unovue. Licensed under the MIT License; see
 web/packages/ui/src/components/ui/LICENSE.
+
+This product includes files derived from the Laravel application skeleton
+(https://github.com/laravel/laravel) in control-plane. Copyright (c) Taylor
+Otwell. Licensed under the MIT License.
+
+THIRD_PARTY_NOTICES lists this source code and the dependencies that a
+build or an installation of Hostmesh includes, with their license texts.

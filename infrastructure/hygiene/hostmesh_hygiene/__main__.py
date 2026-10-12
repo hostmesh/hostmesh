@@ -10,10 +10,12 @@ from hostmesh_hygiene.inventory import (
     InventoryError,
     Package,
     composer_packages,
+    exported_names,
     npm_packages,
     python_packages,
 )
-from hostmesh_hygiene.policy import Policy, PolicyError, load_policy
+from hostmesh_hygiene.notices import render
+from hostmesh_hygiene.policy import Policy, PolicyError, load_policy, normalize_name
 from hostmesh_hygiene.scan import scan
 
 HERE = Path(__file__).resolve().parents[1]
@@ -28,19 +30,29 @@ _README = "infrastructure/hygiene/README.md"
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="hostmesh_hygiene",
-        description="License hygiene: the dependency license scan.",
+        description="License hygiene: the dependency license scan and THIRD_PARTY_NOTICES.",
     )
     commands = parser.add_subparsers(dest="command", required=True)
     licenses = commands.add_parser(
         "licenses", help="fail on a dependency whose license is not allowed"
     )
     _dependency_options(licenses)
+    notices = commands.add_parser(
+        "notices", help="write THIRD_PARTY_NOTICES from the production dependencies"
+    )
+    _dependency_options(notices)
+    notices.add_argument("--output", type=Path, default=REPO_ROOT / "THIRD_PARTY_NOTICES")
+    notices.add_argument(
+        "--check", action="store_true", help="write nothing; fail when the file is out of date"
+    )
     arguments = parser.parse_args(argv)
 
     try:
         match arguments.command:
             case "licenses":
                 return _licenses(arguments)
+            case "notices":
+                return _notices(arguments)
     except (InventoryError, PolicyError, OSError) as error:
         print(f"hostmesh_hygiene: {error}", file=sys.stderr)
         return 2
@@ -91,6 +103,49 @@ def _licenses(arguments: argparse.Namespace) -> int:
         f"{len(policy.exceptions)} of them by exception."
     )
     return 0
+
+
+def _production_packages(arguments: argparse.Namespace, policy: Policy) -> list[Package]:
+    """What a build or an installation includes: no development dependencies."""
+    root: Path = arguments.repo_root
+    inputs: Path = arguments.inputs
+    packages = composer_packages(inputs / "composer-prod.json", root / "control-plane/vendor")
+    packages += npm_packages(inputs / "pnpm-prod.json", root / "web")
+
+    # Only the agent ships. Its environment also holds its development tools.
+    shipped = exported_names(inputs / "python-prod.txt")
+    installed = {
+        normalize_name(package.name): package
+        for package in python_packages(root / "agent/.venv", policy.aliases)
+    }
+    missing = sorted(shipped - installed.keys())
+    if missing:
+        raise InventoryError(
+            f"{root / 'agent/.venv'}: not installed: {', '.join(missing)} "
+            "(run `make -C agent install`)"
+        )
+    packages += [installed[name] for name in sorted(shipped)]
+    return packages
+
+
+def _notices(arguments: argparse.Namespace) -> int:
+    policy = load_policy(arguments.policy)
+    text = render(_production_packages(arguments, policy), policy.vendored, arguments.repo_root)
+    output: Path = arguments.output
+
+    if not arguments.check:
+        output.write_text(text, encoding="utf-8")
+        print(f"Wrote {output.name}.")
+        return 0
+    if output.is_file() and output.read_text(encoding="utf-8") == text:
+        print(f"{output.name} is up to date.")
+        return 0
+    print(
+        f"{output.name} is out of date. Run `make -C infrastructure/hygiene notices` "
+        "and commit the result.",
+        file=sys.stderr,
+    )
+    return 1
 
 
 if __name__ == "__main__":
