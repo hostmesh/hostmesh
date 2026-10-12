@@ -134,6 +134,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Customer portal: brand colors from `GET /api/v1/branding` are applied at run time as overrides of `--primary` and `--primary-foreground` on the root element, for the current color mode, so a basic rebrand needs no rebuild. A color that is not configured, and a branding request that fails, leave the token defaults. The portal also takes its page title and favicon from branding.
 - Admin app: the branding screen at `/branding`. A vee-validate form with a Zod schema that mirrors the API's rules (product name, `#rrggbb` colors for light and dark, `https` links; an empty field clears the value), errors of the API on their fields, and the API's contrast warnings listed in words; a warning never blocks a save. The screen is read-only without the `update` ability and says so when the administrator may not view branding. A save updates the header at once.
 - Admin app: the branding screen uploads and removes the light logo, the dark logo and the favicon. Each slot shows the current image, says what the API accepts, and shows the API's reason next to the file input when an image is refused.
+- License hygiene tooling in `infrastructure/hygiene/`, a uv project like the test-node harness (`make -C infrastructure/hygiene check`). Its first part evaluates SPDX license expressions (`AND`, `OR`, `WITH`, parentheses) against a set of allowed identifiers.
 
 ---
 
