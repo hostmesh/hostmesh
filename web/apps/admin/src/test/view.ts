@@ -26,6 +26,16 @@ export async function mountView(component: Component, path = '/') {
   return { wrapper, router, auth: useAuthStore() }
 }
 
+/**
+ * Waits for a submitted form. vee-validate 4 runs a schema validation, the
+ * one of `handleSubmit` included, behind a 5 ms timer, so `flushPromises()`
+ * alone returns before the form has validated or sent anything.
+ */
+export async function submitted(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 10))
+  await flushPromises()
+}
+
 /** jsdom has no matchMedia: answer as a system set to light or dark would. */
 export function stubSystemColorScheme(dark: boolean): void {
   vi.stubGlobal('matchMedia', (query: string) => ({
