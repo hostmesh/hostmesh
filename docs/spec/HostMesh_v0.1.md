@@ -1,6 +1,6 @@
 # Hostmesh - v0.1 Architecture & MVP Specification
 
-**Status:** Frozen baseline (revision 9)
+**Status:** Frozen baseline (revision 10)
 **Version:** v0.1
 **Purpose:** Open-source hosting infrastructure, control-plane, and billing platform
 
@@ -18,6 +18,7 @@
 | 7    | 2026-09-30 | PowerDNS topology settled: dedicated DNS nodes (at least two in production) reconciled by the agent into local PowerDNS (SQLite backend), no zone transfers, DNS-01 waits for convergence on all active DNS nodes; DNS-node work moved into Slice 2                                                                                                                                |
 | 8    | 2026-09-30 | Hosting essentials settled: sandbox baseline (account slice, one PHP-FPM master per account and PHP version, unit sandboxing, quotas, egress rule); key-only SFTP with an optional SSH shell; cron as systemd timers; root-owned logs with a read-only bind mount and portal viewer; typed per-site PHP settings; PHP versions from a pinned Sury repository. No open items remain |
 | 9    | 2026-10-01 | Licensing decided: Apache-2.0, DCO sign-off, trademark policy; business model recorded; add-on mechanism added to the v0.2 backlog                                                                                                                                                                                                                                                 |
+| 10   | 2026-10-12 | Implementation findings of Slice 0 recorded: `job_history` table, its row statuses and the retry details (§6, §8); audit event model, content rules and retention (§21); Redis limited to queues, caching and rate limiting (§24); `admin` and `customer` route prefixes, the Origin rule, branding details and the first admin roles (§28); two v0.2 backlog items (§38)          |
 
 ---
 
@@ -304,7 +305,9 @@ conditions[]          type, status, reason, message, last_transition_at
 
 ### Jobs
 
-- The `jobs` table is the **reconcile history and audit record**: what was attempted, for which generation, on which node, with what result.
+- The `job_history` table is the **reconcile history and audit record**: what was attempted, for which generation, on which node, with what result. It is not named `jobs`, because that is the name of Laravel's database-queue table.
+- It holds **one row per operation, updated in place**, with an attempt counter and the last message. Columns: `type`, `resource_type`, `resource_id`, `generation`, `node_id`, `status`, `failure_class`, `message`, `attempts`, `started_at`, `finished_at`.
+- Row statuses: `pending`, `running`, `waiting`, `retrying`, `succeeded`, `failed`.
 - True jobs are reserved for **one-shot actions that are not state**: backup now, restart service, force certificate renewal, collect diagnostics.
 
 ---
@@ -368,6 +371,12 @@ Provisioning must not be a single large job, and it is not a stored linear enum 
 | Terminal  | invalid input, quota exceeded, unsupported PHP version | `failed` immediately                                                                                      |
 
 A `failed` resource is retried when its generation changes or when an administrator triggers the one-shot job `retry_reconcile`. All numbers are defaults and must be configurable.
+
+- A failure that carries no class is treated as retryable.
+- **Jitter** shortens a delay by a random share of up to 50%, so the cap always holds.
+- The default recheck interval for `waiting` is 2 minutes.
+- A run that was interrupted (worker killed, timeout) counts as one retryable attempt.
+- Attempts are counted in PostgreSQL (`job_history`, §6), not by the queue.
 
 ### Conditions
 
@@ -1185,14 +1194,24 @@ Initial model:
 ```text
 audit_events
 
-actor
+actor_type
+actor_id
 action
 resource
 resource_id
 metadata
 ip_address
+user_agent
+request_id
 created_at
 ```
+
+- `actor_type` is one of `administrator`, `user`, `node`, `system`. `actor_id` and `resource_id` are nullable.
+- `request_id` (UUID, nullable) ties an event to one HTTP request. `user_agent` (at most 255 characters, nullable) is stored next to `ip_address`.
+- Events hold **identifiers, never copies of personal data or secrets**.
+- A failed login for an unknown address stores a keyed hash of the submitted address, not the address.
+- **Retention:** events are kept for 24 months, `ip_address` and `user_agent` for 90 days, after which the two are cleared together. Both periods are defaults and configurable.
+- Reconcile attempts are recorded in `job_history` (§6), not in `audit_events`. The audit log records state changes and their cause.
 
 The system should be able to answer questions such as:
 
@@ -1269,12 +1288,10 @@ Hosting Node
 Redis is used for:
 
 - Laravel queues
-- Best-effort locks (never for correctness)
 - Caching
 - Rate limiting
-- Temporary provisioning state
 
-Redis is not the source of truth.
+Redis is not the source of truth and is never used for correctness: no locks and no provisioning state.
 
 PostgreSQL remains authoritative.
 
@@ -1410,23 +1427,27 @@ Version the public API from the beginning:
 /api/v1/
 ```
 
+The API has two route groups, one per session realm: `/api/v1/admin` for the admin app and `/api/v1/customer` for the portal. The server must know the group from the path before it can pick the session cookie. Public endpoints stay unprefixed.
+
 Examples:
 
 ```http
-GET    /api/v1/nodes
-POST   /api/v1/nodes
+GET    /api/v1/admin/nodes
+POST   /api/v1/admin/nodes
 
-GET    /api/v1/websites
-POST   /api/v1/websites
-GET    /api/v1/websites/{website}
+POST   /api/v1/admin/websites/{website}/suspend
+POST   /api/v1/admin/websites/{website}/unsuspend
 
-POST   /api/v1/websites/{website}/suspend
-POST   /api/v1/websites/{website}/unsuspend
+GET    /api/v1/customer/websites
+POST   /api/v1/customer/websites
+GET    /api/v1/customer/websites/{website}
 
-GET    /api/v1/subscriptions
-POST   /api/v1/subscriptions
+GET    /api/v1/customer/subscriptions
+POST   /api/v1/customer/subscriptions
 
-GET    /api/v1/invoices
+GET    /api/v1/customer/invoices
+
+GET    /api/v1/branding
 ```
 
 The API is the only interface to the application layer. The Vue apps consume it like any other client, with no privileged path.
@@ -1450,17 +1471,31 @@ The temporary-hostname domain (§10) is a separate dedicated domain and is never
 
 - The Vue apps use Laravel Sanctum's cookie-based SPA authentication. `app`, `admin` and `api` share a registrable domain. CORS allows exactly the two SPA origins, and the CSRF cookie flow is used.
 - **Admin and portal sessions are isolated.** Each uses its own guard and its own session cookie name per route group. Admin requires two-factor authentication and has a shorter session lifetime.
+- A request without an `Origin` header is refused in both groups until customer API tokens add a bearer path.
 - Customers' programmatic access uses personal API tokens with scoped abilities.
 - Two-factor authentication flows are part of the API.
-- Both static apps ship a strict Content Security Policy with `connect-src` limited to the API host.
+- Both static apps ship a strict Content Security Policy with `connect-src` limited to the API host. `img-src` also names the API host, because it serves the branding images.
 
 ### Branding
 
 `GET /api/v1/branding` is public and cacheable. It returns the product name, light and dark logos, favicon, brand colors, and support and legal links. An admin endpoint and admin screen edit it. The same record feeds emails and invoices. Colors are validated and a contrast warning is returned on save.
 
+- **Colors:** `primary` and `primary_foreground`, each for light and dark, as `#rrggbb`. Null keeps the token default.
+- **Links:** `support`, `terms`, `privacy`; `https` only.
+- **Images:** raster only. Logos are PNG, JPEG or WebP, at most 1 MB and 2000×2000. The favicon is a square PNG, at most 256 KB and 512×512. SVG waits for a sanitization decision.
+- **Contrast warning:** per mode, the foreground on the primary, and the primary on the default background and card, against WCAG AA 4.5:1. A failure is reported and never blocks the save.
+- **Serving:** images are served by the API (`GET /api/v1/branding/images/{slot}?v=<version>`), not from a public directory.
+- **Endpoints:** `GET` and `PUT /api/v1/admin/branding` (JSON), `POST` and `DELETE /api/v1/admin/branding/images/{slot}`.
+- **Caching:** `Cache-Control: public, max-age=300`, an `ETag`, and `304` on `If-None-Match`.
+- **Permissions:** `branding.view`, `branding.update`.
+
 ### Authorization
 
 Authorization is enforced server-side by policies. Responses include the abilities the current user has on each resource, so the frontend reflects permissions without duplicating the rules.
+
+- The admin realm starts with two roles. `owner` may do everything, including managing administrators. `read-only` may view everything and change nothing. Further roles are added in the slice that needs them.
+- Roles and permissions are defined in code. Role assignment is data.
+- The customer realm has no roles in v0.1. Access follows ownership.
 
 ### Live status
 
@@ -2087,6 +2122,8 @@ Ideas recorded here do not enter v0.1 scope (non-negotiable 10).
 - Egress connection limits
 - WAF and malware scanning
 - Add-on mechanism: documented extension points for backend modules, so proprietary or third-party add-ons can be built without forking
+- Operator-defined roles with a runtime editor
+- Tamper-evident audit ledger, fed from `audit_events` by a single worker
 
 ---
 

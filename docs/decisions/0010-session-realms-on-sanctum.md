@@ -37,6 +37,6 @@ Checked on 2026-10-05 in the source of Sanctum 4.3.3 and Laravel 13.34:
 - Three independent barriers separate the realms: the Origin check, the cookie name and table, and a guard backed by a different table.
 - A request without an `Origin` header is refused in both realms. Customer API tokens need a bearer path in the customer realm when they are built.
 - The middleware changes configuration per request. That is safe under PHP-FPM. A long-running server (Octane) would need the same reset on every request, which the middleware already performs, but it has not been tested there.
-- The route prefixes differ from the unprefixed examples in spec section 28; a `spec-change` issue records it.
+- The route prefixes differ from the unprefixed examples in spec section 28; a `spec-change` issue (#66) records it.
 - Resources carry no `abilities` until RBAC (#26). Two-factor authentication (#25) attaches to the admin realm.
 - The policy has no `unsafe-inline`. A UI library that needs inline styles will fail visibly in the browser tests (#32) and must be handled there.

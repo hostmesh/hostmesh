@@ -8,7 +8,7 @@
 
 Spec section 21 makes audit logging a first-class feature and gives an initial model: `actor`, `action`, `resource`, `resource_id`, `metadata`, `ip_address`, `created_at`. It must answer who deleted a website, who changed a subscription, why an account was suspended, what changed on a node, and which administrator started a provisioning operation. The admin app has an Audit screen (section 29); the portal does not.
 
-The spec does not ask for tamper evidence, gives no retention period, and does not mention personal data. Section 6 already says that the `jobs` table is "the reconcile history and audit record" of what was attempted, for which generation, on which node, with what result.
+The spec does not ask for tamper evidence, gives no retention period, and does not mention personal data. Section 6 already says that the `job_history` table (named `jobs` until spec revision 10) is "the reconcile history and audit record" of what was attempted, for which generation, on which node, with what result.
 
 Constraints from elsewhere: PostgreSQL is authoritative and Redis never carries correctness (non-negotiable 7). Tests run on real PostgreSQL. Secrets are never logged. Later slices add agents on many nodes that report concurrently.
 
@@ -52,7 +52,7 @@ Checked on 2026-10-07:
   - A failed login for an unknown address has no actor. The submitted address is not stored (people type passwords into that field). A keyed hash of it is stored so that attempts against one account can be correlated.
 - **Erasure:** deleting a customer removes the `users` row. Their events remain, attributed to a UUID that no longer resolves, which pseudonymises them by construction. `ip_address` is cleared immediately for an erased account.
 - **Retention:** events are kept for 24 months and `ip_address` for 90 days. Both are configurable defaults, applied by a scheduled job. The trigger's floor for deletion is 12 months and is not configurable, so an operator can shorten retention but a bug cannot remove recent history.
-- **Reconciliation:** the audit log records decisions and state changes together with their cause. Reconcile attempts stay in `jobs` (section 6). A reconcile that changes nothing writes no audit event.
+- **Reconciliation:** the audit log records decisions and state changes together with their cause. Reconcile attempts stay in `job_history` (section 6). A reconcile that changes nothing writes no audit event.
 - **Read API:** admin realm only, cursor paginated, filtered by actor, resource, action and time, and guarded by a policy on a dedicated permission (decision 0012).
 - **Tamper evidence is not part of v0.1.** If it is wanted, the path is a single worker that copies committed events, in order, into a ledger. The table is then the outbox, PostgreSQL stays authoritative, and a single writer never meets the lock problem above. Chronicle is the natural ledger for that.
 
