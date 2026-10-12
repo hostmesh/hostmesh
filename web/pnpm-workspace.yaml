@@ -34,7 +34,7 @@ catalog:
   pinia: ^4.0.3
   # Exact: each Playwright release drives one Chromium build, and the node
   # image installs the build of this version (decision 0009).
-  playwright: 1.63.0
+  playwright: 1.64.0
   reka-ui: ^2.10.5
   tailwind-merge: ^3.7.0
   tailwindcss: ^4.3.3
