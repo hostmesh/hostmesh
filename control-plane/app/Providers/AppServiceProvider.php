@@ -1,5 +1,8 @@
 <?php
 
+// SPDX-License-Identifier: Apache-2.0 AND MIT
+// Derived from the Laravel application skeleton (laravel/laravel, MIT).
+
 namespace App\Providers;
 
 use App\Application\Events\Audited;

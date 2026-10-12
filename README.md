@@ -41,3 +41,5 @@ Milestones, issues and the project board are on GitHub under this organization.
 ## License
 
 Licensed under the [Apache License, Version 2.0](LICENSE). Contributions are accepted under the Developer Certificate of Origin (sign off your commits with `git commit -s`). The Hostmesh name and logos are not covered by the license; see the trademark policy once published.
+
+Third-party software that Hostmesh contains or ships is listed, with its license texts, in [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES); the policy for dependencies is in [infrastructure/hygiene/README.md](infrastructure/hygiene/README.md).

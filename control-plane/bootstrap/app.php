@@ -1,5 +1,8 @@
 <?php
 
+// SPDX-License-Identifier: Apache-2.0 AND MIT
+// Derived from the Laravel application skeleton (laravel/laravel, MIT).
+
 use App\Http\Middleware\CaptureRequestContext;
 use App\Http\Middleware\RequireSecondFactor;
 use App\Http\Middleware\UseSessionRealm;

@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Weekly version updates for every manifest in the repository. Minor and
+# patch releases arrive as one pull request per ecosystem; a major release
+# gets its own. Titles start with "chore", so squash merges keep to
+# Conventional Commits.
+#
+# A pull request that changes a production dependency may fail the
+# "License scan" job on THIRD_PARTY_NOTICES: see
+# infrastructure/hygiene/README.md.
+version: 2
+
+updates:
+  - package-ecosystem: composer
+    directory: /control-plane
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+    groups:
+      composer-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # pnpm workspace: the lockfile and the catalog are at /web.
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # The Python projects lock with uv (decision 0005), so the ecosystem is
+  # uv, not pip: pip does not read uv.lock.
+  - package-ecosystem: uv
+    directories:
+      - /agent
+      - /infrastructure/testing
+      - /infrastructure/hygiene
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+    groups:
+      python-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Actions are pinned by commit SHA with the tag in a comment on the same
+  # line; Dependabot updates both.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+    groups:
+      actions:
+        patterns:
+          - "*"

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 name: Spike or decision
 description: A time-boxed investigation or a decision to record
 labels: ["type:spike", "needs-decision"]
