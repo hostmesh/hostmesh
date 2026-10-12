@@ -130,6 +130,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Admin app: an `auth` Pinia store that restores the session from `GET /admin/auth/user` (complete, guest, or still owing the two-factor challenge or enrollment), logs in through the CSRF cookie flow, completes the challenge, enrolls in two-factor and logs out. The user's `abilities` come from the API.
 - Admin app: a `branding` store that loads `GET /api/v1/branding` and keeps built-in defaults when it fails, an `AppLogo` component (the logo of the current color mode, or the product name), and the `LoginLayout` and `AppLayout` page frames with a "Log out" button.
 - Admin app: the login screen and the two-factor challenge screen (authenticator code or recovery code). Fields are labelled, errors from the API appear on their field, a failed submit moves focus to the first invalid field, and a `redirect` parameter is followed only to a path inside the app.
+- Admin app: the two-factor enrollment screen. It shows the QR code of the provisioning URI (drawn in the app from `uqr`'s matrix, new in the catalog) and the key, confirms with a code, and shows the recovery codes once before going on.
 
 ---
 
