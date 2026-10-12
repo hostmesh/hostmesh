@@ -8,6 +8,8 @@ export default defineConfig({
   test: {
     name: 'admin',
     environment: 'jsdom',
+    // The page the tests run on: the API host and the CSRF cookie derive from it.
+    environmentOptions: { jsdom: { url: 'https://admin.hostmesh.test/' } },
     include: ['src/**/*.test.ts'],
   },
 })
