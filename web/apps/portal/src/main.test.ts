@@ -21,7 +21,9 @@ afterEach(() => {
 })
 
 describe('entry point', () => {
-  it('applies the system color mode and mounts the app', async () => {
+  // The whole app is imported inside the test, so its load time counts
+  // against the timeout: about a second alone, four to five in a full run.
+  it('applies the system color mode and mounts the app', { timeout: 20_000 }, async () => {
     stubSystemColorScheme(true)
     mockApi(guestRoutes())
     document.body.innerHTML = '<div id="app"></div>'

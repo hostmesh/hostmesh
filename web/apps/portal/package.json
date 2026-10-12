@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "typecheck": "vue-tsc --noEmit && tsc --noEmit --project tsconfig.node.json"
+    "typecheck": "vue-tsc --noEmit && tsc --noEmit --project tsconfig.node.json",
+    "dev": "vite"
   },
   "dependencies": {
     "@hostmesh/api-client": "workspace:*",

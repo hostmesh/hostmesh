@@ -171,6 +171,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Content Security Policy of both static apps now allows images from the API origin (`img-src 'self' data: https://api.<domain>`), so logos and the favicon of the branding configuration load. Copy the new header from `infrastructure/nginx/hostmesh.conf.example`.
 - The admin app is no longer a placeholder page. Its router has a guard that follows the session state the API reports: a guest goes to `/login`, a session that owes its second factor to `/two-factor` or `/two-factor/setup`, everyone else to the application layout with the product name and logo from branding. A call that answers 401 returns the user to the login form and keeps the page for afterwards.
 - The customer portal is no longer a placeholder page. It has the login screen, the two-factor challenge screen for customers who turned two-factor on, logout, an `auth` store on the customer realm, the same route guard as the admin app, and an application layout with the product name and logo from branding.
+- The development stack now serves both apps: `admin.hostmesh.test` and `app.hostmesh.test` are proxied to Vite's dev servers in the `node` service (`pnpm dev`, hot reload) instead of answering with a placeholder. `make install` restarts the service and waits for both servers; the smoke test expects them to answer.
 
 ---
 
