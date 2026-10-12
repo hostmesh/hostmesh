@@ -166,6 +166,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `Agent` CI workflow also runs when `infrastructure/testing/` changes: the agent's development dependencies include the test harness.
 - `agent/README.md` documents the integration tests: the markers `integration` and `doubles`, the targets `test-integration` and `test-doubles`, and what each needs.
 - The Content Security Policy of both static apps now allows images from the API origin (`img-src 'self' data: https://api.<domain>`), so logos and the favicon of the branding configuration load. Copy the new header from `infrastructure/nginx/hostmesh.conf.example`.
+- The admin app is no longer a placeholder page. Its router has a guard that follows the session state the API reports: a guest goes to `/login`, a session that owes its second factor to `/two-factor` or `/two-factor/setup`, everyone else to the application layout with the product name and logo from branding. A call that answers 401 returns the user to the login form and keeps the page for afterwards.
 
 ---
 

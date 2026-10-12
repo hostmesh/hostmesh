@@ -1,35 +1,59 @@
 // SPDX-License-Identifier: Apache-2.0
-import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
-import { describe, expect, it } from 'vitest'
-import { createMemoryHistory } from 'vue-router'
 import { Toaster } from '@hostmesh/ui'
+import { flushPromises } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import App from './App.vue'
-import { createAppRouter } from './router'
+import { json, mockApi } from './test/api'
+import { mountApp } from './test/app'
+import { brandingBody, guestRoutes, signedInRoutes } from './test/fixtures'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  document.body.innerHTML = ''
+  document.title = ''
+})
 
 describe('admin app', () => {
-  it('mounts the root component and renders the home route', async () => {
-    const router = createAppRouter(createMemoryHistory())
-    await router.push('/')
-    await router.isReady()
-
-    const wrapper = mount(App, {
-      global: { plugins: [createPinia(), router] },
-    })
-
-    expect(wrapper.find('h1').text()).toBe('Hostmesh admin app')
-  })
-
   it('mounts the toast host of the component package', async () => {
-    const router = createAppRouter(createMemoryHistory())
-    await router.push('/')
-    await router.isReady()
-
-    const wrapper = mount(App, {
-      global: { plugins: [createPinia(), router] },
-    })
+    mockApi(guestRoutes())
+    const { wrapper } = await mountApp('/')
 
     expect(wrapper.findComponent(Toaster).exists()).toBe(true)
+  })
+
+  it('shows the product name and logo from the API on the login form', async () => {
+    mockApi(guestRoutes())
+    const { wrapper } = await mountApp('/login')
+
+    expect(wrapper.get('img').attributes('alt')).toBe('Acme Hosting')
+    expect(document.title).toBe('Acme Hosting admin')
+  })
+
+  it('shows them in the application layout too', async () => {
+    mockApi(signedInRoutes())
+    const { wrapper } = await mountApp('/')
+
+    expect(wrapper.get('header img').attributes('src')).toBe(brandingBody.data.logos.light)
+    expect(wrapper.get('header').text()).toContain('Ada Lovelace')
+  })
+
+  it('works with the defaults when branding cannot be loaded', async () => {
+    mockApi({ ...guestRoutes(), 'GET /branding': json({ message: 'Server Error' }, 500) })
+    const { wrapper } = await mountApp('/login')
+
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Hostmesh')
+    expect(document.title).toBe('Hostmesh admin')
+    expect(wrapper.get('h1').text()).toBe('Log in')
+  })
+
+  it('uses the name and the logo only: no brand color reaches the tokens', async () => {
+    mockApi(signedInRoutes())
+    await mountApp('/')
+    await flushPromises()
+
+    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('')
+    expect(document.documentElement.style.getPropertyValue('--primary-foreground')).toBe('')
+    expect(document.head.querySelector('link[rel="icon"]')).toBeNull()
   })
 })
