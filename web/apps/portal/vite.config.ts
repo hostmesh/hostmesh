@@ -8,6 +8,8 @@ export default defineConfig({
   test: {
     name: 'portal',
     environment: 'jsdom',
+    // The page the tests run on: the API host and the CSRF cookie derive from it.
+    environmentOptions: { jsdom: { url: 'https://app.hostmest.test/' } },
     include: ['src/**/*.test.ts'],
   },
 })
