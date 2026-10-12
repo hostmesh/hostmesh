@@ -31,6 +31,14 @@ docker compose -f infrastructure/development/compose.yaml exec php composer chec
 
 One test: `docker compose -f infrastructure/development/compose.yaml exec php vendor/bin/pest --filter=<name>`.
 
+## Dependencies held back
+
+`composer.json` has no comments, so the reasons are here. Remove an entry when its reason is gone.
+
+| `conflict` entry | Why | Remove when |
+|---|---|---|
+| `brianium/paratest` 7.26.1 | It added a required argument to `WrapperWorker`, which Pest 5.3.1 constructs with four: `pest --parallel` stops with an `ArgumentCountError` before any test runs. 7.26.0 works. | A Pest release later than 5.3.1 is installed (the fix is on Pest's `5.x` branch). |
+
 ## API contract
 
 `contracts/api/openapi.json` is the OpenAPI 3.1 document of the API. [Scramble](https://scramble.dedoc.co) generates it from the routes, controllers and enums, and it is committed. Never edit it by hand.
