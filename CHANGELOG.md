@@ -190,6 +190,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `NOTICE` names the Laravel application skeleton (MIT) next to shadcn-vue and points to `THIRD_PARTY_NOTICES`.
 - The version comment next to every pinned GitHub Action is now the exact tag name (`# v7.0.1` instead of `# 7.0.1`), so that Dependabot updates it together with the commit SHA.
 - The operation ID of `GET /api/v1/health` is now `health` (the route name) instead of `v1.health`, which Scramble derived from the controller's class. The typed client's `operations["v1.health"]` becomes `operations["health"]`.
+- Dependabot no longer proposes versions the web workspace holds back on purpose: majors of `@vueuse/core` and `@types/node`, anything but patches of `typescript`, and `vue-tsc` 3.3.12, which fails the type check. `playwright` is left out of the grouped update and gets a pull request of its own, because its version must change together with the `node` image.
 
 ---
 
