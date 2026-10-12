@@ -32,11 +32,38 @@ updates:
       day: monday
     commit-message:
       prefix: chore
+    # Versions the workspace holds back on purpose. The catalog in
+    # web/pnpm-workspace.yaml says why, next to each entry.
+    ignore:
+      # The major reka-ui depends on, so the bundle holds one copy
+      # (decision 0009). Raise it when reka-ui moves.
+      - dependency-name: "@vueuse/core"
+        update-types:
+          - version-update:semver-major
+      # The types of the Node major that is pinned (decision 0007).
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+      # 6.0.x only: typescript-eslint accepts <6.1.0 and vue-tsc fails on 7.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-major
+      # 3.3.12 reports "Cannot find name" for the variable of a v-for on an
+      # element that also has v-slot. Remove this entry to try a later one.
+      - dependency-name: vue-tsc
+        versions:
+          - 3.3.12
     groups:
       npm-minor-and-patch:
         update-types:
           - minor
           - patch
+        # Its version must equal PLAYWRIGHT_VERSION in the node image
+        # (infrastructure/development/node/Dockerfile, decision 0009), so it
+        # gets a pull request of its own, to which the image change is added.
+        exclude-patterns:
+          - playwright
 
   # The Python projects lock with uv (decision 0005), so the ecosystem is
   # uv, not pip: pip does not read uv.lock.
