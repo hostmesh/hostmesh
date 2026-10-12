@@ -94,9 +94,15 @@ services:
     # Chromium keeps page memory in /dev/shm. Docker's default of 64 MB makes
     # it crash under load (Playwright's Docker guidance).
     shm_size: 1gb
-    # Serves nothing yet: it exists so that pnpm commands can be run with
+    # Serves both apps with Vite's dev server, with hot reload: the admin
+    # app on 5173 and the portal on 5174, behind Caddy. Before the first
+    # `make install` there are no dependencies to run it with, so it waits;
+    # `make install` restarts the service. pnpm commands still run with
     # `docker compose exec node`.
-    command: ["sleep", "infinity"]
+    command:
+      - sh
+      - -c
+      - if [ -d node_modules ]; then exec pnpm dev; else echo "No node_modules yet. Run make install."; exec sleep infinity; fi
     volumes:
       - ../../web:/workspace/web
       # The typed client is generated from contracts/api/openapi.json.

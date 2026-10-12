@@ -2,18 +2,18 @@
 
 One command starts the services Hostmesh needs for local development, on the hostname layout used in production (spec section 28).
 
-| Hostname              | Production role     | Serves locally today |
-|-----------------------|---------------------|----------------------|
-| `app.hostmesh.test`   | Customer portal     | Placeholder          |
-| `admin.hostmesh.test` | Admin app           | Placeholder          |
-| `api.hostmesh.test`   | Laravel API         | The control plane    |
-| `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder          |
+| Hostname              | Production role     | Serves locally today            |
+|-----------------------|---------------------|---------------------------------|
+| `app.hostmesh.test`   | Customer portal     | The portal (Vite dev server)    |
+| `admin.hostmesh.test` | Admin app           | The admin app (Vite dev server) |
+| `api.hostmesh.test`   | Laravel API         | The control plane               |
+| `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder                     |
 
 The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane, a queue worker on the same image and a Node 24 service for the web workspace.
 Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM.
 A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)).
 Two test doubles run beside them: Pebble, an ACME test server, and its challenge test server, a mock DNS server (see "Test doubles").
-The two apps are not served on `app.hostmesh.test` and `admin.hostmesh.test` yet.
+The `node` service serves both apps with Vite's dev server, with hot reload: Caddy proxies `admin.hostmesh.test` to port 5173 and `app.hostmesh.test` to port 5174. It starts them once `make install` has installed the dependencies. After a change to `web/pnpm-lock.yaml` or a Vite configuration run `docker compose restart node`; its output is in `docker compose logs node`. The dev servers do not send the Content Security Policy of the production setup (`infrastructure/nginx`).
 
 ## Requirements
 
@@ -37,22 +37,22 @@ make -C infrastructure/development trust     # trust the local CA system-wide (s
 make -C infrastructure/development smoke     # check everything
 ```
 
-The smoke test must end with `All checks passed`. Then open <https://app.hostmesh.test/> and <https://api.hostmesh.test/api/v1/health>.
+The smoke test must end with `All checks passed`. Then open <https://admin.hostmesh.test/>, <https://app.hostmesh.test/> and <https://api.hostmesh.test/api/v1/health>.
 
 ## Commands
 
 Run them as `make -C infrastructure/development <target>`, or as `make <target>` from this directory.
 
-| Target    | What it does                                                                                                                                                                                                                                          |
-|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `up`      | Creates `.env` from `.env.example` if it is missing, builds the images whose Dockerfile changed, starts the stack and waits until every service is healthy.                                                                                           |
-| `doubles` | Starts only `pebble` and `challtestsrv`, the ACME and DNS test doubles. Enough for `make -C agent test-doubles`.                                                                                                                                      |
-| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                                                  |
-| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                                                       |
-| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile. Safe to repeat.                                 |
-| `smoke`   | Checks PostgreSQL, Redis, the placeholder hostnames over HTTPS, the API's health endpoint, the queue worker, the `node` service's Node and pnpm versions and its Chromium build, and the ACME and DNS test doubles. Exits non-zero if anything fails. |
-| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                                                      |
-| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                                                   |
+| Target    | What it does                                                                                                                                                                                                                                                                      |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `up`      | Creates `.env` from `.env.example` if it is missing, builds the images whose Dockerfile changed, starts the stack and waits until every service is healthy and reloads Caddy's configuration, so that a changed `Caddyfile` takes effect.                                         |
+| `doubles` | Starts only `pebble` and `challtestsrv`, the ACME and DNS test doubles. Enough for `make -C agent test-doubles`.                                                                                                                                                                  |
+| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                                                                              |
+| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                                                                                   |
+| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile and restarts the `node` service so that it serves both apps. Safe to repeat. |
+| `smoke`   | Checks PostgreSQL, Redis, the app and agent hostnames over HTTPS, the API's health endpoint, the queue worker, the `node` service's Node and pnpm versions and its Chromium build, and the ACME and DNS test doubles. Exits non-zero if anything fails.                           |
+| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                                                                                  |
+| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                                                                               |
 
 ## What `hosts` and `trust` change on your machine
 
@@ -181,6 +181,18 @@ From this directory:
 docker compose exec postgres psql -U hostmesh -d hostmesh
 docker compose exec redis redis-cli
 ```
+
+## Logging in locally
+
+There is no command that creates accounts yet. Create an administrator with the `owner` role and a customer with tinker; the factories set the password `correct-password`. `XDG_CONFIG_HOME` gives tinker a directory it can write its configuration to: the `php` service runs as your user, which has no home directory in the container, and tinker stops without one.
+
+```bash
+docker compose exec -e XDG_CONFIG_HOME=/tmp php php artisan tinker --execute='
+App\Domain\Identity\Administrator::factory()->withRoles(App\Domain\Authorization\Role::Owner)->create(["name" => "Owner", "email" => "owner@hostmesh.test"]);
+App\Domain\Identity\User::factory()->create(["name" => "Customer", "email" => "customer@hostmesh.test"]);'
+```
+
+The first admin login leads to the two-factor setup: scan the QR code with any authenticator app.
 
 ## Troubleshooting
 

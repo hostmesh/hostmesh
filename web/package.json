@@ -12,6 +12,7 @@
     "typecheck": "pnpm --recursive run typecheck",
     "test": "vitest run",
     "build": "pnpm --filter \"./apps/*\" run build",
+    "dev": "pnpm --parallel --filter \"./apps/*\" run dev",
     "generate:api": "pnpm --filter @hostmesh/api-client run generate",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
   },

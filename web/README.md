@@ -4,13 +4,13 @@ The two Vue 3 single-page applications and the packages they share. Both apps ar
 
 ## Layout
 
-| Path                   | Package                | Contents                                                                                             |
-|------------------------|------------------------|------------------------------------------------------------------------------------------------------|
-| `apps/admin/`          | `@hostmesh/admin`      | The admin app. A placeholder page for now.                                                           |
-| `apps/portal/`         | `@hostmesh/portal`     | The customer portal. A placeholder page for now.                                                     |
-| `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens, built with shadcn-vue. See its [README](packages/ui/README.md). |
-| `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`.               |
-| `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                                |
+| Path                   | Package                | Contents                                                                                                        |
+|------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `apps/admin/`          | `@hostmesh/admin`      | The admin app: login with mandatory two-factor, the application layout, the branding screen.                    |
+| `apps/portal/`         | `@hostmesh/portal`     | The customer portal: login, the two-factor challenge, the application layout, brand colors applied at run time. |
+| `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens, built with shadcn-vue. See its [README](packages/ui/README.md).            |
+| `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`.                          |
+| `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                                           |
 
 Shared packages export their TypeScript source, so they have no build step. Both apps depend on them as `workspace:*` packages, and a test in each app (`src/workspace.test.ts`) checks that they resolve.
 
@@ -44,11 +44,15 @@ CI (`.github/workflows/web.yml`) runs the same scripts on every pull request tha
 The apps reach the API only through `@hostmesh/api-client` (decision 0008):
 
 ```ts
-import { createApiClient } from '@hostmesh/api-client'
+import { apiBaseUrl, createSessionClient } from '@hostmesh/api-client'
 
-const api = createApiClient({ baseUrl: 'https://api.example.com/api/v1' })
-const { data, error } = await api.GET('/health')
+export const api = createSessionClient({
+  baseUrl: apiBaseUrl(window.location.hostname), // admin.<domain> -> https://api.<domain>/api/v1
+  csrfCookie: 'XSRF-TOKEN-ADMIN',
+})
 ```
+
+Each app has one client, in `src/api.ts`. `createSessionClient` sends the session cookie cross-origin and echoes the realm's CSRF cookie in `X-XSRF-TOKEN` on every state-changing request (decision 0010). The API host is derived from the page's hostname, so a build is not tied to a domain.
 
 After any API change, regenerate the specification and then the client, and commit both:
 
@@ -58,6 +62,23 @@ docker compose -f infrastructure/development/compose.yaml exec node pnpm generat
 ```
 
 Never edit `packages/api-client/src/generated/` by hand. CI regenerates it and fails on any difference. `src/health.test-d.ts` holds the type-level tests: `pnpm typecheck` compiles them, and they fail when the client and the specification disagree. In tests, type mock responses from the generated `paths` (see `src/client.test.ts`), so that a contract change breaks the typecheck.
+
+## How an app is put together
+
+| Path in `apps/<name>/src/`           | Contents                                                                                                                                                                                      |
+|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `api.ts`                             | The client, and `onUnauthenticated()` for a 401 on any call.                                                                                                                                  |
+| `stores/auth.ts`                     | The session: `unknown`, `guest`, `challenge`, `enrollment` (admin only) or `authenticated`, the user with the `abilities` the API reports, and the auth calls.                                |
+| `stores/branding.ts`                 | `GET /branding`, with built-in defaults that stay when the request fails.                                                                                                                     |
+| `router.ts`                          | The routes and one guard. A route's `meta.requires` names the session state it is for; the guard sends every other state to its own entry route and keeps the page asked for in `?redirect=`. |
+| `layouts/`, `components/AppLogo.vue` | `LoginLayout` and `AppLayout`, with the logo of the current color mode or the product name.                                                                                                   |
+| `views/`                             | One file per screen, with its test next to it.                                                                                                                                                |
+| `lib/`                               | `result.ts` (what an action returns), `form-errors.ts` (API errors onto vee-validate fields, focus on the first invalid one), `redirect.ts`.                                                  |
+| `test/`                              | `mockApi()` (a table of replies in place of `fetch`), bodies typed from the generated schema, `mountView()` and `mountApp()`, and `submitted()` to wait for a submitted form.                 |
+
+The admin app uses the product name and the logo of branding only. The portal also applies the brand colors as overrides of `--primary` and `--primary-foreground` on the root element (`lib/brand-colors.ts`) and sets the favicon (`lib/document-branding.ts`). The files the two apps have in common are copies; keep them in step when one changes.
+
+A form is vee-validate with a Zod schema from `@hostmesh/ui`. The schema is input ergonomics: the API validates again, and its errors are put on their fields. A screen decides what to offer from the `abilities` in the API's response, never from a role.
 
 ## Rules
 

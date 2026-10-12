@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
-# placeholder hostname over HTTPS, the API's health endpoint, the versions
+# hostname over HTTPS, the API's health endpoint, the versions
 # of the node service and its Chromium build, the ACME and DNS test doubles,
 # using the system resolver and trust store.
 # Runs every check and exits non-zero if any of them failed.
@@ -63,6 +63,7 @@ check_https() {
         6) fail "$name" "Name does not resolve. Run: make hosts" ;;
         7) fail "$name" "Connection refused. Is the stack up? Run: make up" ;;
         60) fail "$name" "Certificate is not trusted. Run: make trust" ;;
+        22) fail "$name" "The server answered an error. For app. and admin.: run make install (it starts the Vite dev servers)" ;;
         *) fail "$name" "curl exit code ${status}" ;;
     esac
 }

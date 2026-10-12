@@ -11,7 +11,8 @@ use App\Support\Hostnames;
 // with connect-src limited to the API host. Nginx serves the header; the
 // definition lives in config/hostmesh.php.
 
-const STRICT_POLICY = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+const STRICT_POLICY = "default-src 'none'; script-src 'self'; style-src 'self'; "
+    ."img-src 'self' data: https://api.hostmesh.test; "
     ."font-src 'self'; connect-src https://api.hostmesh.test; manifest-src 'self'; "
     ."base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -28,6 +29,13 @@ it('limits connect-src to the API origin', function (string $app): void {
     $directives = explode('; ', app(ContentSecurityPolicy::class)->header($app));
 
     expect($directives)->toContain('connect-src https://api.hostmesh.test');
+})->with(['portal', 'admin']);
+
+// Logos and the favicon are served by the API (GET /api/v1/branding/images/{slot}).
+it('lets the apps load branding images from the API origin', function (string $app): void {
+    $directives = explode('; ', app(ContentSecurityPolicy::class)->header($app));
+
+    expect($directives)->toContain("img-src 'self' data: https://api.hostmesh.test");
 })->with(['portal', 'admin']);
 
 it('allows nothing inline, evaluated or wildcarded', function (string $app): void {

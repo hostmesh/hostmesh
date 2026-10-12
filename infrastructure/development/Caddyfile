@@ -2,20 +2,20 @@
 #
 # Reverse proxy for local development, on the hostname layout of spec
 # section 28. Certificates come from Caddy's internal CA. The API hostname
-# proxies to the control plane. The other hostnames serve a placeholder
-# until their application exists; each site block then changes from
-# `respond` to `reverse_proxy`.
+# proxies to the control plane, and the two app hostnames to Vite's dev
+# servers in the node service. The agent hostname serves a placeholder
+# until the agent endpoint exists.
 {
 	local_certs
 	skip_install_trust
 }
 
 app.hostmesh.test {
-	respond "Hostmesh development placeholder: customer portal"
+	reverse_proxy node:5174
 }
 
 admin.hostmesh.test {
-	respond "Hostmesh development placeholder: admin app"
+	reverse_proxy node:5173
 }
 
 api.hostmesh.test {
