@@ -8,6 +8,8 @@
 # Runs every check and exits non-zero if any of them failed.
 
 set -u
+# Throwaway (issue #105): proves that a failing suite turns its gate red.
+echo "Throwaway failure" >&2; exit 1
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 
