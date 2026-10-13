@@ -35,6 +35,12 @@ import { Button, Card, CardContent, Input } from '../index'
       Accent
     </div>
     <div
+      class="bg-scannable text-scannable-foreground"
+      data-testid="scannable"
+    >
+      Scannable
+    </div>
+    <div
       class="bg-destructive text-destructive-foreground"
       data-testid="destructive"
     >

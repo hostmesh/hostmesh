@@ -48,6 +48,7 @@ Components read only these variables, through Tailwind utilities such as `bg-pri
 | `--accent`, `--accent-foreground`           | Hover and selection.                              |
 | `--destructive`, `--destructive-foreground` | Destructive actions and errors.                   |
 | `--overlay`                                 | The scrim behind a dialog, without its opacity.   |
+| `--scannable`, `--scannable-foreground`     | A code a camera reads; the same in both modes.    |
 | `--border`, `--input`, `--ring`             | Borders, input borders, focus rings.              |
 | `--radius`                                  | The corner radius every radius step derives from. |
 | `--font-sans`, `--font-mono`                | The font stacks.                                  |

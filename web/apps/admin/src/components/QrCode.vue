@@ -5,7 +5,9 @@ import { computed } from 'vue'
 
 // A QR code as an inline SVG: one square per dark module. No inline style
 // (the Content Security Policy forbids it) and no color literal: the
-// modules take `currentColor`, the background a token.
+// modules take `currentColor`, the background a token. The scannable pair
+// is dark on light in both color modes: authenticator apps do not read a
+// code that is light on dark (issue #124).
 const props = defineProps<{
   value: string
   /** The text alternative of the image. */
@@ -34,7 +36,7 @@ const path = computed(() => {
     :aria-label="props.label"
     :viewBox="`0 0 ${code.size} ${code.size}`"
     shape-rendering="crispEdges"
-    class="size-48 bg-background text-foreground"
+    class="size-48 bg-scannable text-scannable-foreground"
   >
     <path
       :d="path"

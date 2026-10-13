@@ -35,6 +35,18 @@ describe('QrCode', () => {
     expect(wrapper.get('path').attributes('fill')).toBe('currentColor')
   })
 
+  // Issue #124: light modules on a dark field do not scan. The scannable
+  // pair of @hostmesh/ui is dark on light in both color modes.
+  it('is drawn with the scannable pair, which does not follow the color mode', () => {
+    const wrapper = mount(QrCode, { props: { value: uri, label: 'QR' } })
+
+    const classes = wrapper.get('svg').classes()
+    expect(classes).toContain('bg-scannable')
+    expect(classes).toContain('text-scannable-foreground')
+    expect(classes).not.toContain('bg-background')
+    expect(classes).not.toContain('text-foreground')
+  })
+
   it('redraws when the value changes', async () => {
     const wrapper = mount(QrCode, { props: { value: uri, label: 'QR' } })
     const before = wrapper.get('path').attributes('d')
