@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# PHP runtime for local development of the contorl plane. See
+# PHP runtime for local development of the control plane. See
 # docs/decisions/0003-development-runtimes-in-containers.md and
 # docs/decisions/0004-php-8-5-for-the-control-plane.md.
 
