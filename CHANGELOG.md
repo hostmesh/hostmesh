@@ -149,6 +149,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - OpenAPI generation fails instead of writing an incomplete document. `composer openapi` now exits with an error that lists every problem when Scramble cannot read the rules of a `FormRequest` or cannot infer a type; before, it exported the request without its body or the field as a string. The settings are in `AppServiceProvider`, so the contract test and CI share them. `control-plane/README.md` says what to do for each kind of problem.
 - A contract test that fails when a route under `/api/v1` has no name or when an operation's ID is not its route name, and the convention for operation IDs in `control-plane/README.md`.
 - `php artisan e2e:seed` in the control plane: creates the administrators, customers and branding of the Playwright suite and prints their generated credentials as JSON. It is registered only when `APP_ENV` is `e2e` or `testing` and refuses to run anywhere else.
+- End-to-end mode of the development stack: `make -C infrastructure/development e2e-up` builds both apps and serves the builds on `admin.` and `app.hostmesh.test` with the production security headers (`Caddyfile.e2e`, `compose.e2e.yaml`), with the control plane on its own `hostmesh_e2e` database and Redis databases. `make up` switches back. The `node` image now holds `certutil`, and a Pest test keeps the end-to-end Caddyfile's Content Security Policy in step with the configured one.
 
 ---
 

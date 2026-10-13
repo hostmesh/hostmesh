@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# End-to-end mode of the development stack (issue #32, decision 0016).
+# Used together with compose.yaml by `make e2e-up`; `make up` returns the
+# stack to development mode. The hostnames are the same, so the two modes
+# cannot run at once.
+
+services:
+  # Its own database and Redis databases, so the suite never touches
+  # development data. Real environment variables win over control-plane/.env.
+  php: &e2e-application
+    environment:
+      APP_ENV: e2e
+      APP_DEBUG: "false"
+      DB_DATABASE: hostmesh_e2e
+      REDIS_DB: "2"
+      REDIS_CACHE_DB: "3"
+
+  worker: *e2e-application
+
+  caddy:
+    volumes:
+      - ./Caddyfile.e2e:/etc/caddy/Caddyfile:ro
+      - ../../web/apps/admin/dist:/srv/admin:ro
+      - ../../web/apps/portal/dist:/srv/portal:ro
+    # Playwright runs in the node service, which resolves the hostnames here.
+    networks:
+      default:
+        aliases:
+          - app.hostmesh.test
+          - admin.hostmesh.test
+          - api.hostmesh.test
+          - agent.hostmesh.test

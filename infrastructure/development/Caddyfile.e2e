@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The stack in end-to-end mode (compose.e2e.yaml, issue #32): the two apps
+# are the static builds in web/apps/*/dist, served with the security headers
+# of infrastructure/nginx/hostmesh.conf.example, so the Playwright suite
+# runs what production serves. A Pest test keeps both policies in step with
+# control-plane/config/hostmesh.php.
+{
+	local_certs
+	skip_install_trust
+}
+
+(security_headers) {
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000"
+	}
+}
+
+app.hostmesh.test {
+	root * /srv/portal
+	import security_headers
+	header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://api.hostmesh.test; font-src 'self'; connect-src https://api.hostmesh.test; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+	try_files {path} /index.html
+	file_server
+}
+
+admin.hostmesh.test {
+	root * /srv/admin
+	import security_headers
+	header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://api.hostmesh.test; font-src 'self'; connect-src https://api.hostmesh.test; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+	try_files {path} /index.html
+	file_server
+}
+
+api.hostmesh.test {
+	rewrite * /index.php
+	reverse_proxy php:9000 {
+		transport fastcgi {
+			root /var/www/html/public
+			split .php
+		}
+	}
+}
+
+agent.hostmesh.test {
+	respond "Hostmesh development placeholder: agent endpoint"
+}

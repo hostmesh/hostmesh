@@ -63,3 +63,16 @@ it('documents that the agent hostname is never proxied by a CDN', function (): v
     expect(nginxExample())->toContain('never behind a CDN')
         ->and((string) file_get_contents(base_path('../infrastructure/nginx/README.md')))->toContain('never behind a CDN');
 });
+
+// Issue #32: the end-to-end stack serves the built apps with the same
+// policy, so a violation shows up in the Playwright run.
+it('keeps the end-to-end Caddyfile in step with the configured policy', function (): void {
+    $caddyfile = (string) file_get_contents(base_path('../infrastructure/development/Caddyfile.e2e'));
+    $policy = ContentSecurityPolicy::fromConfig(config('hostmesh.csp'), new Hostnames('hostmesh.test'));
+
+    foreach (['portal', 'admin'] as $app) {
+        expect($caddyfile)->toContain('Content-Security-Policy "'.$policy->header($app).'"');
+    }
+
+    expect(substr_count($caddyfile, 'Content-Security-Policy'))->toBe(2);
+});
