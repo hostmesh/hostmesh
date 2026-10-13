@@ -26,6 +26,9 @@ catalog:
   "@types/node": ^24.19.2
   "@vitejs/plugin-vue": ^6.0.10
   "@vitest/browser-playwright": ^5.0.3
+  # Exact, and equal to the version of vitest in the lockfile: the provider
+  # names vitest as an exact peer. Raise the two together.
+  "@vitest/coverage-v8": 5.0.3
   "@vue/test-utils": ^2.5.1
   # 14.x, the major reka-ui depends on, so the bundle holds one copy
   # (decision 0009). Raise it when reka-ui moves to 15.

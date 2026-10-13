@@ -26,16 +26,19 @@ docker compose -f infrastructure/development/compose.yaml exec node pnpm check
 
 | pnpm script    | What it does                                                                                                                                                                  |
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `check`        | `lint`, `typecheck`, `test` and `build`. Run it before every push.                                                                                                            |
+| `check`        | `lint`, `typecheck`, `test:coverage` and `build`. Run it before every push.                                                                                                   |
 | `lint`         | ESLint (flat config) over the whole workspace, warnings fail.                                                                                                                 |
 | `lint:fix`     | ESLint with `--fix`.                                                                                                                                                          |
 | `typecheck`    | TypeScript strict in every package: `vue-tsc` for browser code (no Node types), `tsc` for the Vite and Vitest configuration and for the API client with its type-level tests. |
 | `test`         | Vitest, every project: each app (jsdom) and each package. The `ui` project runs in headless Chromium.                                                                         |
+| `test:coverage`| The same with code coverage of the whole workspace; fails below 95% of statements, branches, functions or lines.                                                              |
 | `build`        | Builds each app to `apps/<name>/dist/`.                                                                                                                                       |
 | `generate:api` | Empties `packages/api-client/src/generated/` and regenerates `schema.d.ts` from `contracts/api/openapi.json`.                                                                 |
 | `e2e`          | Playwright, against the stack in end-to-end mode. Not part of `check`. Run it with `make -C infrastructure/development e2e`, which seeds first.                               |
 
 One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`, `ui`, `api-client`).
+
+Coverage (spec section 37) is measured by `@vitest/coverage-v8` over the source of both apps and both packages in one run, configured in `vitest.config.ts`. Not measured: tests and their helpers, the generated API client, and `packages/ui/src/components/ui/`, which the shadcn-vue CLI writes. Run it for the whole workspace only: with `--project <name>` Vitest measures nothing and the thresholds pass on an empty report. The provider's version must equal Vitest's; raise the two together.
 
 The `ui` project needs Chromium: the `node` service has it, and CI installs it. Outside the container run `pnpm --filter @hostmesh/ui exec playwright install chromium` once.
 

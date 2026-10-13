@@ -97,8 +97,8 @@ jobs:
       # (decision 0009). The version comes from the lockfile.
       - name: Install Chromium for the component tests
         run: pnpm --filter @hostmesh/ui exec playwright install --with-deps --only-shell chromium
-      - name: Vitest
-        run: pnpm test
+      - name: Vitest, with the 95% coverage gate
+        run: pnpm test:coverage
       - name: Build both apps
         run: pnpm build
 
