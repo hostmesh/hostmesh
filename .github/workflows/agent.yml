@@ -2,12 +2,9 @@
 name: Agent
 
 on:
+  # No path filter here: the gate at the end must report on every pull
+  # request (decision 0017). The `changes` job holds the paths.
   pull_request:
-    paths:
-      - "agent/**"
-      - "contracts/agent-protocol/**"
-      - ".github/workflows/agent.yml"
-      - "infrastructure/testing/**"
   # Runs on main too, so pull requests can restore the uv cache.
   push:
     branches:
@@ -26,8 +23,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decision 0017: the workflow starts on every pull request, so that its
+  # gate (the last job) can be a required status check, and this job decides
+  # whether the suite has anything to do. The patterns are what it covers.
+  changes:
+    name: Changed paths (agent)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.detect.outputs.run }}
+    steps:
+      # The merge commit of the pull request and its first parent, the base:
+      # their difference is what the pull request changes.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - name: Does this pull request touch what the suite covers?
+        id: detect
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            echo "run=true" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only HEAD^1 HEAD)
+          run=$(.github/scripts/changed.sh \
+            "agent/**" \
+            "contracts/agent-protocol/**" \
+            ".github/workflows/agent.yml" \
+            "infrastructure/testing/**" \
+            ".github/scripts/**" <<< "$files")
+          echo "run=$run" | tee -a "$GITHUB_OUTPUT"
+
   checks:
     name: Ruff, mypy and pytest
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -53,3 +84,22 @@ jobs:
       # Unit and contract tests only. The integration tests run in integration.yml.
       - name: pytest with the 85% coverage gate
         run: make test-coverage
+
+  # The required status check of this workflow (decision 0017). It passes
+  # when the suite passed, and when it was skipped because the pull request
+  # touches nothing it covers. It fails when the change detection failed:
+  # GitHub would count the jobs skipped after that as passing.
+  gate:
+    name: Agent
+    if: always()
+    needs: [changes, checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+      - name: The suite passed, or had nothing to do
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: .github/scripts/gate.sh

@@ -2,30 +2,18 @@
 name: Integration tests
 
 # Decision 0015: two system containers on every pull request that touches
-# the agent or the harness; two virtual machines every night, on demand,
-# and on a pull request that carries the label `vm-tests`.
+# the agent or the harness. The virtual machines run in integration-vm.yml.
 on:
+  # No path filter here: the gate at the end must report on every pull
+  # request (decision 0017). The `changes` job holds the paths.
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
-    paths:
-      - "agent/**"
-      - "infrastructure/testing/**"
-      - "infrastructure/development/compose.yaml"
-      - "infrastructure/development/Makefile"
-      - "infrastructure/development/.env.example"
-      - ".github/workflows/integration.yml"
-  schedule:
-    # 02:17 UTC, off the hour: scheduled runs queue up at :00.
-    - cron: "17 2 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# A run started by a label has a group of its own: in the group of the
-# pushes it would cancel their run and then skip the jobs it cancelled.
 concurrency:
-  group: integration-${{ github.ref }}-${{ github.event.action == 'labeled' && 'label' || 'code' }}
+  group: integration-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -33,10 +21,44 @@ env:
   UV_VERSION: "0.12.22"
 
 jobs:
+  # Decision 0017: the workflow starts on every pull request, so that its
+  # gate (the last job) can be a required status check, and this job decides
+  # whether the suite has anything to do. The patterns are what it covers.
+  changes:
+    name: Changed paths (integration tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.detect.outputs.run }}
+    steps:
+      # The merge commit of the pull request and its first parent, the base:
+      # their difference is what the pull request changes.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - name: Does this pull request touch what the suite covers?
+        id: detect
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            echo "run=true" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only HEAD^1 HEAD)
+          run=$(.github/scripts/changed.sh \
+            "agent/**" \
+            "infrastructure/testing/**" \
+            "infrastructure/development/compose.yaml" \
+            "infrastructure/development/Makefile" \
+            "infrastructure/development/.env.example" \
+            ".github/workflows/integration.yml" \
+            ".github/scripts/**" <<< "$files")
+          echo "run=$run" | tee -a "$GITHUB_OUTPUT"
+
   harness:
     name: Harness checks
-    # Adding a label re-runs nothing but the virtual machines.
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled')
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -55,7 +77,8 @@ jobs:
 
   containers:
     name: Integration tests on containers
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled')
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -101,7 +124,8 @@ jobs:
 
   doubles:
     name: ACME and DNS test doubles
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled')
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -124,57 +148,21 @@ jobs:
         working-directory: infrastructure/development
         run: docker compose logs --no-color pebble challtestsrv
 
-  vms:
-    name: Integration tests on virtual machines
-    # On a pull request: only with the label `vm-tests`, and when a label is
-    # added, only when it is that one.
-    if: >-
-      github.event_name != 'pull_request'
-      || (contains(github.event.pull_request.labels.*.name, 'vm-tests')
-      && (github.event.action != 'labeled' || github.event.label.name == 'vm-tests'))
+  # The required status check of this workflow (decision 0017). It passes
+  # when the suite passed, and when it was skipped because the pull request
+  # touches nothing it covers. It fails when the change detection failed:
+  # GitHub would count the jobs skipped after that as passing.
+  gate:
+    name: Integration tests
+    if: always()
+    needs: [changes, harness, containers, doubles]
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    env:
-      HOSTMESH_NODE_TYPE: vm
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Set up uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: ${{ env.UV_VERSION }}
-          working-directory: agent
-          enable-cache: true
-          cache-python: true
-      - name: Let the runner user open /dev/kvm
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      # With recommended packages (decision 0015): without them virtual
-      # machines fail with "QEMU failed to run feature checks".
-      - name: Install Incus and QEMU
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y incus qemu-system
-          sudo incus admin init --minimal
-          sudo chmod 666 /var/lib/incus/unix.socket
-          incus version
-      - name: Let the Incus bridge through Docker's firewall
-        run: |
-          sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
-          sudo iptables -I DOCKER-USER -o incusbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-      - name: Install the agent's dependencies
-        run: make -C agent install
-      # Budget (decision 0015): ready within 150 seconds, reset within 60.
-      - name: Create two nodes
-        run: uv run --locked --directory agent python -m hostmesh_testing up
-      - name: Reset them
-        run: uv run --locked --directory agent python -m hostmesh_testing up
-      - name: Integration tests
-        run: make -C agent test-integration
-      - name: Show the nodes and the Incus daemon log
-        if: failure()
-        run: |
-          incus list || true
-          sudo tail -n 60 /var/log/incus/incusd.log || true
-          sudo journalctl -u incus --no-pager -n 40 || true
+          sparse-checkout: .github/scripts
+      - name: The suite passed, or had nothing to do
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: .github/scripts/gate.sh

@@ -38,6 +38,11 @@ jobs:
         run : |
           make -C infrastructure/hygiene install
           make -C infrastructure/hygiene check
+      # The scripts behind the gates of the path-aware workflows (decision 0017).
+      - name: Workflow scripts
+        run: |
+          shellcheck .github/scripts/*.sh
+          .github/scripts/test.sh
 
   spdx:
     name: SPDX identifiers

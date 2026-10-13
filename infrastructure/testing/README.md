@@ -96,4 +96,4 @@ def test_something_that_dirties_the_nodes(harness: NodeHarness) -> None:
 
 ## In CI
 
-`.github/workflows/integration.yml` runs the integration tests on two containers on every pull request that touches the agent or this directory, and on two virtual machines every night, on manual dispatch, and on a pull request that carries the label `vm-tests`.
+`.github/workflows/integration.yml` runs the integration tests on two containers on every pull request that touches the agent or this directory. It starts on every pull request, decides in its `changes` job whether the tests have anything to do, and reports the result as `Integration tests`, a required status check (decision 0017). `.github/workflows/integration-vm.yml` runs them on two virtual machines every night, on manual dispatch, and on a pull request that carries the label `vm-tests`.
