@@ -16,15 +16,15 @@ overrides:
 # (decision 0007). Packages refer to an entry with "catalog:".
 catalog:
   "@eslint/js": ^10.0.1
-  "@lucide/vue": ^1.54.0
+  "@lucide/vue": ^1.55.0
   # Exact, and the same as `playwright` below: both drive the Chromium build
   # the node image installs (decisions 0009 and 0016).
   "@playwright/test": 1.64.0
   "@standard-schema/spec": ^1.1.0
   "@tailwindcss/vite": ^4.3.3
   "@tanstack/vue-table": ^9.2.8
-  "@types/node": ^24.19.1
-  "@vitejs/plugin-vue": ^6.0.9
+  "@types/node": ^24.19.2
+  "@vitejs/plugin-vue": ^6.0.10
   "@vitest/browser-playwright": ^5.0.3
   "@vue/test-utils": ^2.5.1
   # 14.x, the major reka-ui depends on, so the bundle holds one copy
