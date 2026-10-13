@@ -4,7 +4,7 @@ The dependency license scan, the generated `THIRD_PARTY_NOTICES` and the SPDX id
 
 ## Setup
 
-`make -C infrastructure/hygiene install`, once. The scan and the notices also read what the other projects have installed, so they need the development stack running with its dependencies (`make -C infrastructure/development up`) and `make install` in `agent/` and `infrastructure/testing/`. uv 0.12 on the host, as for the agent.
+`make -C infrastructure/hygiene install`, once. The scan and the notices also read what the other projects have installed, so they need the development stack running with its dependencies (`make -C infrastructure/development up`) and `make install` in `agent/` and `infrastructure/testing/`. uv 0.12.18 or later, below 0.14, on the host, as for the agent.
 
 | Task                                              | Command                                        |
 |---------------------------------------------------|------------------------------------------------|

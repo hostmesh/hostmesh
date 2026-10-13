@@ -45,3 +45,13 @@ Decision 0003 covers PHP and Node only. It does not extend to the agent.
 - Unit and contract tests run on uv's Python 3.13 build, which is newer than Debian's 3.13.5. Fidelity to Debian's own interpreter comes from the integration tests on the Debian 13 test nodes (#16, #17).
 - How the agent is installed on a node is decided with the install script (#44). Any standard frontend can build the wheel.
 - Raising the minimum Python version is a new decision, tied to the Debian release the nodes run.
+
+## Amendment, 2026-10-13 (issue #117)
+
+The three Python projects require uv `>=0.12.18,<0.14`, not 0.12 alone.
+
+Dependabot's updater ships one exact uv version and refuses a project whose `required-version` does not hold it. With `>=0.12.22,<0.13` and Dependabot on 0.12.18, every run of its `uv` job failed and no Python dependency was ever proposed. The lower bound was only the newest release of the day the agent was started. uv 0.12.18, 0.12.24 and 0.13.0 each accept the three committed lockfiles and write them back byte for byte.
+
+- The range is set by what Dependabot ships now and next, not by a feature the projects need. When uv 0.14 is out and Dependabot is about to move to it, the upper bound is raised after the same check: `uv lock --check`, and a re-lock that changes nothing.
+- CI still pins one exact version (`UV_VERSION` in the workflows), which must lie in the range. Reproducible builds rest on that pin and on `--locked`, not on the range.
+- A lockfile that Dependabot's uv writes differently from CI's fails `--locked` on its pull request, where it is seen.
