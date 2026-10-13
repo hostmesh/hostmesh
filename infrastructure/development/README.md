@@ -47,6 +47,8 @@ Run them as `make -C infrastructure/development <target>`, or as `make <target>`
 |-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `up`      | Creates `.env` from `.env.example` if it is missing, builds the images whose Dockerfile changed, starts the stack and waits until every service is healthy and reloads Caddy's configuration, so that a changed `Caddyfile` takes effect.                                         |
 | `doubles` | Starts only `pebble` and `challtestsrv`, the ACME and DNS test doubles. Enough for `make -C agent test-doubles`.                                                                                                                                                                  |
+| `e2e-up`  | Builds both apps and switches the stack to end-to-end mode. See [End-to-end mode](#end-to-end-mode). `up` switches back.                                                                                                                                                          |
+| `e2e`     | Seeds the end-to-end database and runs the Playwright suite. Needs `e2e-up` first. `ARGS="…"` is passed to Playwright.                                                                                                                                                            |
 | `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                                                                              |
 | `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                                                                                   |
 | `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile and restarts the `node` service so that it serves both apps. Safe to repeat. |
@@ -171,6 +173,14 @@ The agent's tests run on your machine. `make -C agent test-doubles` runs the tes
 
 Pest runs inside the `php` service, which reaches both doubles by service name (the right-hand column above); the smoke test checks that. Pebble's CA is not in that container: copy it into the test's temporary directory with the `docker compose cp` command above, run from the host, or fetch it once in the test setup. There is no control plane code, configuration or test that uses the doubles yet. The resolver and the ACME client the control plane uses are chosen in Slice 3, and their tests then point them at these addresses.
 
+## End-to-end mode
+
+`make e2e-up` switches the stack to the mode the Playwright suite runs in (`web/README.md`, decision 0016): Caddy serves the built apps from `web/apps/*/dist` with the security headers of `infrastructure/nginx/hostmesh.conf.example` (`Caddyfile.e2e`), and the `php` and `worker` services run with `APP_ENV=e2e` on the database `hostmesh_e2e` and on Redis databases 2 and 3 (`compose.e2e.yaml`). Your development database is not touched. `make e2e` seeds and runs the suite; `make up` switches back.
+
+The hostnames are the same in both modes, so only one runs at a time. While the stack is in end-to-end mode a browser on your machine sees the built apps and the seeded branding ("Hostmesh E2E"), and the accounts of "Logging in locally" do not exist there.
+
+Chromium in the `node` service trusts Caddy's CA through an NSS database (`$HOME/.pki/nssdb` in that container) that `make e2e-up` rebuilds on every run, so nothing else is needed after a `make reset`.
+
 ## PostgreSQL and Redis
 
 Neither is published to the host. Containers in this Compose project reach them as `postgres:5432` and `redis:6379`. The database name, user and password are in `.env`.
@@ -215,6 +225,12 @@ The first admin login leads to the two-factor setup: scan the QR code with any a
 **Tests fail with `database "hostmesh_test" does not exist`.** The database is created with the PostgreSQL volume. A volume from before the control plane existed does not have it. Create it without losing data: `docker compose exec postgres createdb -U hostmesh hostmesh_test`.
 
 **Files in `control-plane/` are owned by root.** The `php` service was started without the Makefile, which sets your user and group id. Run `make down`, fix the ownership with `sudo chown -R "$(id -u):$(id -g)" ../../control-plane`, and start with `make up`.
+
+**`make e2e`: "The stack is not in end-to-end mode".** Run `make e2e-up`.
+
+**The apps show "Hostmesh E2E" or your login no longer works.** The stack is in end-to-end mode. Run `make up`.
+
+**`make e2e-up` fails with `database "hostmesh_e2e" does not exist`.** Run it again; it creates the database on a volume that is older than the init script.
 
 ## Undo
 

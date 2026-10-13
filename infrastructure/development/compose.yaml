@@ -46,6 +46,9 @@ services:
       # two. Mounted read-only so that ../infrastructure/nginx resolves in
       # the container as it does on the host and in CI.
       - ../nginx:/var/www/infrastructure/nginx:ro
+      # The end-to-end Caddyfile carries the same policy; the same Pest test
+      # compares it.
+      - ./Caddyfile.e2e:/var/www/infrastructure/development/Caddyfile.e2e:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,6 +81,9 @@ services:
       - ../../control-plane:/var/www/html
       - ../../contracts:/var/www/contracts
       - ../nginx:/var/www/infrastructure/nginx:ro
+      # The end-to-end Caddyfile carries the same policy; the same Pest test
+      # compares it.
+      - ./Caddyfile.e2e:/var/www/infrastructure/development/Caddyfile.e2e:ro
     depends_on:
       postgres:
         condition: service_healthy

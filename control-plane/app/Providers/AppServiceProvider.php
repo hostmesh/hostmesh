@@ -9,6 +9,8 @@ use App\Application\Events\Audited;
 use App\Application\Listeners\RecordAuditEvent;
 use App\Application\Services\AuditContext;
 use App\Application\Services\LoginAddressHasher;
+use App\Console\EndToEnd\Environment;
+use App\Console\EndToEnd\SeedCommand;
 use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Audit\Policies\AuditEventPolicy;
@@ -194,5 +196,12 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(20)->by("two-factor-address|$scope|$address"),
             ];
         });
+
+        // Issue #32: the seed command of the Playwright suite exists only
+        // in the end-to-end and test environments. It is outside
+        // app/Console/Commands on purpose, so Laravel does not discover it.
+        if (Environment::allows($this->app->environment())) {
+            $this->commands([SeedCommand::class]);
+        }
     }
 }

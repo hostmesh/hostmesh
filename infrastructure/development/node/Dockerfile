@@ -26,6 +26,13 @@ RUN npx --yes playwright@${PLAYWRIGHT_VERSION} install --with-deps --only-shell 
     && npm cache clean --force \
     && rm -rf /var/lib/apt/lists/*
 
+# certutil, for the end-to-end tests: Chromium trusts only the certificate
+# authorities in its NSS database, and `make e2e-up` imports Caddy's local
+# CA there (decision 0016).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libnss3-tools \
+    && rm -rf /var/lib/apt/lists/*
+
 # The container runs as the host user, who has no home directory inside it.
 # pnpm keeps its store on the workspace's filesystem, in
 # web/node_modules/.pnpm-store, so packages are hard-linked, not copied.

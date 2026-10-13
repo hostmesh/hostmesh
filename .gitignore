@@ -33,6 +33,8 @@ dist/
 playwright-report/
 test-results/
 coverage/
+/web/e2e/.seed.json
+/web/e2e/.seed.json.tmp
 
 # AI
 CLAUDE.md
