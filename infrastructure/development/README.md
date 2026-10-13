@@ -194,15 +194,20 @@ docker compose exec redis redis-cli
 
 ## Logging in locally
 
-There is no command that creates accounts yet. Create an administrator with the `owner` role and a customer with tinker; the factories set the password `correct-password`. `XDG_CONFIG_HOME` gives tinker a directory it can write its configuration to: the `php` service runs as your user, which has no home directory in the container, and tinker stops without one.
+Create an administrator with the console command of the control plane. It generates the password and shows it once, so store it; there is no way to read it later.
+
+```bash
+docker compose exec php php artisan administrator:create owner@hostmesh.test --name="Owner"
+```
+
+The role is `owner` unless `--role=read-only` is given. The first admin login leads to the two-factor setup: scan the QR code with any authenticator app.
+
+No command creates a customer yet. Create one with tinker; the factory sets the password `correct-password`. `XDG_CONFIG_HOME` gives tinker a directory it can write its configuration to: the `php` service runs as your user, which has no home directory in the container, and tinker stops without one.
 
 ```bash
 docker compose exec -e XDG_CONFIG_HOME=/tmp php php artisan tinker --execute='
-App\Domain\Identity\Administrator::factory()->withRoles(App\Domain\Authorization\Role::Owner)->create(["name" => "Owner", "email" => "owner@hostmesh.test"]);
 App\Domain\Identity\User::factory()->create(["name" => "Customer", "email" => "customer@hostmesh.test"]);'
 ```
-
-The first admin login leads to the two-factor setup: scan the QR code with any authenticator app.
 
 ## Troubleshooting
 

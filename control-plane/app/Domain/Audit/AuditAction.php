@@ -21,6 +21,7 @@ enum AuditAction: string
     case TwoFactorChallengeFailed = 'auth.two_factor.challenge_failed';
     case RecoveryCodeUsed = 'auth.two_factor.recovery_code_used';
     case RecoveryCodesRegenerated = 'auth.two_factor.recovery_codes_regenerated';
+    case AdministratorCreated = 'administrator.created';
     case AdministratorRoleAssigned = 'administrator.role_assigned';
     case AdministratorRoleRevoked = 'administrator.role_revoked';
     case BrandingUpdated = 'branding.updated';
