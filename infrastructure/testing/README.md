@@ -37,7 +37,7 @@ Install Incus with its recommended packages: without them `incus admin init` fai
 - Log out and in for the group to apply, or run one command at once with `sg incus-admin -c '<command>'`.
 - Where firewalld is active, the two `firewall-cmd` lines are needed: without them a node gets no IPv4 address and cannot resolve names.
 - Virtual machines need a writable `/dev/kvm`.
-- uv 0.12, as for the agent. Tested with Incus 6.0.0 and 6.23.
+- uv 0.12.18 or later, below 0.14, as for the agent. Tested with Incus 6.0.0 and 6.23.
 - macOS is not supported yet (decision 0015).
 
 ## Commands
