@@ -21,6 +21,8 @@ class Instance:
     state: str  # RUNNING or STOPPED
     config: dict[str, str]
     snapshots: set[str] = field(default_factory=set)
+    # Set by a test to stand for what a test run left behind; a restore clears it.
+    dirty: bool = False
 
 
 class FakeClock:
@@ -46,6 +48,12 @@ class FakeIncus:
         self.system_state = "running"
         self.address = "10.99.0.2 (eth0)"
         self.exec_result = _ok()
+        # The Incus daemon starts by itself, some seconds after it comes up,
+        # every instance that was running when it went down (issue #97).
+        # A name here is started once, "before restore" or "after restore".
+        self.daemon_starts: dict[str, str] = {}
+        # When set, `incus start` fails with this message and starts nothing.
+        self.start_error: str | None = None
 
     def verbs(self) -> list[str]:
         """The first two words of every call that changed something."""
@@ -86,8 +94,16 @@ class FakeIncus:
                 return _ok()
             case ("snapshot", "restore", name, snapshot):
                 instance = self.instances[name]
-                if instance.state != "STOPPED" or snapshot not in instance.snapshots:
+                moment = self.daemon_starts.pop(name, None)
+                if moment == "before restore":
+                    instance.state = "RUNNING"
+                if snapshot not in instance.snapshots:
                     return _error("cannot restore")
+                # Incus restores a running instance too: it stops it, restores
+                # it and starts it again.
+                instance.dirty = False
+                if moment == "after restore":
+                    instance.state = "RUNNING"
                 return _ok()
             case ("image", "info", alias):
                 return _ok() if alias in self.images else _error("image not found")
@@ -114,6 +130,10 @@ class FakeIncus:
                 self.instances[name].state = "STOPPED"
                 return _ok()
             case ("start", name):
+                if self.start_error is not None:
+                    return _error(self.start_error)
+                if self.instances[name].state == "RUNNING":
+                    return _error("The instance is already running")
                 self.instances[name].state = "RUNNING"
                 return _ok()
             case ("delete", "--force", name):

@@ -311,9 +311,31 @@ class NodeHarness:
             if described is not None and described[1] == "RUNNING":
                 _incus(self._runner, ["stop", "--force", name])
             _incus(self._runner, ["snapshot", "restore", name, SNAPSHOT])
-            _incus(self._runner, ["start", name])
+            self._start_restored(name)
         for name in names:
             self._wait_until_booted(name)
+
+    def _start_restored(self, name: str) -> None:
+        """Starts a node after its restore, unless something else already has.
+
+        The state read before the restore can be out of date (issue #97):
+        when the Incus daemon comes up, after a boot, it starts by itself the
+        nodes that were running when it went down. A node it starts after the
+        restore is clean and running. One it starts before is restored
+        while running, which Incus does by stopping it and starting it again.
+        Either way `incus start` then fails with "already running", and the
+        node is what a reset promises. So the start is tried, not decided on
+        a state that may change, and it is an error only when the node is not
+        running afterwards.
+        """
+        result = self._runner.run(["start", name])
+        if result.returncode == 0:
+            return
+        described = self._describe(name)
+        if described is None or described[1] != "RUNNING":
+            raise HarnessError(
+                f"incus start {name} failed: {result.stderr.strip() or result.stdout.strip()}"
+            )
 
     def _wait_until_booted(self, name: str) -> None:
         """Waits until commands run on the node and systemd has finished booting."""

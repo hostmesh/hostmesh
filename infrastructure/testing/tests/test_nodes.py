@@ -144,6 +144,46 @@ def test_a_stopped_node_is_reset_without_stopping_it_first() -> None:
     assert fake.instances[NODE_1].state == "RUNNING"
 
 
+# Issue #97. After a boot the first incus command starts the daemon, and the
+# daemon then starts by itself every node that was running when it went down.
+# A reset in those seconds reads STOPPED and finds the node running later.
+@pytest.mark.parametrize("moment", ["before restore", "after restore"])
+def test_a_node_the_daemon_starts_by_itself_during_a_reset_is_not_an_error(moment: str) -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    for name in NODE_NAMES:
+        fake.instances[name].state = "STOPPED"
+        fake.instances[name].dirty = True
+    fake.daemon_starts = {NODE_1: moment}
+
+    _harness(fake).up()
+
+    for name in NODE_NAMES:
+        assert fake.instances[name].state == "RUNNING"
+        assert fake.instances[name].dirty is False
+
+
+def test_a_node_that_does_not_start_after_a_reset_is_reported() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    fake.start_error = "Failed to run: forkstart: exit status 1"
+
+    with pytest.raises(HarnessError, match=f"incus start {NODE_1} failed: .*forkstart"):
+        _harness(fake).reset()
+
+    assert fake.instances[NODE_1].state == "STOPPED"
+
+
+def test_a_reset_restores_what_a_test_left_behind() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    fake.instances[NODE_2].dirty = True
+
+    _harness(fake).reset()
+
+    assert fake.instances[NODE_2].dirty is False
+
+
 def test_up_refuses_a_node_of_the_other_type() -> None:
     fake = FakeIncus()
     _harness(fake).up()
