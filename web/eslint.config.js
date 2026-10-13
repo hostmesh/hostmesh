@@ -31,7 +31,7 @@ const vueStyleRulesOff = Object.fromEntries(
 )
 
 export default defineConfig(
-  globalIgnores(['**/dist/', '**/coverage/', '**/generated/']),
+  globalIgnores(['**/dist/', '**/coverage/', '**/generated/', '**/playwright-report/', '**/test-results/']),
   {
     files: ['**/*.{js,ts,vue}'],
     extends: [
@@ -47,6 +47,11 @@ export default defineConfig(
         parser: tseslint.parser,
       },
     },
+  },
+  {
+    // Playwright's runner and the test files run in Node.
+    files: ['e2e/**/*.ts'],
+    languageOptions: { globals: globals.node },
   },
   {
     // The apps and the component package never talk to the network

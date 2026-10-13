@@ -150,6 +150,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A contract test that fails when a route under `/api/v1` has no name or when an operation's ID is not its route name, and the convention for operation IDs in `control-plane/README.md`.
 - `php artisan e2e:seed` in the control plane: creates the administrators, customers and branding of the Playwright suite and prints their generated credentials as JSON. It is registered only when `APP_ENV` is `e2e` or `testing` and refuses to run anywhere else.
 - End-to-end mode of the development stack: `make -C infrastructure/development e2e-up` builds both apps and serves the builds on `admin.` and `app.hostmesh.test` with the production security headers (`Caddyfile.e2e`, `compose.e2e.yaml`), with the control plane on its own `hostmesh_e2e` database and Redis databases. `make up` switches back. The `node` image now holds `certutil`, and a Pest test keeps the end-to-end Caddyfile's Content Security Policy in step with the configured one.
+- Playwright project `web/e2e` (`@hostmesh/e2e`): browser tests that run against the stack in end-to-end mode, with TOTP codes computed in the test. The first spec covers the admin login: password and code, a wrong code, a wrong password, and the refusal of a session that has passed the password only.
 
 ---
 
