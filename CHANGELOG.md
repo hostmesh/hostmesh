@@ -200,6 +200,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The control plane refuses `brianium/paratest` 7.26.1 (a `conflict` entry in `composer.json`): it breaks `pest --parallel` under Pest 5.3.1. `control-plane/README.md` lists dependencies that are held back and when each entry can go.
 - The web workspace forces one version of `@types/node` and `jsdom` for the whole dependency graph (`overrides` in `web/pnpm-workspace.yaml`). They are optional peers of Vitest and Vite; after an update, packages that do not list them kept the old version, the workspace held two copies of Vitest, and `expect.element` lost its type in the tests of `@hostmesh/ui`. The `vue-demi` entry of `allowBuilds` is gone with the package: `reka-ui` 2.11 no longer depends on it.
 - The ruleset of `main` requires the status check `End-to-end (Playwright)` next to the DCO and hygiene checks: a pull request cannot merge while the Slice 0 exit test fails.
+- Spec revision 11 records the outcome of the Slice 0 review: console commands as an entry point (section 25); `web/e2e/`, `infrastructure/nginx/` and `infrastructure/hygiene/` in the repository tree (section 27); the health endpoint and how the apps find the API (section 28); the two-node principle starts with Slice 1 (section 33); where the Playwright tests run and where their data comes from (section 37); abilities for navigation as an open item (section 39). Decision record 0017 documents which status checks are required and why the path-filtered pipelines are not yet.
 
 ---
 

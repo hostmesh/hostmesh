@@ -1,6 +1,6 @@
 # Hostmesh - v0.1 Architecture & MVP Specification
 
-**Status:** Frozen baseline (revision 10)
+**Status:** Frozen baseline (revision 11)
 **Version:** v0.1
 **Purpose:** Open-source hosting infrastructure, control-plane, and billing platform
 
@@ -19,6 +19,7 @@
 | 8    | 2026-09-30 | Hosting essentials settled: sandbox baseline (account slice, one PHP-FPM master per account and PHP version, unit sandboxing, quotas, egress rule); key-only SFTP with an optional SSH shell; cron as systemd timers; root-owned logs with a read-only bind mount and portal viewer; typed per-site PHP settings; PHP versions from a pinned Sury repository. No open items remain |
 | 9    | 2026-10-01 | Licensing decided: Apache-2.0, DCO sign-off, trademark policy; business model recorded; add-on mechanism added to the v0.2 backlog                                                                                                                                                                                                                                                 |
 | 10   | 2026-10-12 | Implementation findings of Slice 0 recorded: `job_history` table, its row statuses and the retry details (§6, §8); audit event model, content rules and retention (§21); Redis limited to queues, caching and rate limiting (§24); `admin` and `customer` route prefixes, the Origin rule, branding details and the first admin roles (§28); two v0.2 backlog items (§38)          |
+| 11   | 2026-10-13 | Slice 0 review: console commands as an entry point (§25); `web/e2e/`, `infrastructure/nginx/` and `infrastructure/hygiene/` in the repository tree (§27); the health endpoint and how the apps find the API (§28); the two-node principle starts with Slice 1 (§33); where the Playwright tests run and where their data comes from (§37); abilities for navigation recorded as an open item (§39) |
 
 ---
 
@@ -1330,12 +1331,16 @@ app/
 │   ├── NodeAgents/
 │   └── Notifications/
 │
-└── Http/
-    └── Api/
-        └── V1/
-            ├── Admin/       # admin endpoints
-            └── Customer/    # customer endpoints
+├── Http/
+│   └── Api/
+│       └── V1/
+│           ├── Admin/       # admin endpoints
+│           └── Customer/    # customer endpoints
+│
+└── Console/                 # console commands: an entry point like Http
 ```
+
+Console commands, like controllers, hold no business logic: they call the application layer, and nothing depends on them.
 
 The Laravel application serves no application UI. All screens are provided by the separate Vue apps in `web/` (§29).
 
@@ -1399,6 +1404,7 @@ hosting-platform/
 │   ├── packages/
 │   │   ├── ui/             # shared components and design tokens
 │   │   └── api-client/     # TypeScript client generated from OpenAPI
+│   ├── e2e/                # Playwright end-to-end tests (decision 0016)
 │   └── themes/             # optional operator themes, selected with THEME=<name>
 │
 ├── contracts/
@@ -1408,7 +1414,9 @@ hosting-platform/
 ├── infrastructure/
 │   ├── docker/
 │   ├── development/
-│   └── testing/
+│   ├── testing/
+│   ├── nginx/              # example configuration for the four hostnames
+│   └── hygiene/            # license scan, third-party notices, SPDX check
 │
 ├── docs/
 │
@@ -1452,6 +1460,8 @@ GET    /api/v1/branding
 
 The API is the only interface to the application layer. The Vue apps consume it like any other client, with no privileged path.
 
+`GET /api/v1/health` is a public liveness endpoint. It needs no session, reports no detail and answers `{"status":"ok"}` while the application can serve requests.
+
 ### OpenAPI and typed client
 
 The OpenAPI specification is generated from the Laravel code (for example with Scramble) and committed to `contracts/api/`. A TypeScript client is generated from it into `web/packages/api-client/`. CI regenerates both and fails if either is stale. This is internal tooling for the Vue apps; public SDKs remain out of scope (§32).
@@ -1466,6 +1476,8 @@ The OpenAPI specification is generated from the Laravel code (for example with S
 | `agent.<domain>` | Agent mTLS endpoint, on its own hostname and not proxied (§5) |
 
 The temporary-hostname domain (§10) is a separate dedicated domain and is never under the brand domain. A single host with path prefixes was rejected: it is simpler to install, but a stored XSS in the customer-facing portal would then share an origin with the admin app. Separate origins are cheap defense in depth.
+
+The apps take the API origin from the hostname they are served on: `admin.<domain>` and `app.<domain>` call `https://api.<domain>`. No address is built into an app.
 
 ### Client authentication
 
@@ -1727,7 +1739,7 @@ The roadmap is a sequence of **vertical slices**, not horizontal phases. It assu
 
 ### Principles
 
-1. Every slice ends with an automated end-to-end test that runs against **two nodes**, so multi-node behavior is exercised from the start.
+1. Every slice from Slice 1 on ends with an automated end-to-end test that runs against **two nodes**, so multi-node behavior is exercised from the start. Slice 0 builds the two test nodes and proves them with the harness's own integration tests; its exit test is a login through the Vue apps.
 2. **UI ships with the slice that needs it.** The admin UI stays deliberately thin (generated-client CRUD screens). Portal theming and polish land in the last slice.
 3. **Backups come before any real customer data, and billing before the public.**
 4. **Open spec items are settled just before the slice that needs them** (§39).
@@ -2084,7 +2096,7 @@ Hostmesh is developed **test-first**: red, green, refactor. A failing test is wr
 ### Frontend practices
 
 - Components, stores and composables are developed test-first with Vitest. API calls are mocked against types generated from the OpenAPI spec, so a contract change breaks the build.
-- Playwright covers critical flows against the real API (with fakes for Stripe and the agent): login and two-factor, node enrollment, website provisioning progress, checkout, and suspension on payment failure.
+- Playwright covers critical flows against the real API (with fakes for Stripe and the agent): login and two-factor, node enrollment, website provisioning progress, checkout, and suspension on payment failure. It runs against the built apps, served with the production security headers, and a database of its own. Test data comes from a console command that exists only in the end-to-end and test environments, never in production (decision 0016).
 - Themability is tested: the portal renders correctly with a non-default token set and branding configuration, and theme-folder overrides resolve with fallback to the core components.
 
 ### Cross-cutting
@@ -2129,4 +2141,6 @@ Ideas recorded here do not enter v0.1 scope (non-negotiable 10).
 
 # 39. Open Items (Next Revision)
 
-None at revision 8. Design questions that arise during implementation are recorded here and settled before the slice that needs them (§33).
+One at revision 11. Design questions that arise during implementation are recorded here and settled before the slice that needs them (§33).
+
+- **Abilities for navigation.** Responses carry the abilities of the current user on each resource (§28). Nothing reports which sections an administrator may open, so an app cannot hide a navigation entry before it has asked for the resource. To settle before the admin app gets its second section (Slice 1).
