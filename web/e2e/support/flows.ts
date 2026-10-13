@@ -25,10 +25,10 @@ export async function submitCode(page: Page, code: string): Promise<void> {
 export async function logInAsAdministrator(page: Page, administrator: Administrator): Promise<void> {
   await submitLogin(page, ADMIN, administrator)
   await submitCode(page, totp(administrator.totp_secret))
-  await expect(page.getByRole('heading', { name: 'Dashboard that does not exist' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 }
 
 export async function logInAsCustomer(page: Page, customer: Account): Promise<void> {
   await submitLogin(page, PORTAL, customer)
-  await expect(page.getByRole('heading', { name: 'Dashboard that does not exist' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 }
