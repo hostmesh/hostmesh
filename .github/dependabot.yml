@@ -64,6 +64,13 @@ updates:
         # gets a pull request of its own, to which the image change is added.
         exclude-patterns:
           - playwright
+          # Pinned to the same version as playwright (decision 0016).
+          - "@playwright/test"
+      # One pull request for both, so the two pins move together.
+      playwright:
+        patterns:
+          - playwright
+          - "@playwright/test"
 
   # The Python projects lock with uv (decision 0005), so the ecosystem is
   # uv, not pip: pip does not read uv.lock.
