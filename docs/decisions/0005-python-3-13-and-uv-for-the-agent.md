@@ -50,8 +50,8 @@ Decision 0003 covers PHP and Node only. It does not extend to the agent.
 
 The three Python projects require uv `>=0.12.18,<0.14`, not 0.12 alone.
 
-Dependabot's updater ships one exact uv version and refuses a project whose `required-version` does not hold it. With `>=0.12.22,<0.13` and Dependabot on 0.12.18, every run of its `uv` job failed and no Python dependency was ever proposed. The lower bound was only the newest release of the day the agent was started. uv 0.12.18, 0.12.24 and 0.13.0 each accept the three committed lockfiles and write them back byte for byte.
+Dependabot's updater ships one exact uv version and refuses a project whose `required-version` does not hold it. With `>=0.12.22,<0.13` and Dependabot on 0.12.18, every run of its `uv` job failed and no Python dependency was ever proposed. The lower bound was only the newest release of the day the agent was started. uv 0.12.18, 0.12.24 and 0.13.0 each accept the three committed lockfiles, and a re-lock that has nothing to update leaves them unchanged. When it does update a package, a uv writes the header of the lockfile with its own `revision`: 0.12.18 writes 3 where 0.12.22 writes 5, as Dependabot's first pull request showed (#119). The package entries carry the same fields either way, and CI's uv accepts such a lockfile without rewriting it. The projects' lockfiles can therefore differ in that one number.
 
 - The range is set by what Dependabot ships now and next, not by a feature the projects need. When uv 0.14 is out and Dependabot is about to move to it, the upper bound is raised after the same check: `uv lock --check`, and a re-lock that changes nothing.
 - CI still pins one exact version (`UV_VERSION` in the workflows), which must lie in the range. Reproducible builds rest on that pin and on `--locked`, not on the range.
-- A lockfile that Dependabot's uv writes differently from CI's fails `--locked` on its pull request, where it is seen.
+- A lockfile from Dependabot's uv that CI's uv does not accept fails `--locked` on its pull request, where it is seen. A lower `revision` alone is accepted.
