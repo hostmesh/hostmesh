@@ -151,6 +151,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `php artisan e2e:seed` in the control plane: creates the administrators, customers and branding of the Playwright suite and prints their generated credentials as JSON. It is registered only when `APP_ENV` is `e2e` or `testing` and refuses to run anywhere else.
 - End-to-end mode of the development stack: `make -C infrastructure/development e2e-up` builds both apps and serves the builds on `admin.` and `app.hostmesh.test` with the production security headers (`Caddyfile.e2e`, `compose.e2e.yaml`), with the control plane on its own `hostmesh_e2e` database and Redis databases. `make up` switches back. The `node` image now holds `certutil`, and a Pest test keeps the end-to-end Caddyfile's Content Security Policy in step with the configured one.
 - Playwright project `web/e2e` (`@hostmesh/e2e`): browser tests that run against the stack in end-to-end mode, with TOTP codes computed in the test. The first spec covers the admin login: password and code, a wrong code, a wrong password, and the refusal of a session that has passed the password only.
+- End-to-end specs for the portal login, the branding both apps show (product name, page title, and the portal's brand color), logout in both apps, and session isolation: with an admin session in the browser, the portal asks for a login, the customer API answers 401, the admin API refuses the portal's origin, and the admin cookie's value under the portal cookie's name opens nothing.
 
 ---
 
