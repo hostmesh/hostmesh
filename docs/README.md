@@ -50,3 +50,5 @@ GitHub does not expose these through the CLI:
 ## Editing the plan
 
 Everything is data: `data/labels.json`, `data/milestones.json` and `data/issues.json`. Edit and re-run. New issues are created; existing ones are matched by title and left as they are (edit those on GitHub).
+
+<!-- Throwaway (issue #105): a change that no suite covers. -->
