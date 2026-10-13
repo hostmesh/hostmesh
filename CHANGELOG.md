@@ -153,6 +153,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Playwright project `web/e2e` (`@hostmesh/e2e`): browser tests that run against the stack in end-to-end mode, with TOTP codes computed in the test. The first spec covers the admin login: password and code, a wrong code, a wrong password, and the refusal of a session that has passed the password only.
 - End-to-end specs for the portal login, the branding both apps show (product name, page title, and the portal's brand color), logout in both apps, and session isolation: with an admin session in the browser, the portal asks for a login, the customer API answers 401, the admin API refuses the portal's origin, and the admin cookie's value under the portal cookie's name opens nothing.
 - CI workflow `End-to-end`: starts the stack, switches it to end-to-end mode and runs the Playwright suite on every pull request, with no path filter, so that its job `End-to-end (Playwright)` can be a required status check. A failing run uploads the Playwright report and traces.
+- Decision record 0016: end-to-end tests with Playwright in the `node` service against an end-to-end mode of the stack. `web/README.md` and the development environment guide describe how to run them and the rules for a test.
 
 ---
 

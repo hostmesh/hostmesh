@@ -10,6 +10,7 @@ The two Vue 3 single-page applications and the packages they share. Both apps ar
 | `apps/portal/`         | `@hostmesh/portal`     | The customer portal: login, the two-factor challenge, the application layout, brand colors applied at run time. |
 | `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens, built with shadcn-vue. See its [README](packages/ui/README.md).            |
 | `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`.                          |
+| `e2e/`                 | `@hostmesh/e2e`        | Playwright tests against the stack in end-to-end mode: the Slice 0 exit test.                                   |
 | `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                                           |
 
 Shared packages export their TypeScript source, so they have no build step. Both apps depend on them as `workspace:*` packages, and a test in each app (`src/workspace.test.ts`) checks that they resolve.
@@ -32,12 +33,33 @@ docker compose -f infrastructure/development/compose.yaml exec node pnpm check
 | `test`         | Vitest, every project: each app (jsdom) and each package. The `ui` project runs in headless Chromium.                                                                         |
 | `build`        | Builds each app to `apps/<name>/dist/`.                                                                                                                                       |
 | `generate:api` | Empties `packages/api-client/src/generated/` and regenerates `schema.d.ts` from `contracts/api/openapi.json`.                                                                 |
+| `e2e`          | Playwright, against the stack in end-to-end mode. Not part of `check`. Run it with `make -C infrastructure/development e2e`, which seeds first.                               |
 
 One test: `… exec node pnpm vitest run -t "<name>"`. One project: `… exec node pnpm vitest run --project admin` (or `portal`, `ui`, `api-client`).
 
 The `ui` project needs Chromium: the `node` service has it, and CI installs it. Outside the container run `pnpm --filter @hostmesh/ui exec playwright install chromium` once.
 
 CI (`.github/workflows/web.yml`) runs the same scripts on every pull request that touches `web/` or `contracts/api/`, on the Node and pnpm versions pinned here, installs Chromium for the component tests, and regenerates the API client, failing on any difference.
+
+## End-to-end tests
+
+`e2e/` holds the Playwright suite (decision 0016). It drives the built apps on `admin.` and `app.hostmesh.test` against the real control plane, PostgreSQL and Redis, and runs in the `node` service:
+
+```bash
+make -C infrastructure/development e2e-up   # build, switch the stack to end-to-end mode
+make -C infrastructure/development e2e      # seed, then run
+make -C infrastructure/development e2e ARGS="tests/admin-login.spec.ts"
+make -C infrastructure/development up       # back to development mode
+```
+
+After a change to an app, run `e2e-up` again: it rebuilds. The report is in `e2e/playwright-report/` and the traces of failed tests in `e2e/test-results/` (`pnpm exec playwright show-trace <file>` on the host).
+
+Rules for a test:
+
+- Import `test` and `expect` from `support/test`, never from `@playwright/test`: that fixture fails a test on an uncaught error or a Content Security Policy violation.
+- Find elements by role or label, or by an existing `data-test` attribute. Wait with `expect(…)`, never with a timeout.
+- Accounts come from `support/seed` (`php artisan e2e:seed`, `control-plane/app/Console/EndToEnd/Fixtures.php`). A test that passes a two-factor challenge gets an administrator of its own: add a key to `Fixtures::ADMINISTRATORS` and to the `Seed` type.
+- Do not repeat tests with `--repeat-each`: the login throttle counts every attempt. Repeat `make e2e`.
 
 ## API client
 
