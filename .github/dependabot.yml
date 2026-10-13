@@ -49,11 +49,14 @@ updates:
         update-types:
           - version-update:semver-minor
           - version-update:semver-major
-      # 3.3.12 reports "Cannot find name" for the variable of a v-for on an
-      # element that also has v-slot. Remove this entry to try a later one.
+      # 3.3.12 and 3.3.13 report "Cannot find name" for the variable of a
+      # v-for on an element that also has v-slot. A later release is offered
+      # again; add it here if it still fails, and remove the entry when one
+      # passes.
       - dependency-name: vue-tsc
         versions:
           - 3.3.12
+          - 3.3.13
     groups:
       npm-minor-and-patch:
         update-types:
