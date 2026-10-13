@@ -26,6 +26,7 @@ def _harness(
     lines: list[str] | None = None,
 ) -> NodeHarness:
     clock = FakeClock()
+    fake.clock = clock
     return NodeHarness(
         fake,
         config,
@@ -287,6 +288,85 @@ def test_up_reports_how_long_each_phase_took() -> None:
 
     assert [line.split()[:2] for line in first] == [["TIME", "image"], ["TIME", "create"]]
     assert [line.split()[:2] for line in second] == [["TIME", "reset"]]
+
+
+# Issue #123. The budgets of decision 0015 are advisory: an overrun is said,
+# and fails nothing. Containers: ready in 60 seconds, reset in 10.
+def test_a_reset_over_its_budget_is_warned_about_and_fails_nothing() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    fake.durations = {"snapshot restore": 6.0}
+    lines: list[str] = []
+
+    _harness(fake, lines=lines).up()
+
+    assert lines == ["TIME reset 12", "WARNING reset took 12 s, budget 10 s (decision 0015)"]
+    assert all(fake.instances[name].state == "RUNNING" for name in NODE_NAMES)
+
+
+def test_a_phase_within_its_budget_is_not_warned_about() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    fake.durations = {"snapshot restore": 5.0}
+    lines: list[str] = []
+
+    _harness(fake, lines=lines).up()
+
+    assert lines == ["TIME reset 10"]
+
+
+def test_ready_is_the_image_and_the_creation_together() -> None:
+    fake = FakeIncus()
+    fake.durations = {"image copy": 30.0, "launch": 20.0}
+    lines: list[str] = []
+
+    _harness(fake, lines=lines).up()
+
+    assert lines == [
+        "TIME image 30",
+        "TIME create 40",
+        "WARNING ready took 70 s, budget 60 s (decision 0015)",
+    ]
+
+
+def test_virtual_machines_have_budgets_of_their_own() -> None:
+    config = Config(node_type="vm")
+    fake = FakeIncus()
+    _harness(fake, config).up()
+    lines: list[str] = []
+
+    # 50 seconds: over a container's 10, within a virtual machine's 60.
+    fake.durations = {"snapshot restore": 25.0}
+    _harness(fake, config, lines=lines).up()
+    # 70 seconds.
+    fake.durations = {"snapshot restore": 35.0}
+    _harness(fake, config, lines=lines).up()
+
+    assert lines == [
+        "TIME reset 50",
+        "TIME reset 70",
+        "WARNING reset took 70 s, budget 60 s (decision 0015)",
+    ]
+
+
+def test_under_github_actions_the_warning_is_an_annotation() -> None:
+    config = Config.from_environment({"GITHUB_ACTIONS": "true"})
+    fake = FakeIncus()
+    _harness(fake, config).up()
+    fake.durations = {"snapshot restore": 6.0}
+    lines: list[str] = []
+
+    _harness(fake, config, lines=lines).up()
+
+    assert lines[1] == (
+        "::warning title=Test node budget::reset took 12 s, budget 10 s (decision 0015)"
+    )
+
+
+def test_the_warning_is_plain_text_outside_github_actions() -> None:
+    assert Config.from_environment({}).annotate is False
+    assert Config.from_environment({"GITHUB_ACTIONS": "false"}).annotate is False
+    assert Config.from_environment({"GITHUB_ACTIONS": "true"}).annotate is True
 
 
 def test_the_harness_hands_out_both_nodes_and_refuses_an_unknown_name() -> None:

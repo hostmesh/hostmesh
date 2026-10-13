@@ -108,7 +108,9 @@ jobs:
       - name: Install the agent's dependencies
         run: make -C agent install
       # Budget (decision 0015): ready within 60 seconds, reset within 10.
-      # Printed, not enforced: one slow mirror must not fail a pull request.
+      # Advisory: the harness prints the times and annotates the run with a
+      # warning when one is exceeded. One slow mirror must not fail a pull
+      # request.
       - name: Create two nodes
         run: uv run --locked --directory agent python -m hostmesh_testing up
       - name: Reset them

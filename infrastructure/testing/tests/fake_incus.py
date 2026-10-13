@@ -54,6 +54,10 @@ class FakeIncus:
         self.daemon_starts: dict[str, str] = {}
         # When set, `incus start` fails with this message and starts nothing.
         self.start_error: str | None = None
+        # How long a command takes, by its first two words ("snapshot restore")
+        # or its first ("launch"). Time passes on `clock`, when a test sets one.
+        self.durations: dict[str, float] = {}
+        self.clock: FakeClock | None = None
 
     def verbs(self) -> list[str]:
         """The first two words of every call that changed something."""
@@ -69,6 +73,10 @@ class FakeIncus:
     ) -> Result:
         call = tuple(args)
         self.calls.append(call)
+        if self.clock is not None:
+            self.clock.now += self.durations.get(
+                " ".join(call[:2]), self.durations.get(call[0], 0.0)
+            )
         match call:
             case ("list", pattern, "-f", "csv", "-c", columns):
                 instance = self.instances.get(pattern.strip("^$"))

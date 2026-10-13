@@ -76,6 +76,7 @@ jobs:
       - name: Install the agent's dependencies
         run: make -C agent install
       # Budget (decision 0015): ready within 150 seconds, reset within 60.
+      # Advisory: an overrun is a warning on the run, not a failure.
       - name: Create two nodes
         run: uv run --locked --directory agent python -m hostmesh_testing up
       - name: Reset them

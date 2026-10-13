@@ -97,3 +97,5 @@ def test_something_that_dirties_the_nodes(harness: NodeHarness) -> None:
 ## In CI
 
 `.github/workflows/integration.yml` runs the integration tests on two containers on every pull request that touches the agent or this directory. It starts on every pull request, decides in its `changes` job whether the tests have anything to do, and reports the result as `Integration tests`, a required status check (decision 0017). `.github/workflows/integration-vm.yml` runs them on two virtual machines every night, on manual dispatch, and on a pull request that carries the label `vm-tests`.
+
+`up` prints how long each phase took (`TIME image`, `TIME create`, `TIME reset`, in seconds). The budgets of decision 0015 are advisory: when the nodes take longer to be ready or to be reset than the budget of their type, `up` prints a warning, which is an annotation on the run in CI, and carries on.
