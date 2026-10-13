@@ -199,6 +199,17 @@ Rules for a new one-shot job:
 - `tests/Arch` holds the architecture rules. Eloquent write methods in `app/Http` are reported by PHPStan (`phpstan/http-no-database-writes.neon`), because `arch()` only sees class-level dependencies.
 - Coverage counts `app/` without `app/Providers`.
 
+## Creating an administrator
+
+`php artisan administrator:create <email> --name=<name> [--role=owner|read-only]` creates an administrator (spec section 28). It is how an installation gets its first one, and until there are screens for it, every further one: run it with shell access to the control plane.
+
+- The password is generated (40 random characters) and printed once. It is never an argument, so it reaches no shell history, and it is in no log and no audit event. A lost password cannot be recovered or reset yet: create another administrator.
+- The account has no second factor. Its first login leads into two-factor enrollment, as the admin app requires.
+- The command refuses an address that is not one, an address that is taken, and a role that does not exist, and changes nothing then.
+- It writes two audit events with the system as actor: `administrator.created` and `administrator.role_assigned`.
+
+The command is `app/Console/Commands/CreateAdministratorCommand.php`, thin like a controller; the work is in `App\Application\Commands\CreateAdministrator`.
+
 ## End-to-end seed command
 
 `php artisan e2e:seed` creates the accounts and branding of the Playwright suite (`web/e2e`) and prints their generated passwords and TOTP secrets as JSON. It exists only when `APP_ENV` is `e2e` (the stack of `infrastructure/development/compose.e2e.yaml`) or `testing`: `AppServiceProvider` does not register it anywhere else, and the command refuses again when it runs. Do not call it yourself; `make -C infrastructure/development e2e` does. Its classes are in `app/Console/EndToEnd/`. Console commands are an entry point next to `Http`: they call the application layer and nothing depends on them (`tests/Arch/LayeringTest.php`).

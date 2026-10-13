@@ -531,7 +531,7 @@ export interface components {
          * @description What happened. A value is stored forever: add cases, never rename one.
          * @enum {string}
          */
-        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "administrator.role_assigned" | "administrator.role_revoked" | "branding.updated" | "branding.image_replaced" | "branding.image_removed";
+        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "administrator.created" | "administrator.role_assigned" | "administrator.role_revoked" | "branding.updated" | "branding.image_replaced" | "branding.image_removed";
         /** AuditEventResource */
         AuditEventResource: {
             id: string;
