@@ -11,14 +11,16 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "pnpm --recursive run typecheck",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "build": "pnpm --filter \"./apps/*\" run build",
     "dev": "pnpm --parallel --filter \"./apps/*\" run dev",
     "generate:api": "pnpm --filter @hostmesh/api-client run generate",
     "e2e": "pnpm --filter @hostmesh/e2e run e2e",
-    "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run build"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-vue": "catalog:",
     "globals": "catalog:",
