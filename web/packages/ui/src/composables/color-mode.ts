@@ -21,7 +21,12 @@ export interface UseColorMode {
  * once when the app starts.
  */
 export function useColorMode(): UseColorMode {
-  const { store, state } = useVueUseColorMode({ storageKey: COLOR_MODE_STORAGE_KEY })
+  const { store, state } = useVueUseColorMode({
+    storageKey: COLOR_MODE_STORAGE_KEY,
+    // VueUse would switch transitions off with a <style> element it adds to
+    // the document, which `style-src 'self'` blocks and reports (issue #95).
+    disableTransition: false,
+  })
 
   return { preference: store, mode: state }
 }

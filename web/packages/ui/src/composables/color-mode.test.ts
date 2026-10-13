@@ -120,4 +120,24 @@ describe('useColorMode', () => {
     expect(mode.value).toBe('light')
     expect(root.classList.contains('dark')).toBe(false)
   })
+
+  // Issue #95: the apps are served with `style-src 'self'`, which blocks
+  // and reports a <style> element made by a script.
+  it('adds no <style> element to the document when it applies a mode', async () => {
+    stubSystem(false)
+    const added: Node[] = []
+    const observer = new MutationObserver((records) => {
+      added.push(...records.flatMap((record) => [...record.addedNodes]))
+    })
+    observer.observe(document.head, { childList: true })
+    const { preference } = start()
+
+    preference.value = 'dark'
+    await nextTick()
+    added.push(...observer.takeRecords().flatMap((record) => [...record.addedNodes]))
+    observer.disconnect()
+
+    expect(root.classList.contains('dark')).toBe(true)
+    expect(added.filter((node) => node.nodeName === 'STYLE')).toEqual([])
+  })
 })
