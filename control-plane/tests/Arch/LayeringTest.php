@@ -24,6 +24,12 @@ arch('Http does not touch the database directly')
         'Illuminate\Database\Query\Builder',
     ]);
 
+// Console commands are an entry point next to Http: they call the
+// application layer, and nothing calls them.
+arch('nothing depends on the console commands')
+    ->expect('App\Console')
+    ->toOnlyBeUsedIn(['App\Console', 'App\Providers']);
+
 foreach (['dd', 'ddd', 'dump', 'ray', 'var_dump', 'print_r'] as $helper) {
     arch("the debugging helper $helper() is not used")
         ->expect($helper)

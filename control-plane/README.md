@@ -199,6 +199,10 @@ Rules for a new one-shot job:
 - `tests/Arch` holds the architecture rules. Eloquent write methods in `app/Http` are reported by PHPStan (`phpstan/http-no-database-writes.neon`), because `arch()` only sees class-level dependencies.
 - Coverage counts `app/` without `app/Providers`.
 
+## End-to-end seed command
+
+`php artisan e2e:seed` creates the accounts and branding of the Playwright suite (`web/e2e`) and prints their generated passwords and TOTP secrets as JSON. It exists only when `APP_ENV` is `e2e` (the stack of `infrastructure/development/compose.e2e.yaml`) or `testing`: `AppServiceProvider` does not register it anywhere else, and the command refuses again when it runs. Do not call it yourself; `make -C infrastructure/development e2e` does. Its classes are in `app/Console/EndToEnd/`. Console commands are an entry point next to `Http`: they call the application layer and nothing depends on them (`tests/Arch/LayeringTest.php`).
+
 ## Requirements
 
 PHP 8.5 with the extensions `pdo_pgsql`, `redis`, `intl`, `pcntl`, `fileinfo` and PCOV (or Xdebug) for coverage. See [decision 0004](../docs/decisions/0004-php-8-5-for-the-control-plane.md). `upload_max_filesize` and `post_max_size` must be at least 2M (the PHP default) for logo uploads.
