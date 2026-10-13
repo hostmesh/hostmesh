@@ -82,7 +82,7 @@ jobs:
       - name: mypy
         run: make typecheck
       # Unit and contract tests only. The integration tests run in integration.yml.
-      - name: pytest with the 85% coverage gate
+      - name: pytest with the 95% coverage gate
         run: make test-coverage
 
   # The required status check of this workflow (decision 0017). It passes
