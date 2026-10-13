@@ -33,3 +33,20 @@ Option 3, as a first step.
 - The end-to-end suite is required and drives the built apps against the real control plane, so a change that breaks login, two-factor, branding or session isolation cannot merge, whatever the state of the unit pipelines.
 - A new workflow that is meant to be required must have no path filter, or a job that always reports.
 - A required check that is renamed or misspelled blocks every pull request: the name in the ruleset must equal the job's `name` exactly. This happened once, for a few minutes, when the end-to-end check was added.
+
+## Amendment, 2026-10-13 (issue #105)
+
+Option 2 is adopted, and the gap named under "Consequences" is closed.
+
+- `control-plane.yml`, `agent.yml`, `web.yml`, `dev-environment.yml` and `integration.yml` have no path filter on `pull_request` any more. Each starts with a `changes` job, which lists the files the pull request changes (`git diff --name-only HEAD^1 HEAD` on the merge commit) and asks `.github/scripts/changed.sh` whether any of them is one the suite covers. The suite's jobs run only when it answers `true`. The patterns are the former path filters, plus `.github/scripts/**`.
+- Each of the five ends with a gate job named after the workflow: `Control plane`, `Agent`, `Web`, `Development environment` and `Integration tests`. It always runs, and `.github/scripts/gate.sh` passes it only when the change detection succeeded and every suite job has the result the detection asked for: `success` when something changed, `skipped` when nothing did. The ruleset requires the five gates, next to the five checks it required before.
+- The gates are required, not the suite jobs, because GitHub counts a skipped job as passing, also when it was skipped because the job it needs failed. With the suite jobs required, a broken change detection would let every pull request through.
+- The virtual-machine tests moved to `integration-vm.yml`. They also start when a label is added, and such a run skips the container jobs on purpose: in the same workflow its gate would report success and replace the failure of an earlier run on the same commit.
+- `changed.sh` understands a file name and `directory/**` and refuses anything else, so that a pattern cannot match nothing silently. Both scripts have tests (`.github/scripts/test.sh`), which the `Hygiene` workflow runs.
+
+Consequences:
+
+- A pull request cannot merge while any pipeline it touches is red, which is what spec section 37 asks for.
+- Every pull request starts six workflows instead of one to three. On a pull request that touches none of a suite's paths, that workflow costs two short jobs and runs no suite.
+- A pull request that changes `.github/scripts/` runs every suite.
+- A new suite follows the same shape: no path filter, a `changes` job, the suite behind it, a gate to require.
