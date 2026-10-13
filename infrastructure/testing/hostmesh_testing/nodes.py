@@ -23,6 +23,10 @@ _NODE_TYPES: dict[str, NodeType] = {"container": "container", "vm": "vm"}
 _INCUS_TYPES: dict[NodeType, str] = {"container": "CONTAINER", "vm": "VIRTUAL-MACHINE"}
 # systemd has finished booting, whatever the outcome.
 _BOOTED = frozenset({"running", "degraded"})
+# Decision 0015, in seconds: both nodes ready, and both nodes reset. Advisory
+# (issue #123): an overrun is warned about and fails nothing, because a slow
+# mirror or a busy runner must not fail a pull request.
+_BUDGETS: dict[NodeType, tuple[float, float]] = {"container": (60.0, 10.0), "vm": (150.0, 60.0)}
 
 
 def _incus(runner: Runner, args: Sequence[str], *, timeout: float = 120.0) -> Result:
@@ -56,15 +60,21 @@ class Config:
     cpus: int = 2
     boot_timeout: float = 180.0
     capabilities: tuple[str, ...] = ("dns",)
+    # Write a warning as a GitHub Actions command, which annotates the run.
+    annotate: bool = False
 
     @classmethod
     def from_environment(cls, environ: Mapping[str, str]) -> Self:
-        """Reads HOSTMESH_NODE_TYPE and HOSTMESH_NODE_IMAGE."""
+        """Reads HOSTMESH_NODE_TYPE, HOSTMESH_NODE_IMAGE and GITHUB_ACTIONS."""
         wanted = environ.get("HOSTMESH_NODE_TYPE", "container")
         node_type = _NODE_TYPES.get(wanted)
         if node_type is None:
             raise HarnessError(f"HOSTMESH_NODE_TYPE must be 'container' or 'vm', got '{wanted}'")
-        return cls(node_type=node_type, image=environ.get("HOSTMESH_NODE_IMAGE", DEFAULT_IMAGE))
+        return cls(
+            node_type=node_type,
+            image=environ.get("HOSTMESH_NODE_IMAGE", DEFAULT_IMAGE),
+            annotate=environ.get("GITHUB_ACTIONS") == "true",
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,11 +168,15 @@ class NodeHarness:
         """Ends with two clean, running nodes: creates what is missing, resets the rest."""
         self._check_host()
         missing, present = self._survey(recreate=True)
+        ready_budget, reset_budget = _BUDGETS[self._config.node_type]
         if missing:
-            self._timed("image", self._fetch_image)
-            self._timed("create", lambda: self._create(missing))
+            ready = self._timed("image", self._fetch_image)
+            ready += self._timed("create", lambda: self._create(missing))
+            self._warn_over_budget("ready", ready, ready_budget)
         if present:
-            self._timed("reset", lambda: self._reset(present))
+            self._warn_over_budget(
+                "reset", self._timed("reset", lambda: self._reset(present)), reset_budget
+            )
 
     def create(self) -> None:
         """Creates the nodes that are missing. Existing nodes are left as they are."""
@@ -195,10 +209,22 @@ class NodeHarness:
                 "Use HOSTMESH_NODE_TYPE=container."
             )
 
-    def _timed(self, phase: str, action: Callable[[], None]) -> None:
+    def _timed(self, phase: str, action: Callable[[], None]) -> float:
+        """Runs a phase, reports how long it took and returns it, in seconds."""
         start = self._clock()
         action()
-        self._report(f"TIME {phase} {self._clock() - start:.0f}")
+        elapsed = self._clock() - start
+        self._report(f"TIME {phase} {elapsed:.0f}")
+        return elapsed
+
+    def _warn_over_budget(self, phase: str, elapsed: float, budget: float) -> None:
+        if elapsed <= budget:
+            return
+        message = f"{phase} took {elapsed:.0f} s, budget {budget:.0f} s (decision 0015)"
+        if self._config.annotate:
+            self._report(f"::warning title=Test node budget::{message}")
+        else:
+            self._report(f"WARNING {message}")
 
     def _describe(self, name: str) -> tuple[str, str] | None:
         """The instance's type and state as Incus prints them, or None when it does not exist."""

@@ -114,3 +114,13 @@ A container uses the kernel of its host: 7.2 on the owner's machine and Ubuntu's
 - Issue #17 takes `nodes.sh` and `verify.sh` as a starting point and adds what they do not have: pytest fixtures that create, reset and address the nodes, the agent installed on them, the `dns` capability on both, the quota filesystem in virtual machines, and the lasting workflows. The proof of concept and its manual workflow `test-nodes-poc.yml` are removed or replaced there.
 - The macOS path is open. Two candidates exist and neither is proven: the Incus server inside a Linux VM (Colima documents an Incus runtime), or Lima's native virtual machines, whose reset would be delete and start. A contributor on macOS is the trigger to test them.
 - Revisit this decision if hosted runners lose `/dev/kvm`, if a supported way to enforce user quotas inside an Incus container appears (the nightly tier could then shrink), or if the virtual machine tier turns out to be fast enough on public runners to drop the container tier.
+
+## Amendment, 2026-10-13 (issue #123)
+
+The budgets are advisory. #78 left open whether they are enforced; they are not, and an overrun is now said instead of only being readable in the log.
+
+- The harness holds the four figures (`_BUDGETS` in `hostmesh_testing/nodes.py`): containers ready within 60 seconds and reset within 10, virtual machines ready within 150 seconds and reset within 60. "Ready" is the image and the creation together, as `up` on a host without nodes does them.
+- `up` prints its `TIME` lines as before. When a phase took longer than its budget it prints one more line with the phase, the time and the budget. Under GitHub Actions the line is a `::warning::` command, so the run carries an annotation; elsewhere it starts with `WARNING`. No budget changes an exit status.
+- Why not enforced: the times depend on a package mirror, an image server and the runner of the day, none of which a pull request changes. Measured in CI before this amendment: containers ready in 16 to 20 seconds and reset in 4 to 5; virtual machines ready in 51 to 133 seconds and reset in 24 to 60, the last of which is the budget itself. An enforced budget would have failed an ordinary nightly run.
+- A warning that keeps coming back is the reason to look: at the runner, at the image, or at the budget.
+
