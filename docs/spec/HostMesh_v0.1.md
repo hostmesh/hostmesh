@@ -1,6 +1,6 @@
 # Hostmesh - v0.1 Architecture & MVP Specification
 
-**Status:** Frozen baseline (revision 11)
+**Status:** Frozen baseline (revision 12)
 **Version:** v0.1
 **Purpose:** Open-source hosting infrastructure, control-plane, and billing platform
 
@@ -20,6 +20,7 @@
 | 9    | 2026-10-01 | Licensing decided: Apache-2.0, DCO sign-off, trademark policy; business model recorded; add-on mechanism added to the v0.2 backlog                                                                                                                                                                                                                                                 |
 | 10   | 2026-10-12 | Implementation findings of Slice 0 recorded: `job_history` table, its row statuses and the retry details (§6, §8); audit event model, content rules and retention (§21); Redis limited to queues, caching and rate limiting (§24); `admin` and `customer` route prefixes, the Origin rule, branding details and the first admin roles (§28); two v0.2 backlog items (§38)          |
 | 11   | 2026-10-13 | Slice 0 review: console commands as an entry point (§25); `web/e2e/`, `infrastructure/nginx/` and `infrastructure/hygiene/` in the repository tree (§27); the health endpoint and how the apps find the API (§28); the two-node principle starts with Slice 1 (§33); where the Playwright tests run and where their data comes from (§37); abilities for navigation recorded as an open item (§39) |
+| 12   | 2026-10-13 | One coverage target, 95% for the control plane and the agent, replaces 85% overall and 95% for three modules (§37)                                                                                                                                                                                                                                                                 |
 
 ---
 
@@ -2104,7 +2105,7 @@ Hostmesh is developed **test-first**: red, green, refactor. A failing test is wr
 - **Contract tests:** the JSON Schemas in `contracts/agent-protocol/` are validated by both test suites. An incompatible change requires a `schema_version` bump.
 - **OpenAPI contract:** the spec is generated from Laravel and committed to `contracts/api/`. CI regenerates the spec and the TypeScript client and fails on any diff, so the backend and both Vue apps cannot drift.
 - **End-to-end:** the §34 workflow is automated (fake Stripe, real agent on a Debian VM or container, driven through the Vue apps with Playwright) and is the release gate for v0.1.
-- **CI (GitHub Actions):** a pull request cannot merge with failing tests. Initial coverage targets are 85% overall and 95% for Billing, Provisioning and Scheduler, to be revisited after beta.
+- **CI (GitHub Actions):** a pull request cannot merge with failing tests. The coverage target is 95% for the control plane and for the agent, enforced in CI and to be revisited after beta. The web workspace gets its target when coverage is measured there.
 
 ---
 

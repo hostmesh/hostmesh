@@ -26,7 +26,7 @@ docker compose -f infrastructure/development/compose.yaml exec php composer chec
 | `lint` / `lint:fix` | Pint: check or fix code style.                                   |
 | `analyse`           | Larastan (PHPStan) at level 10.                                  |
 | `test`              | Pest in parallel.                                                |
-| `test:coverage`     | Pest in parallel with code coverage; fails below 85%.            |
+| `test:coverage`     | Pest in parallel with code coverage; fails below 95%.            |
 | `openapi`           | Regenerates `contracts/api/openapi.json` from the code.          |
 
 One test: `docker compose -f infrastructure/development/compose.yaml exec php vendor/bin/pest --filter=<name>`.

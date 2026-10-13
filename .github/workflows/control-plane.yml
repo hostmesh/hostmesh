@@ -138,7 +138,7 @@ jobs:
           composer openapi
           git add --intent-to-add ../contracts/api/openapi.json
           git diff --exit-code -- ../contracts/api/openapi.json
-      - name: Pest, in parallel, with the 85% coverage gate
+      - name: Pest, in parallel, with the 95% coverage gate
         run: composer test:coverage
 
   # The required status check of this workflow (decision 0017). It passes

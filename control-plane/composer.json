@@ -47,7 +47,7 @@
         ],
         "test:coverage": [
             "@php artisan config:clear --ansi",
-            "pest --parallel --coverage --min=85"
+            "pest --parallel --coverage --min=95"
         ],
         "check": [
             "@lint",
