@@ -27,6 +27,8 @@
   --destructive: rgb(128 0 255);
   --destructive-foreground: rgb(13 14 15);
   --overlay: rgb(90 60 30);
+  --scannable: rgb(250 250 210);
+  --scannable-foreground: rgb(1 2 3);
   --border: rgb(0 128 0);
   --input: rgb(0 0 255);
   --ring: rgb(255 128 0);

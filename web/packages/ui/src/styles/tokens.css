@@ -12,6 +12,12 @@
  * here so that destructive is a pair too. --overlay is not upstream's
  * either: it is the color of the scrim behind a dialog, which upstream
  * hard-codes as black. The component sets the opacity.
+ *
+ * --scannable and --scannable-foreground are ours too: the field and the
+ * modules of a code a camera reads, such as a QR code. They have the same
+ * values in both color modes, dark on light, because readers reject a code
+ * that is light on dark (issue #124). A theme that changes them keeps the
+ * foreground the darker of the two.
  */
 :root {
   --background: oklch(1 0 0);
@@ -34,6 +40,8 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --overlay: oklch(0 0 0);
+  --scannable: oklch(1 0 0);
+  --scannable-foreground: oklch(0.145 0 0);
 
   --radius: 0.625rem;
 
@@ -65,4 +73,6 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
   --overlay: oklch(0 0 0);
+  --scannable: oklch(1 0 0);
+  --scannable-foreground: oklch(0.145 0 0);
 }

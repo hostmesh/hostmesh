@@ -103,6 +103,42 @@ describe('design tokens', () => {
       expect(destructive.backgroundColor).toBe('rgb(128, 0, 255)')
       expect(destructive.color).toBe('rgb(13, 14, 15)')
     })
+
+    it('maps the scannable pair into Tailwind utilities', async () => {
+      root.classList.add('tokens-non-default')
+      const screen = await render(TokenSample)
+
+      const scannable = styleOf(screen.getByTestId('scannable'))
+      expect(scannable.backgroundColor).toBe('rgb(250, 250, 210)')
+      expect(scannable.color).toBe('rgb(1, 2, 3)')
+    })
+  })
+
+  // Issue #124: a QR code that follows the color mode is light on dark in
+  // dark mode, and authenticator apps do not read it.
+  describe('the scannable pair', () => {
+    it('is the light page and its text in light mode', async () => {
+      const screen = await render(TokenSample)
+
+      const scannable = styleOf(screen.getByTestId('scannable'))
+      const page = getComputedStyle(document.body)
+      expect(scannable.backgroundColor).toBe(page.backgroundColor)
+      expect(scannable.color).toBe(page.color)
+      expect(scannable.backgroundColor).not.toBe(scannable.color)
+    })
+
+    it('stays dark on light in dark mode, when everything else turns', async () => {
+      const screen = await render(TokenSample)
+      const scannable = screen.getByTestId('scannable')
+      const light = { background: styleOf(scannable).backgroundColor, color: styleOf(scannable).color }
+      const lightPage = getComputedStyle(document.body).backgroundColor
+
+      root.classList.add('dark')
+
+      await expect.poll(() => getComputedStyle(document.body).backgroundColor).not.toBe(lightPage)
+      expect(styleOf(scannable).backgroundColor).toBe(light.background)
+      expect(styleOf(scannable).color).toBe(light.color)
+    })
   })
 
   describe('with the default token set', () => {
