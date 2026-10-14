@@ -135,6 +135,17 @@ updates:
       day: monday
     commit-message:
       prefix: chore
+    # Majors of both are raised deliberately, by hand, together with the
+    # service containers of the control plane's workflow (see below). A
+    # PostgreSQL major does not start on the data directory of an existing
+    # postgres volume.
+    ignore:
+      - dependency-name: postgres
+        update-types:
+          - version-update:semver-major
+      - dependency-name: redis
+        update-types:
+          - version-update:semver-major
     groups:
       docker-compose-minor-and-patch:
         update-types:
