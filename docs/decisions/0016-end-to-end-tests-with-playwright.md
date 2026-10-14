@@ -40,3 +40,14 @@ Three facts shaped the design:
 - `--repeat-each` trips the login throttle. Flakiness is looked for by repeating `make e2e`.
 - A new CA after a volume reset needs `make e2e-up` again, which rebuilds the NSS database.
 - Later slices add their flows (node enrollment, provisioning, checkout) as spec files and fixtures here.
+
+## Amendment, 2026-10-14 (issue #175)
+
+The traces that a failed CI run uploads hold that run's generated passwords and one-time codes. This is accepted.
+
+- What they hold: with `trace: 'retain-on-failure'`, a value typed with `fill` is recorded in the action's parameters and log, in the DOM snapshot (the field's value), and in the network log (the body of the login request). Checked in the artifact of run 38397230502: six passwords and six TOTP codes.
+- What they do not hold: TOTP secrets. `e2e:seed` writes them to `web/e2e/.seed.json`, which is neither printed nor uploaded, and a test turns a secret into a code in Node, so only the code reaches the browser. No secret was found in that artifact's traces, attachments or `test-results/`.
+- Who can read them: the artifact `playwright-report` is kept for 7 days and can be downloaded by anyone with read access to the repository, which for a public repository is everyone.
+- Why accepted: each password is 40 random characters made for that run, and its account exists only in the run's database, which is gone with the runner. A code is accepted within one 30-second step either way of its own, and only once (decision 0011). Nothing in a trace opens anything that outlives the run.
+- Not chosen: masking the fields, because Playwright 1.64.0 has no option for it (the trace options only switch snapshots, screenshots, sources and attachments off), and the value is in four places, so every trace would need rewriting before the upload. Not uploading the traces, because a failure in CI would lose its main means of diagnosis (`web/README.md`).
+- What keeps it true: a test types only credentials that `e2e:seed` made for the run. A fixed credential, or one that is valid outside the run's stack, must not be typed in a test; that would reopen this decision.

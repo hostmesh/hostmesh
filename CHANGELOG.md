@@ -211,6 +211,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The test-node harness knows the time budgets of decision 0015 and warns when creating or resetting the nodes takes longer: a `WARNING` line locally, an annotation on the run in CI. The budgets are advisory and fail nothing (decision 0015, amended; issue #123).
 - `web/README.md` says how to open the end-to-end report: `playwright show-report` from the `node` image on http://localhost:9323, which also opens the trace of a failed test. Opened as a file, the report shows no trace (issue #186).
 - `web/README.md` says how to open the report artifact of a failed CI run: unpack it under `web/e2e/test-results/` with `gh run download` or `unzip`, then serve its `playwright-report/` with `show-report` from the `node` image. The zip itself is refused, because `index.html` is not at its top level (issue #188).
+- Decision 0016 records that the Playwright traces a failed CI run uploads hold that run's generated passwords and one-time codes, never TOTP secrets, and why that is accepted: the accounts exist only in the run's database. `web/README.md` adds the rule that keeps it so: a test types only credentials that `e2e:seed` made for the run (decision 0016, amended; issue #175).
 
 ---
 
