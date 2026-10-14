@@ -220,6 +220,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The agent's in-memory fakes and the mutation journal moved from `agent/services/` to `agent/tests/fakes/` (`journal.py`, `users.py`, `filesystem.py`), so the `hostmesh-agent` wheel no longer ships them. `tests/unit/test_wheel.py` builds the wheel with hatchling, now a development dependency, and fails if it holds anything but the `agent` package or holds a fake or the journal. The coverage measurement needs no exclusions any more: `agent/tests/` is outside its source (issue #165).
 - The control plane no longer holds `brianium/paratest` back: Pest 5.3.2 supports paratest 7.26.1 and later (pestphp/pest#1959) and requires it. Pest is raised to `^5.3.2`, the `conflict` entry is gone, and the lockfile holds Pest 5.3.2, paratest 7.27.1 and PHPUnit 13.4.2 (issue #163).
 - `infrastructure/development/README.md` has a troubleshooting entry for a `php` container created before the `contracts/` mount: the contract test reports the spec missing and `composer openapi` cannot write it; `make up` recreates the container (issue #162).
+- The control plane no longer registers Laravel's stock `storage/{path}` routes (`GET`, `HEAD` and `PUT`, closures): the `local` disk is not served. A test reads the route list and fails on any route that is not under `/api/v1` with a controller in `App\Http\Api\V1`, so a route the framework or a package registers by itself is caught (issue #161).
 
 ---
 

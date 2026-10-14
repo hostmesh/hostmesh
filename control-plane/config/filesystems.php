@@ -30,10 +30,11 @@ return [
 
     'disks' => [
 
+        // No `serve`: with it, Laravel registers storage/{path} routes, and
+        // the API serves no files that way (tests/Feature/Platform/RoutesTest.php).
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
