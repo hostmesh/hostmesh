@@ -4,7 +4,7 @@
 from dataclasses import replace
 from pathlib import PurePosixPath
 
-from agent.services.filesystem.interface import Entry, EntryKind
+from agent.services.filesystem.interface import Entry, EntryKind, SymlinkError
 from agent.services.journal import Journal
 
 _SERVICE = "filesystem"
@@ -21,9 +21,11 @@ class FakeFilesystem:
         }
 
     def stat(self, path: PurePosixPath) -> Entry | None:
+        self._refuse_links_above(path)
         return self._entries.get(path)
 
     def make_directory(self, path: PurePosixPath, *, mode: int) -> None:
+        self._refuse_links_above(path)
         if path in self._entries:
             raise FileExistsError(str(path))
         parent = self._entries.get(path.parent)
@@ -53,7 +55,17 @@ class FakeFilesystem:
         return dict(self._entries)
 
     def _existing(self, path: PurePosixPath) -> Entry:
+        self._refuse_links_above(path)
         entry = self._entries.get(path)
         if entry is None:
             raise FileNotFoundError(str(path))
+        if entry.kind is EntryKind.SYMLINK:
+            raise SymlinkError(str(path))
         return entry
+
+    def _refuse_links_above(self, path: PurePosixPath) -> None:
+        """Raise ``SymlinkError`` if any directory above ``path`` is a link."""
+        for ancestor in reversed(path.parents):
+            entry = self._entries.get(ancestor)
+            if entry is not None and entry.kind is EntryKind.SYMLINK:
+                raise SymlinkError(str(ancestor))

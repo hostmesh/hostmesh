@@ -9,7 +9,7 @@ from agent.services.filesystem.fake import FakeFilesystem
 from agent.services.filesystem.interface import Entry, EntryKind
 from agent.services.journal import InjectedFaultError, Journal, Mutation
 from agent.services.users.fake import FakeUsers
-from tests.support.filesystem_contract import FilesystemContract
+from tests.support.filesystem_contract import FilesystemContract, Link
 
 ROOT = PurePosixPath("/")
 SITE = PurePosixPath("/site")
@@ -24,6 +24,14 @@ class TestFakeFilesystem(FilesystemContract):
     @pytest.fixture
     def base(self) -> PurePosixPath:
         return ROOT
+
+    @pytest.fixture
+    def link(self, filesystem: FakeFilesystem) -> Link:
+        # The fake keeps no target: no operation follows a link.
+        def place(path: PurePosixPath, target: PurePosixPath) -> None:
+            filesystem.put(path, Entry(EntryKind.SYMLINK, uid=0, gid=0, mode=0o777))
+
+        return place
 
 
 def test_starts_with_a_root_directory() -> None:
