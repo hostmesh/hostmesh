@@ -92,6 +92,7 @@ Rules for a test:
 - Import `test` and `expect` from `support/test`, never from `@playwright/test`: that fixture fails a test on an uncaught error or a Content Security Policy violation.
 - Find elements by role or label, or by an existing `data-test` attribute. Wait with `expect(…)`, never with a timeout.
 - Accounts come from `support/seed` (`php artisan e2e:seed`, `control-plane/app/Console/EndToEnd/Fixtures.php`). A test that passes a two-factor challenge gets an administrator of its own: add a key to `Fixtures::ADMINISTRATORS` and to the `Seed` type.
+- Type only credentials that `e2e:seed` made for the run, never a fixed one. The trace of a failed test records what was typed, and the CI artifact can be downloaded by anyone for 7 days (decision 0016, amended).
 - Do not repeat tests with `--repeat-each`: the login throttle counts every attempt. Repeat `make e2e`.
 
 ## API client
