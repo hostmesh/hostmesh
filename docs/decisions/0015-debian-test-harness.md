@@ -131,3 +131,12 @@ The virtual-machine job installs less of QEMU. Its install line is `apt-get inst
 
 - Each package beyond `incus` and `qemu-system-x86` was left out once on the runner, and each time the job failed. Without `ovmf`: "QEMU failed to run feature checks", the error found while building the proof of concept. Without `qemu-utils`: `Failed to find executable "qemu-img"` while reading the image. Without `qemu-system-modules-spice`: QEMU refuses the `-spice` option Incus starts it with. Without `incus-agent`: the node never answers, because the harness reaches it through the agent. `dnsmasq-base` is needed for `incus admin init`, as found before.
 - The open question above, whether a job with virtual machines can install less of `qemu-system`, is answered: it installs `qemu-system-x86`, the emulator of the one architecture the nodes use.
+
+## Amendment, 2026-10-14 (issue #170)
+
+The image is not pinned: the nodes stay on the daily build of `images:debian/13`. The question above, left to #17 and closed there without an answer, is decided here.
+
+- A pin needs a copy of our own. The image server keeps the last three daily builds (on 2026-10-14: 20261012, 20261013 and 20261014), so a fingerprint taken from it stops resolving within three days. Pinning would mean exporting the image, storing it where CI can fetch it, and refreshing it on a schedule, for both node types.
+- A pin would not hold the nodes still. Packages that later slices install on the nodes (Nginx, PHP-FPM, MariaDB, PowerDNS) come from Debian's mirrors at the time of the run, whatever the image.
+- Instead, every run says which build it used. `up` ends with one line per node, `IMAGE <node> <image> <serial> <fingerprint>`, read from what Incus records on the instance (`image.serial` and `volatile.base_image`), after a creation and after a reset alike. A failure that appears from one run to the next can be tied to a new build by comparing the lines.
+- If a new build ever breaks the suite, the way back is an earlier build the server still has, by fingerprint: `HOSTMESH_NODE_IMAGE=images:<fingerprint>` (checked: `images:7aa4e23f8905` resolves to the build of 2026-10-12). That is a stopgap for at most three days, not a pin.

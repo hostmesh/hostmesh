@@ -11,7 +11,9 @@ from tests.fake_incus import FakeIncus
 NODE_1 = NODE_NAMES[0]
 
 
-def test_up_creates_the_nodes_and_prints_the_timings(capsys: pytest.CaptureFixture[str]) -> None:
+def test_up_creates_the_nodes_and_prints_the_timings_and_the_build(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     fake = FakeIncus()
 
     assert main(["up"], runner=fake) == 0
@@ -20,6 +22,8 @@ def test_up_creates_the_nodes_and_prints_the_timings(capsys: pytest.CaptureFixtu
     assert [line.split()[:2] for line in capsys.readouterr().out.splitlines()] == [
         ["TIME", "image"],
         ["TIME", "create"],
+        ["IMAGE", NODE_NAMES[0]],
+        ["IMAGE", NODE_NAMES[1]],
     ]
 
 

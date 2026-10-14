@@ -5,7 +5,7 @@ Two disposable Debian 13 nodes for the agent's integration tests (spec section 3
 | | |
 |---|---|
 | Names | `hostmesh-node-1`, `hostmesh-node-2` |
-| Image | `images:debian/13`, a daily build |
+| Image | `images:debian/13`, a daily build, not pinned (decision 0015) |
 | Size | 2 GiB of RAM and 2 vCPUs each |
 | Type | System containers by default; virtual machines with `HOSTMESH_NODE_TYPE=vm` |
 | Capabilities | Both carry `dns` (spec section 9), as the Incus config key `user.hostmesh.capabilities` |
@@ -46,15 +46,15 @@ Install Incus with its recommended packages: without them `incus admin init` fai
 
 From the repository root:
 
-| Command                                                                                                         | Effect                                                                                                                 |
-|-----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `make -C infrastructure/testing up`                                                                             | Create the nodes that are missing and reset the others. Prints `TIME image`, `TIME create` and `TIME reset` in seconds |
-| `make -C infrastructure/testing reset`                                                                          | Restore both nodes to `clean`                                                                                          |
-| `make -C infrastructure/testing status`                                                                         | List them                                                                                                              |
-| `make -C infrastructure/testing destroy`                                                                        | Delete both                                                                                                            |
-| `uv run --directory infrastructure/testing python -m hostmesh_testing exec hostmesh-node-1 -- systemctl status` | Run a command on a node                                                                                                |
-| `make -C infrastructure/testing check`                                                                          | ruff, mypy and the harness's unit tests. Needs no Incus                                                                |
-| `make -C agent test-integration`                                                                                | The agent's integration tests, on the nodes                                                                            |
+| Command                                                                                                         | Effect                                                                                                                                                       |
+|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `make -C infrastructure/testing up`                                                                             | Create the nodes that are missing and reset the others. Prints `TIME image`, `TIME create` and `TIME reset` in seconds, and the build of each node (`IMAGE`) |
+| `make -C infrastructure/testing reset`                                                                          | Restore both nodes to `clean`                                                                                                                                |
+| `make -C infrastructure/testing status`                                                                         | List them                                                                                                                                                    |
+| `make -C infrastructure/testing destroy`                                                                        | Delete both                                                                                                                                                  |
+| `uv run --directory infrastructure/testing python -m hostmesh_testing exec hostmesh-node-1 -- systemctl status` | Run a command on a node                                                                                                                                      |
+| `make -C infrastructure/testing check`                                                                          | ruff, mypy and the harness's unit tests. Needs no Incus                                                                                                      |
+| `make -C agent test-integration`                                                                                | The agent's integration tests, on the nodes                                                                                                                  |
 
 | Variable              | Default            | Meaning                   |
 |-----------------------|--------------------|---------------------------|
@@ -63,7 +63,9 @@ From the repository root:
 
 The harness refuses to reuse nodes of another type or image: run `destroy` first, with the variables the nodes were created with.
 
-`destroy` keeps the downloaded image (`incus image list` shows it as `hostmesh-<type>-<image>`). It is not refreshed: two machines may therefore run different builds of Debian 13. `incus image delete <alias>` makes the next `up` download the current build.
+`destroy` keeps the downloaded image (`incus image list` shows it as `hostmesh-<type>-<image>`). It is not refreshed: two machines may therefore run different builds of Debian 13. `incus image delete <alias>` makes the next `up` download the current build. `up` ends with one line per node that names the build it was made from, by serial and fingerprint, so a failure can be tied to a new build:
+
+    IMAGE hostmesh-node-1 images:debian/13 20261014_05:24 7439b6b23e1a
 
 ## In a test
 

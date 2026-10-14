@@ -17,6 +17,9 @@ SNAPSHOT = "clean"
 CAPABILITIES_KEY = "user.hostmesh.capabilities"
 IMAGE_KEY = "user.hostmesh.image"
 DEFAULT_IMAGE = "images:debian/13"
+# What Incus records on an instance about the image it was made from.
+SERIAL_KEY = "image.serial"
+FINGERPRINT_KEY = "volatile.base_image"
 
 _NODE_TYPES: dict[str, NodeType] = {"container": "container", "vm": "vm"}
 # As `incus list -c t` prints them.
@@ -177,6 +180,7 @@ class NodeHarness:
             self._warn_over_budget(
                 "reset", self._timed("reset", lambda: self._reset(present)), reset_budget
             )
+        self._report_builds()
 
     def create(self) -> None:
         """Creates the nodes that are missing. Existing nodes are left as they are."""
@@ -225,6 +229,23 @@ class NodeHarness:
             self._report(f"::warning title=Test node budget::{message}")
         else:
             self._report(f"WARNING {message}")
+
+    def _report_builds(self) -> None:
+        """Says which build of the image each node was made from (issue #170).
+
+        The image is a daily build and is not pinned (decision 0015), so two
+        runs may test on different builds. The line ties a run to its build.
+        """
+        for name in NODE_NAMES:
+            serial = _incus(self._runner, ["config", "get", name, SERIAL_KEY]).stdout.strip()
+            fingerprint = _incus(
+                self._runner, ["config", "get", name, FINGERPRINT_KEY]
+            ).stdout.strip()
+            # Twelve characters, as `incus image list` prints a fingerprint.
+            self._report(
+                f"IMAGE {name} {self._config.image} "
+                f"{serial or 'unknown'} {fingerprint[:12] or 'unknown'}"
+            )
 
     def _describe(self, name: str) -> tuple[str, str] | None:
         """The instance's type and state as Incus prints them, or None when it does not exist."""

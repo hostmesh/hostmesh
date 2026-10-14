@@ -56,7 +56,10 @@ def test_a_new_node_has_the_size_the_image_and_the_dns_capability_of_decision_00
 
     _harness(fake).up()
 
-    assert fake.instances[NODE_1].config == {
+    # Without the keys Incus records by itself.
+    recorded = {"image.serial", "volatile.base_image"}
+    config = fake.instances[NODE_1].config
+    assert {key: value for key, value in config.items() if key not in recorded} == {
         "limits.memory": "2GiB",
         "limits.cpu": "2",
         IMAGE_KEY: "images:debian/13",
@@ -286,8 +289,74 @@ def test_up_reports_how_long_each_phase_took() -> None:
     _harness(fake, lines=first).up()
     _harness(fake, lines=second).up()
 
-    assert [line.split()[:2] for line in first] == [["TIME", "image"], ["TIME", "create"]]
-    assert [line.split()[:2] for line in second] == [["TIME", "reset"]]
+    assert [line.split()[:2] for line in _timings(first)] == [["TIME", "image"], ["TIME", "create"]]
+    assert [line.split()[:2] for line in _timings(second)] == [["TIME", "reset"]]
+
+
+def _timings(lines: list[str]) -> list[str]:
+    """The lines about time: the TIME lines and the budget warnings."""
+    return [line for line in lines if not line.startswith("IMAGE ")]
+
+
+# Issue #170. The image is a daily build and is not pinned: each run says
+# which build its nodes were made from, so a failure can be tied to a new one.
+def test_up_reports_the_build_each_new_node_was_made_from() -> None:
+    fake = FakeIncus()
+    lines: list[str] = []
+
+    _harness(fake, lines=lines).up()
+
+    assert [line for line in lines if line.startswith("IMAGE ")] == [
+        f"IMAGE {NODE_1} images:debian/13 20261014_05:24 7439b6b23e1a",
+        f"IMAGE {NODE_2} images:debian/13 20261014_05:24 7439b6b23e1a",
+    ]
+
+
+def test_a_reset_reports_the_build_the_nodes_were_made_from_not_a_newer_one() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    fake.build = ("20261015_05:24", "b93220c609a3" + "0" * 52)
+    lines: list[str] = []
+
+    _harness(fake, lines=lines).up()
+
+    assert [line for line in lines if line.startswith("IMAGE ")] == [
+        f"IMAGE {NODE_1} images:debian/13 20261014_05:24 7439b6b23e1a",
+        f"IMAGE {NODE_2} images:debian/13 20261014_05:24 7439b6b23e1a",
+    ]
+
+
+def test_nodes_made_from_two_builds_say_so() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    # A newer build, fetched after the local copy was deleted, for one new node.
+    fake.build = ("20261015_05:24", "b93220c609a3" + "0" * 52)
+    fake.images.clear()
+    del fake.instances[NODE_2]
+    lines: list[str] = []
+
+    _harness(fake, lines=lines).up()
+
+    assert [line for line in lines if line.startswith("IMAGE ")] == [
+        f"IMAGE {NODE_1} images:debian/13 20261014_05:24 7439b6b23e1a",
+        f"IMAGE {NODE_2} images:debian/13 20261015_05:24 b93220c609a3",
+    ]
+
+
+def test_a_node_that_does_not_record_its_build_is_reported_as_unknown() -> None:
+    fake = FakeIncus()
+    _harness(fake).up()
+    for instance in fake.instances.values():
+        del instance.config["image.serial"]
+        del instance.config["volatile.base_image"]
+    lines: list[str] = []
+
+    _harness(fake, lines=lines).up()
+
+    assert [line for line in lines if line.startswith("IMAGE ")] == [
+        f"IMAGE {NODE_1} images:debian/13 unknown unknown",
+        f"IMAGE {NODE_2} images:debian/13 unknown unknown",
+    ]
 
 
 # Issue #123. The budgets of decision 0015 are advisory: an overrun is said,
@@ -300,7 +369,10 @@ def test_a_reset_over_its_budget_is_warned_about_and_fails_nothing() -> None:
 
     _harness(fake, lines=lines).up()
 
-    assert lines == ["TIME reset 12", "WARNING reset took 12 s, budget 10 s (decision 0015)"]
+    assert _timings(lines) == [
+        "TIME reset 12",
+        "WARNING reset took 12 s, budget 10 s (decision 0015)",
+    ]
     assert all(fake.instances[name].state == "RUNNING" for name in NODE_NAMES)
 
 
@@ -312,7 +384,7 @@ def test_a_phase_within_its_budget_is_not_warned_about() -> None:
 
     _harness(fake, lines=lines).up()
 
-    assert lines == ["TIME reset 10"]
+    assert _timings(lines) == ["TIME reset 10"]
 
 
 def test_ready_is_the_image_and_the_creation_together() -> None:
@@ -322,7 +394,7 @@ def test_ready_is_the_image_and_the_creation_together() -> None:
 
     _harness(fake, lines=lines).up()
 
-    assert lines == [
+    assert _timings(lines) == [
         "TIME image 30",
         "TIME create 40",
         "WARNING ready took 70 s, budget 60 s (decision 0015)",
@@ -342,7 +414,7 @@ def test_virtual_machines_have_budgets_of_their_own() -> None:
     fake.durations = {"snapshot restore": 35.0}
     _harness(fake, config, lines=lines).up()
 
-    assert lines == [
+    assert _timings(lines) == [
         "TIME reset 50",
         "TIME reset 70",
         "WARNING reset took 70 s, budget 60 s (decision 0015)",
@@ -358,7 +430,7 @@ def test_under_github_actions_the_warning_is_an_annotation() -> None:
 
     _harness(fake, config, lines=lines).up()
 
-    assert lines[1] == (
+    assert _timings(lines)[1] == (
         "::warning title=Test node budget::reset took 12 s, budget 10 s (decision 0015)"
     )
 

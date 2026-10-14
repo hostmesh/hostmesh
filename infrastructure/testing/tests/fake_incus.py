@@ -44,6 +44,11 @@ class FakeIncus:
     def __init__(self) -> None:
         self.instances: dict[str, Instance] = {}
         self.images: set[str] = set()
+        # The build an `image copy` gets: serial and fingerprint, as the image
+        # server publishes them. A test changes it to stand for a newer daily
+        # build. Incus records both on every instance made from the image.
+        self.build = ("20261014_05:24", "7439b6b23e1a" + "0" * 52)
+        self.image_builds: dict[str, tuple[str, str]] = {}
         self.calls: list[tuple[str, ...]] = []
         self.system_state = "running"
         self.address = "10.99.0.2 (eth0)"
@@ -117,12 +122,15 @@ class FakeIncus:
                 return _ok() if alias in self.images else _error("image not found")
             case ("image", "copy", "--quiet", _, "local:", "--alias", alias, *_):
                 self.images.add(alias)
+                self.image_builds[alias] = self.build
                 return _ok()
             case ("launch", "--quiet", alias, name, *rest):
                 if alias not in self.images:
                     return _error("image not found")
                 pairs = (pair.partition("=") for pair in rest if "=" in pair)
                 config = {key: value for key, _, value in pairs}
+                serial, fingerprint = self.image_builds[alias]
+                config |= {"image.serial": serial, "volatile.base_image": fingerprint}
                 incus_type = "VIRTUAL-MACHINE" if "--vm" in rest else "CONTAINER"
                 self.instances[name] = Instance(incus_type, "RUNNING", config)
                 return _ok()
