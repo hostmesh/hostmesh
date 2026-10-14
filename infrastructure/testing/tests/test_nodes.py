@@ -117,6 +117,8 @@ _QUOTA_COMMANDS = [
     ("systemctl", "daemon-reload"),
     ("mount", "/srv/hostmesh-quota"),
     ("chmod", "1777", "/srv/hostmesh-quota"),
+    # The mount enforces the quotas already; quotaon would fail at every boot.
+    ("systemctl", "mask", "quotaon@srv-hostmesh\\x2dquota.service"),
 ]
 
 
@@ -136,7 +138,7 @@ def test_a_virtual_machine_gets_the_quota_filesystem_before_its_snapshot() -> No
         last_step = max(
             index
             for index, call in enumerate(fake.calls)
-            if call == ("exec", name, "--", "chmod", "1777", "/srv/hostmesh-quota")
+            if call[:3] == ("exec", name, "--") and call[3:] == _QUOTA_COMMANDS[-1]
         )
         assert last_step < fake.calls.index(("stop", name))
 

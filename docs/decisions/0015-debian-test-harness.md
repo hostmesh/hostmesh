@@ -140,3 +140,10 @@ The image is not pinned: the nodes stay on the daily build of `images:debian/13`
 - A pin would not hold the nodes still. Packages that later slices install on the nodes (Nginx, PHP-FPM, MariaDB, PowerDNS) come from Debian's mirrors at the time of the run, whatever the image.
 - Instead, every run says which build it used. `up` ends with one line per node, `IMAGE <node> <image> <serial> <fingerprint>`, read from what Incus records on the instance (`image.serial` and `volatile.base_image`), after a creation and after a reset alike. A failure that appears from one run to the next can be tied to a new build by comparing the lines.
 - If a new build ever breaks the suite, the way back is an earlier build the server still has, by fingerprint: `HOSTMESH_NODE_IMAGE=images:<fingerprint>` (checked: `images:7aa4e23f8905` resolves to the build of 2026-10-12). That is a stopgap for at most three days, not a pin.
+
+## Amendment, 2026-10-14 (issue #169)
+
+The harness now makes the quota filesystem that this decision gives virtual machines. Before the `clean` snapshot, a virtual machine gets a 256 MiB file formatted as ext4 with the `quota` feature, mounted on `/srv/hostmesh-quota` through `/etc/fstab` with `loop,usrquota`, and the `quota` package. An integration test holds a user to a 1 MiB hard limit on it.
+
+- Found on the way, for whoever sets quotas up on a real node: on Debian 13, systemd 257 starts `quotaon@<mount>.service` for every fstab entry with `usrquota` once `/usr/sbin/quotaon` exists. On ext4 with the `quota` feature the mount has already turned the quotas on, so `quotaon` fails with "File exists" and the node boots `degraded`. The harness masks that unit instance. After a reboot the node is `running`, `quotaon -p` reports the user quota on, and the limit holds.
+- How a production node provides the filesystem is still not decided here.

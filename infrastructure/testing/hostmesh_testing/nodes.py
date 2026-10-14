@@ -22,6 +22,11 @@ DEFAULT_IMAGE = "images:debian/13"
 QUOTA_IMAGE = "/var/lib/hostmesh-quota.img"
 QUOTA_MOUNT = "/srv/hostmesh-quota"
 _QUOTA_SIZE = "256M"
+# systemd 257 starts this unit for a mount with `usrquota` once the quota
+# tools are installed. On ext4 with the quota feature the mount has already
+# turned the quotas on, so `quotaon` fails with "File exists" and the node
+# boots `degraded`. The name is `systemd-escape --path --template` of QUOTA_MOUNT.
+_QUOTAON_UNIT = "quotaon@srv-hostmesh\\x2dquota.service"
 # What Incus records on an instance about the image it was made from.
 SERIAL_KEY = "image.serial"
 FINGERPRINT_KEY = "volatile.base_image"
@@ -380,6 +385,7 @@ class NodeHarness:
         node.run(["mount", QUOTA_MOUNT])
         # Any user may write, as in /tmp: the tests write as unprivileged users.
         node.run(["chmod", "1777", QUOTA_MOUNT])
+        node.run(["systemctl", "mask", _QUOTAON_UNIT])
 
     def _reset(self, names: Sequence[str]) -> None:
         for name in names:

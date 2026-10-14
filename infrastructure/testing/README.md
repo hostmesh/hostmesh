@@ -10,6 +10,7 @@ Two disposable Debian 13 nodes for the agent's integration tests (spec section 3
 | Type | System containers by default; virtual machines with `HOSTMESH_NODE_TYPE=vm` |
 | Capabilities | Both carry `dns` (spec section 9), as the Incus config key `user.hostmesh.capabilities` |
 | Clean state | A snapshot named `clean`, taken stopped after the first boot. A reset restores it |
+| Quotas | Virtual machines only: an ext4 filesystem with user quotas on `/srv/hostmesh-quota`, in the `clean` snapshot (below) |
 
 Containers run everything except filesystem user quotas and use the kernel of the host. Virtual machines run Debian's own kernel; the isolation suite and anything that needs a quota belong there.
 
@@ -97,6 +98,27 @@ def test_something_that_dirties_the_nodes(harness: NodeHarness) -> None:
 - `node.capabilities` is read from Incus each time. `node.address()` is the node's IPv4 address on the Incus bridge.
 - `harness.reset()` takes about 4 seconds for two containers and 18 for two virtual machines on a developer machine (decision 0015). Call it at the start of a test group that needs clean nodes, not after every test.
 - Mark every such test `integration`. `make -C agent check` does not run them.
+
+### User quotas
+
+A virtual machine is created with an ext4 filesystem that enforces user quotas (spec section 13; decision 0015). It is made as the quota probe of decision 0015 made it, before the `clean` snapshot, so every reset brings it back empty:
+
+- A 256 MiB file, `/var/lib/hostmesh-quota.img`, formatted with the ext4 `quota` feature, mounted on `/srv/hostmesh-quota` (`hostmesh_testing.QUOTA_MOUNT`) through `/etc/fstab` with `loop,usrquota`. Any user may write to it, as to `/tmp`.
+- The `quota` package is installed, for `setquota` and `quotaon -p`.
+- The mount turns the quotas on. systemd's `quotaon@srv-hostmesh\x2dquota.service`, which would run `quotaon` again at every boot, is masked: `quotaon` fails with "File exists", and the node would boot `degraded`. Found on Debian 13 with systemd 257.
+
+```python
+from hostmesh_testing import QUOTA_MOUNT, Node
+
+
+def test_a_limit(node: Node) -> None:
+    if node.node_type != "vm":
+        pytest.skip("user quotas need a virtual machine (decision 0015)")
+    node.run(["setquota", "-u", "nobody", "1024", "1024", "0", "0", QUOTA_MOUNT])  # KiB
+    ...
+```
+
+A container has no loop device, so it has no such filesystem: a test that needs one skips there, as `test_a_hard_user_quota_holds` in `agent/tests/integration/test_nodes.py` does. How a production node provides the filesystem is not decided (decision 0015).
 
 ## In CI
 
