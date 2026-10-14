@@ -124,3 +124,10 @@ The budgets are advisory. #78 left open whether they are enforced; they are not,
 - Why not enforced: the times depend on a package mirror, an image server and the runner of the day, none of which a pull request changes. Measured in CI before this amendment: containers ready in 16 to 20 seconds and reset in 4 to 5; virtual machines ready in 51 to 133 seconds and reset in 24 to 60, the last of which is the budget itself. An enforced budget would have failed an ordinary nightly run.
 - A warning that keeps coming back is the reason to look: at the runner, at the image, or at the budget.
 
+
+## Amendment, 2026-10-14 (issue #171)
+
+The virtual-machine job installs less of QEMU. Its install line is `apt-get install --no-install-recommends incus incus-agent dnsmasq-base qemu-system-x86 qemu-utils ovmf qemu-system-modules-spice`: 34 packages and 55.8 MB, where `incus qemu-system` with recommended packages was 105 packages and 185 MB.
+
+- Each package beyond `incus` and `qemu-system-x86` was left out once on the runner, and each time the job failed. Without `ovmf`: "QEMU failed to run feature checks", the error found while building the proof of concept. Without `qemu-utils`: `Failed to find executable "qemu-img"` while reading the image. Without `qemu-system-modules-spice`: QEMU refuses the `-spice` option Incus starts it with. Without `incus-agent`: the node never answers, because the harness reaches it through the agent. `dnsmasq-base` is needed for `incus admin init`, as found before.
+- The open question above, whether a job with virtual machines can install less of `qemu-system`, is answered: it installs `qemu-system-x86`, the emulator of the one architecture the nodes use.

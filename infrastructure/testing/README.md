@@ -27,11 +27,13 @@ Fedora 44:
 
 Ubuntu 24.04, as the CI workflow does it:
 
-    sudo apt-get install -y incus            # add qemu-system for virtual machines
+    sudo apt-get install -y incus
     sudo incus admin init --minimal
     sudo usermod -aG incus-admin "$USER"
+    # for virtual machines:
+    sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf qemu-system-modules-spice
 
-Install Incus with its recommended packages: without them `incus admin init` fails for want of `dnsmasq`.
+Install Incus with its recommended packages: without them `incus admin init` fails for want of `dnsmasq`, and virtual machines lack `incus-agent`. Not the `qemu-system` package: it brings the emulators of every architecture. The virtual-machine workflow installs the same packages (issue #171).
 
 - **Membership of `incus-admin` is equivalent to root on your machine.** Anyone in that group can start a privileged instance and mount the host's filesystem in it.
 - Log out and in for the group to apply, or run one command at once with `sg incus-admin -c '<command>'`.

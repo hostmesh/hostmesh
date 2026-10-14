@@ -212,6 +212,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `web/README.md` says how to open the end-to-end report: `playwright show-report` from the `node` image on http://localhost:9323, which also opens the trace of a failed test. Opened as a file, the report shows no trace (issue #186).
 - `web/README.md` says how to open the report artifact of a failed CI run: unpack it under `web/e2e/test-results/` with `gh run download` or `unzip`, then serve its `playwright-report/` with `show-report` from the `node` image. The zip itself is refused, because `index.html` is not at its top level (issue #188).
 - Decision 0016 records that the Playwright traces a failed CI run uploads hold that run's generated passwords and one-time codes, never TOTP secrets, and why that is accepted: the accounts exist only in the run's database. `web/README.md` adds the rule that keeps it so: a test types only credentials that `e2e:seed` made for the run (decision 0016, amended; issue #175).
+- The virtual-machine workflow installs QEMU for x86 only, with the four recommended packages a virtual machine needs, instead of `qemu-system` with all of them: 34 packages and 55.8 MB instead of 105 and 185 MB, and the step takes about half as long. `infrastructure/testing/README.md` installs the same (decision 0015, amended; issue #171).
 
 ---
 
