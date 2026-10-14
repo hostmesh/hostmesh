@@ -73,6 +73,18 @@ docker compose -f infrastructure/development/compose.yaml run --rm --no-deps \
 
 Opened as a file, `playwright-report/index.html` lists the tests but shows no trace: the trace viewer must be loaded over HTTP.
 
+When the suite fails in CI, the run keeps the report and the traces for 7 days as the artifact `playwright-report`. Its zip holds the folders `playwright-report/` and `test-results/`, so `show-report` refuses the zip itself. Unpack it under `test-results/`, which is ignored by git and emptied by the next local run, and serve the report from there:
+
+```bash
+gh run download <run-id> -n playwright-report -D web/e2e/test-results/ci
+# or, with the zip from the run's page:
+unzip playwright-report.zip -d web/e2e/test-results/ci
+
+docker compose -f infrastructure/development/compose.yaml run --rm --no-deps \
+  -p 127.0.0.1:9323:9323 -w /workspace/web/e2e node \
+  pnpm exec playwright show-report --host 0.0.0.0 --port 9323 test-results/ci/playwright-report
+```
+
 Use the `node` image, not pnpm on the host: there `show-trace` fails without Playwright's Chromium, and `pnpm exec` first reinstalls `web/node_modules` from the host's store. Run `… exec node pnpm install` afterwards if that happened.
 
 Rules for a test:
