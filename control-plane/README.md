@@ -151,7 +151,7 @@ Rules for a new audited action:
 One record holds the product name, the logos, the favicon, the brand colors and the links (spec section 28). It is a single row of the table `branding`, created by the first change. Until then every reader gets the defaults.
 
 - **Reading.** `App\Application\Queries\GetBranding` returns the read model `Branding`. Emails and invoices read it there, not from the table.
-- **Public endpoint.** `GET /api/v1/branding` has no session and sets no cookie. It carries `Cache-Control: public, max-age=300` and an `ETag`, and answers `304` to a matching `If-None-Match`.
+- **Public endpoint.** `GET /api/v1/branding` has no session and sets no cookie. It carries `Cache-Control: public, max-age=300` and an `ETag`, and answers `304` to a matching `If-None-Match`. It and the image endpoint share the `branding` rate limit (see [Rate limits](#rate-limits)).
 - **Admin endpoints.** `GET` and `PUT /api/v1/admin/branding`, with the permissions `branding.view` and `branding.update`. `PUT` replaces the name, colors and links: send every field.
 - **Colors** are `#rrggbb`: `primary` and `primary_foreground`, for light and dark. Null keeps the token default. A pair below WCAG AA (4.5:1) is saved and listed in `warnings`: the foreground on the primary, and the primary on the default `background` and `card`. The default surfaces are in `App\Domain\Branding\ColorMode` and mirror `web/packages/ui/src/styles/tokens.css`: change both together.
 - **Links** are `https` URLs: `support`, `terms`, `privacy`.
@@ -159,6 +159,20 @@ One record holds the product name, the logos, the favicon, the brand colors and 
 - **How an upload is checked.** `finfo` names the type of the bytes and `getimagesize()` measures them; both must agree. The client's file name and content type are never read. This is a header check, not a full decode: a stored file is harmless because the server names it (`<slot>/<start of its SHA-256>.<extension of the detected type>`) and serves it as the detected type with `X-Content-Type-Options: nosniff`.
 - **Storage.** The filesystem disk `branding` (`storage/app/branding`, see `config/filesystems.php`). It is not public: `GET /api/v1/branding/images/{slot}` serves the files. The URL names the slot and carries the version as `v`, so a URL from a cached response keeps working after a replacement. Back the directory up with the database.
 - **Audit.** `branding.updated` (metadata `fields`: the names of the changed columns), `branding.image_replaced` and `branding.image_removed` (metadata `slot`). Values are never recorded. A change that changes nothing writes no event.
+
+## Rate limits
+
+Named limiters in `AppServiceProvider`, applied with `throttle:<name>` in `routes/api.php`. Past a limit the API answers `429` with `{"message": "Too Many Attempts."}` and a `Retry-After` header in seconds.
+
+| Limiter      | Routes                                                                            | Limit                                                                                   |
+|--------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| `login`      | `POST …/auth/login` of both realms                                                | 5 a minute per email and address, 20 a minute per address; each realm counts on its own |
+| `two-factor` | the challenge, `confirm`, `recovery-codes` and `DELETE …/auth/two-factor`         | 5 a minute per account, 20 a minute per address; each realm counts on its own           |
+| `branding`   | `GET /api/v1/branding` and `GET /api/v1/branding/images/{slot}`, counted together | 300 a minute per address                                                                |
+
+The `branding` limit is generous on purpose. A login page loads the branding once and an image or two, and browsers cache both. 300 a minute is about 100 uncached login pages a minute from one address, for the many people who can share one: an office, a campus, carrier-grade NAT.
+
+The address is the one PHP sees. The control plane trusts no proxy yet, so behind a CDN or a reverse proxy that is the proxy's address, and everyone behind it shares one budget.
 
 ## Jobs
 

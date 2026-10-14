@@ -166,6 +166,13 @@ it('documents a branding image as the bytes of an image, not as JSON', function 
     expect(array_keys($notFound['properties']))->toBe(['message']);
 });
 
+it('documents the rate limit of both public branding routes', function (string $path): void {
+    $response = generateOpenApiDocument()['paths'][$path]['get']['responses']['429'] ?? null;
+
+    expect($response)->not->toBeNull("GET $path does not document 429")
+        ->and(array_keys($response['content']['application/json']['schema']['properties']))->toBe(['message']);
+})->with(['/branding', '/branding/images/{slot}']);
+
 // Issue #62: the operation ID is the route name. An unnamed route gets an ID
 // that Scramble derives from the controller's namespace and class, and that
 // ID changes when another controller of the same name appears.

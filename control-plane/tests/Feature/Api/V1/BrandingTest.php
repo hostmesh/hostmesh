@@ -109,3 +109,46 @@ it('can be read from both SPA origins, and caches must keep them apart', functio
     expect($response->headers->get('Access-Control-Allow-Origin'))->toBe($origin)
         ->and((string) $response->headers->get('Vary'))->toContain('Origin');
 })->with([Browser::ADMIN, Browser::PORTAL]);
+
+// Issue #158: both public routes share one limit by client address, generous
+// enough for a login page behind a shared address (control-plane/README.md,
+// "Rate limits").
+
+const PUBLIC_FAVICON = 'https://api.hostmesh.test/api/v1/branding/images/favicon';
+
+it('allows 300 requests a minute from one address across both public routes', function (): void {
+    $this->freezeTime();
+
+    foreach (range(1, 150) as $ignored) {
+        $this->getJson(PUBLIC_BRANDING)->assertOk();
+        // No favicon is stored: 404, and it counts all the same.
+        $this->get(PUBLIC_FAVICON)->assertNotFound();
+    }
+
+    $this->getJson(PUBLIC_BRANDING)->assertTooManyRequests()->assertHeader('Retry-After');
+    $this->get(PUBLIC_FAVICON)->assertTooManyRequests();
+
+    // Another address has a budget of its own.
+    $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.7'])->getJson(PUBLIC_BRANDING)->assertOk();
+
+    $this->travel(61)->seconds();
+
+    $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])->getJson(PUBLIC_BRANDING)->assertOk();
+});
+
+// `cache.headers` leaves a response that is not 2xx alone, whatever the
+// order of the middleware. This keeps it so.
+it('never lets a shared cache keep a 429', function (): void {
+    $this->freezeTime();
+
+    foreach (range(1, 300) as $ignored) {
+        $this->getJson(PUBLIC_BRANDING);
+    }
+
+    $response = $this->getJson(PUBLIC_BRANDING)->assertTooManyRequests();
+    $cacheControl = (string) $response->headers->get('Cache-Control');
+
+    expect($cacheControl)->not->toContain('public')
+        ->and($cacheControl)->not->toContain('max-age=300')
+        ->and($response->headers->has('ETag'))->toBeFalse();
+});

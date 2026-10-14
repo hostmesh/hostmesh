@@ -197,6 +197,12 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // The two public branding routes (issue #158), counted together by
+        // client address. Generous: a login page loads the branding and an
+        // image or two, and many people may share one address
+        // (control-plane/README.md, "Rate limits").
+        RateLimiter::for('branding', fn (Request $request): Limit => Limit::perMinute(300)->by('branding|'.$request->ip()));
+
         // Issue #32: the seed command of the Playwright suite exists only
         // in the end-to-end and test environments. It is outside
         // app/Console/Commands on purpose, so Laravel does not discover it.

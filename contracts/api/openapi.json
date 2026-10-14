@@ -989,6 +989,24 @@
                                 }
                             }
                         }
+                    },
+                    "429": {
+                        "description": "Too many requests from this address: 300 a minute for this and the branding images together. Retry after the seconds in `Retry-After`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 },
                 "security": []
@@ -1053,6 +1071,24 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "429": {
+                        "description": "Too many requests from this address: 300 a minute for this and `GET /branding` together. Retry after the seconds in `Retry-After`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 },
                 "security": []
