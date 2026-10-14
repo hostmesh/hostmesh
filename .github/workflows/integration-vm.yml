@@ -68,8 +68,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            incus dnsmasq-base \
-            qemu-system-x86 qemu-utils ovmf qemu-system-modules-spice
+            incus incus-agent dnsmasq-base \
+            qemu-system-x86 qemu-utils qemu-system-modules-spice
           sudo incus admin init --minimal
           sudo chmod 666 /var/lib/incus/unix.socket
           incus version
