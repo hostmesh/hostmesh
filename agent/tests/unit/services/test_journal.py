@@ -3,7 +3,7 @@
 
 import pytest
 
-from agent.services.journal import InjectedFaultError, Journal, Mutation
+from tests.fakes.journal import InjectedFaultError, Journal, Mutation
 
 
 def test_records_mutations_in_order() -> None:

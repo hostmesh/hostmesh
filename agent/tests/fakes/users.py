@@ -4,8 +4,8 @@
 from dataclasses import replace
 from pathlib import PurePosixPath
 
-from agent.services.journal import Journal
 from agent.services.users.interface import User, UserExistsError, UserNotFoundError
+from tests.fakes.journal import Journal
 
 _SERVICE = "users"
 
