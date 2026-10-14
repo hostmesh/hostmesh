@@ -60,16 +60,18 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      # QEMU for x86 only, and of its recommended packages only what Incus
-      # needs for a virtual machine (issue #171). The qemu-system metapackage
-      # without recommends fails with "QEMU failed to run feature checks"
-      # (decision 0015); with them it is 105 packages and 185 MB.
+      # QEMU for x86 only, and of the recommended packages only what a
+      # virtual machine needs (issue #171). Each was tried without on the
+      # runner: dnsmasq-base for `incus admin init` (decision 0015), ovmf
+      # ("QEMU failed to run feature checks"), qemu-utils (qemu-img reads
+      # the image), qemu-system-modules-spice (Incus starts QEMU with
+      # -spice), and incus-agent (the harness reaches the node through it).
       - name: Install Incus and QEMU
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             incus incus-agent dnsmasq-base \
-            qemu-system-x86 qemu-utils qemu-system-modules-spice
+            qemu-system-x86 qemu-utils ovmf qemu-system-modules-spice
           sudo incus admin init --minimal
           sudo chmod 666 /var/lib/incus/unix.socket
           incus version
