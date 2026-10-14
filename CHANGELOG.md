@@ -215,6 +215,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The virtual-machine workflow installs QEMU for x86 only, with the four recommended packages a virtual machine needs, instead of `qemu-system` with all of them: 34 packages and 55.8 MB instead of 105 and 185 MB, and the step takes about half as long. `infrastructure/testing/README.md` installs the same (decision 0015, amended; issue #171).
 - The test-node harness says which build of the Debian 13 image each node was made from: `up` ends with `IMAGE <node> <image> <serial> <fingerprint>` per node. The image stays the unpinned daily build, because the image server keeps only three days of builds (decision 0015, amended; issue #170).
 - Virtual-machine test nodes carry an ext4 filesystem with user quotas on `/srv/hostmesh-quota` (`hostmesh_testing.QUOTA_MOUNT`), made before the `clean` snapshot, and an integration test shows a 1 MiB hard limit holding there. Containers skip it: they have no loop device (decision 0015, amended; issue #169).
+- CI runs the agent's unit and contract tests on Debian 13's own `python3` as well, in a `debian:13` container (job `pytest on Debian 13's python3`), next to uv's Python 3.13. The `Agent` gate requires it (decision 0005, amended; issue #168).
 
 ---
 

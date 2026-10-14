@@ -42,7 +42,7 @@ The agent's own command line has one command so far: `uv run --directory agent h
 
 ## Requirements
 
-uv 0.12.18 or later, below 0.14. Python 3.13 is the minimum, because it is what Debian 13 ships. See [decision 0005](../docs/decisions/0005-python-3-13-and-uv-for-the-agent.md).
+uv 0.12.18 or later, below 0.14. Python 3.13 is the minimum, because it is what Debian 13 ships. See [decision 0005](../docs/decisions/0005-python-3-13-and-uv-for-the-agent.md). CI runs the unit and contract tests twice: on uv's Python 3.13, with the coverage gate, and on the `python3` of a `debian:13` container, which nodes run (job `pytest on Debian 13's python3` in `.github/workflows/agent.yml`).
 The integration tests also need Incus (for `test-integration`) or Docker (for `test-doubles`). The unit and contract tests need neither.
 
 ## Rules

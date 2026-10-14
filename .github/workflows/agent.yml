@@ -85,6 +85,47 @@ jobs:
       - name: pytest with the 95% coverage gate
         run: make test-coverage
 
+  # Issue #168: the same tests on the python3 that Debian 13 ships (3.13.5),
+  # which the nodes run, besides uv's own build of Python 3.13 above.
+  debian-python:
+    name: pytest on Debian 13's python3
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The current point release of Debian 13, as a node gets it.
+    container: debian:13
+    defaults:
+      run:
+        working-directory: agent
+    env:
+      # Debian's interpreter, and never one uv downloads.
+      UV_PYTHON: /usr/bin/python3
+      UV_PYTHON_DOWNLOADS: never
+    steps:
+      - name: Install Debian's python3
+        working-directory: /
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends python3 ca-certificates make
+          python3 --version
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          # Must satisfy required-version in agent/pyproject.toml.
+          version: "0.12.22"
+          working-directory: agent
+          # The cache of the job above is uv's Python build's; this job needs none.
+          enable-cache: false
+      - name: Install dependencies
+        run: make install
+      - name: The environment runs on Debian's interpreter
+        run: uv run --locked python -c 'import sys; assert sys.base_prefix == "/usr", sys.base_prefix; print(sys.version)'
+      # Unit and contract tests, without the coverage gate the job above holds.
+      - name: pytest
+        run: make test
+
   # The required status check of this workflow (decision 0017). It passes
   # when the suite passed, and when it was skipped because the pull request
   # touches nothing it covers. It fails when the change detection failed:
@@ -92,7 +133,7 @@ jobs:
   gate:
     name: Agent
     if: always()
-    needs: [changes, checks]
+    needs: [changes, checks, debian-python]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

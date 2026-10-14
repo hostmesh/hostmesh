@@ -55,3 +55,11 @@ Dependabot's updater ships one exact uv version and refuses a project whose `req
 - The range is set by what Dependabot ships now and next, not by a feature the projects need. When uv 0.14 is out and Dependabot is about to move to it, the upper bound is raised after the same check: `uv lock --check`, and a re-lock that changes nothing.
 - CI still pins one exact version (`UV_VERSION` in the workflows), which must lie in the range. Reproducible builds rest on that pin and on `--locked`, not on the range.
 - A lockfile from Dependabot's uv that CI's uv does not accept fails `--locked` on its pull request, where it is seen. A lower `revision` alone is accepted.
+
+## Amendment, 2026-10-14 (issue #168)
+
+The consequence above that fidelity to Debian's interpreter comes from the integration tests did not hold: those tests drive the nodes from the host's uv Python, and no agent code runs on a node yet. CI now runs the unit and contract tests on Debian 13's own interpreter as well.
+
+- The job `pytest on Debian 13's python3` in `agent.yml` runs in a `debian:13` container, installs `python3` from Debian (3.13.5 on 2026-10-14) and nothing else of Python, and runs `make test` with uv on it: `UV_PYTHON=/usr/bin/python3`, `UV_PYTHON_DOWNLOADS=never`. A step fails the job when the environment's base interpreter is not the one under `/usr`.
+- uv makes the environment without Debian's `python3-venv`, and the dependencies are the same locked wheels from PyPI. The job tests the interpreter, not Debian's packaged libraries.
+- The coverage gate stays on the job with uv's Python. The `Agent` gate requires both.
