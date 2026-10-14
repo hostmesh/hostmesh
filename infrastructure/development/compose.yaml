@@ -122,7 +122,7 @@ services:
       retries: 30
 
   caddy:
-    image: caddy:2.11.4-alpine
+    image: caddy:2.11.7-alpine
     ports:
       - "127.0.0.1:80:80"
       - "127.0.0.1:443:443"
