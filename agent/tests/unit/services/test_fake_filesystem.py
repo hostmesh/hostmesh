@@ -5,10 +5,10 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from agent.services.filesystem.fake import FakeFilesystem
 from agent.services.filesystem.interface import Entry, EntryKind
-from agent.services.journal import InjectedFaultError, Journal, Mutation
-from agent.services.users.fake import FakeUsers
+from tests.fakes.filesystem import FakeFilesystem
+from tests.fakes.journal import InjectedFaultError, Journal, Mutation
+from tests.fakes.users import FakeUsers
 from tests.support.filesystem_contract import FilesystemContract, Link
 
 ROOT = PurePosixPath("/")

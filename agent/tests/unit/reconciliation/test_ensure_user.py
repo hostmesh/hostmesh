@@ -14,11 +14,11 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from agent.reconciliation.user import Change, PathConflictError, UserSpec, ensure_user
-from agent.services.filesystem.fake import FakeFilesystem
 from agent.services.filesystem.interface import Entry, EntryKind
-from agent.services.journal import InjectedFaultError, Journal
-from agent.services.users.fake import FakeUsers
 from agent.services.users.interface import User
+from tests.fakes.filesystem import FakeFilesystem
+from tests.fakes.journal import InjectedFaultError, Journal
+from tests.fakes.users import FakeUsers
 
 HOME = PurePosixPath("/home/acct1")
 OLD_HOME = PurePosixPath("/home/old")

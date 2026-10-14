@@ -5,7 +5,7 @@ from dataclasses import replace
 from pathlib import PurePosixPath
 
 from agent.services.filesystem.interface import Entry, EntryKind, SymlinkError
-from agent.services.journal import Journal
+from tests.fakes.journal import Journal
 
 _SERVICE = "filesystem"
 _ROOT = PurePosixPath("/")

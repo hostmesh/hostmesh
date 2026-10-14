@@ -5,9 +5,9 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from agent.services.journal import InjectedFaultError, Mutation
-from agent.services.users.fake import FakeUsers
 from agent.services.users.interface import User, UserExistsError
+from tests.fakes.journal import InjectedFaultError, Mutation
+from tests.fakes.users import FakeUsers
 from tests.support.users_contract import UsersContract
 
 HOME = PurePosixPath("/home/acct1")

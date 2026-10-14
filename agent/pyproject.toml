@@ -19,6 +19,7 @@ dev = [
     "acme>=5.8.0",
     "cryptography>=50.0.2",
     "dnspython>=2.8.0",
+    "hatchling>=1.32.4",
     "hostmesh-testing",
     "hypothesis>=6.168.3",
     "josepy>=2.2.0",
@@ -114,12 +115,8 @@ markers = [
 
 [tool.coverage.run]
 branch = true
+# The package only. The test doubles live in tests/fakes/, outside it.
 source = ["agent"]
-# Test doubles. They must not hold the gate up for production code.
-omit = [
-    "agent/services/journal.py",
-    "agent/services/*/fake.py",
-]
 
 [tool.coverage.report]
 show_missing = true
