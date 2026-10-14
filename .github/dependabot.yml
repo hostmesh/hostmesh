@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Weekly version updates for every manifest in the repository. Minor and
+# Weekly version updates for every manifest in the repository, and for the
+# images of the development stack. Minor and
 # patch releases arrive as one pull request per ecosystem; a major release
 # gets its own. Titles start with "chore", so squash merges keep to
 # Conventional Commits.
@@ -89,6 +90,67 @@ updates:
       prefix: chore
     groups:
       python-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Base images of the development images. Dependabot reads the Dockerfile
+  # of each directory named here, not of its subdirectories.
+  - package-ecosystem: docker
+    directories:
+      - /infrastructure/development/php
+      - /infrastructure/development/node
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+    ignore:
+      # PHP 8.5 (decision 0004). To Dependabot, 8.6 is a minor release.
+      - dependency-name: php
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-major
+      # Node 24 (decision 0007).
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
+    groups:
+      docker-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+        # Its version must equal web/.nvmrc and the engines field of
+        # web/package.json, which the smoke test compares. It gets a pull
+        # request of its own, to which those changes are added.
+        exclude-patterns:
+          - node
+
+  # The images of the development stack. Dependabot reads compose.yaml and
+  # compose.e2e.yaml; the services it builds come from the Dockerfiles above.
+  - package-ecosystem: docker-compose
+    directory: /infrastructure/development
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+    groups:
+      docker-compose-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+        # The control plane's workflow runs both as service containers at
+        # the same versions, and Dependabot does not update images in
+        # workflows. They get a pull request of their own, to which the
+        # change of .github/workflows/control-plane.yml is added.
+        exclude-patterns:
+          - postgres
+          - redis
+      ci-services:
+        patterns:
+          - postgres
+          - redis
         update-types:
           - minor
           - patch
