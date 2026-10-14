@@ -23,6 +23,7 @@ final class BrandingController
      * @unauthenticated
      */
     #[Response(200, 'The branding, or the defaults when nothing is configured.')]
+    #[Response(429, 'Too many requests from this address: 300 a minute for this and the branding images together. Retry after the seconds in `Retry-After`.', type: 'array{message: string}')]
     public function __invoke(GetBranding $query): JsonResponse
     {
         $branding = $query->handle();

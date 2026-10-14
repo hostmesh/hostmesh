@@ -221,6 +221,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The control plane no longer holds `brianium/paratest` back: Pest 5.3.2 supports paratest 7.26.1 and later (pestphp/pest#1959) and requires it. Pest is raised to `^5.3.2`, the `conflict` entry is gone, and the lockfile holds Pest 5.3.2, paratest 7.27.1 and PHPUnit 13.4.2 (issue #163).
 - `infrastructure/development/README.md` has a troubleshooting entry for a `php` container created before the `contracts/` mount: the contract test reports the spec missing and `composer openapi` cannot write it; `make up` recreates the container (issue #162).
 - The control plane no longer registers Laravel's stock `storage/{path}` routes (`GET`, `HEAD` and `PUT`, closures): the `local` disk is not served. A test reads the route list and fails on any route that is not under `/api/v1` with a controller in `App\Http\Api\V1`, so a route the framework or a package registers by itself is caught (issue #161).
+- `GET /api/v1/branding` and `GET /api/v1/branding/images/{slot}` share a rate limit of 300 requests a minute per client address (limiter `branding`), generous enough for a login page behind a shared address. Both document `429` in the OpenAPI document, and the typed client is regenerated. `control-plane/README.md` has a new "Rate limits" section with every limiter (issue #158).
 
 ---
 

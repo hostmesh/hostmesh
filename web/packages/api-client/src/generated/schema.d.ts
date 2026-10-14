@@ -1208,6 +1208,17 @@ export interface operations {
                     };
                 };
             };
+            /** @description Too many requests from this address: 300 a minute for this and the branding images together. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "branding.images.show": {
@@ -1236,6 +1247,17 @@ export interface operations {
                 };
             };
             404: components["responses"]["ModelNotFoundException"];
+            /** @description Too many requests from this address: 300 a minute for this and `GET /branding` together. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "customer.auth.csrf-cookie": {

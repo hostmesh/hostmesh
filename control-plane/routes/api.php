@@ -21,13 +21,16 @@ Route::get('/health', HealthController::class)->name('health');
 // Spec section 28: public and cacheable. Laravel's `cache.headers` sets the
 // ETag from the body and answers 304 to a matching If-None-Match. It sits
 // outside both realm groups, so it has no session and sets no cookie.
+// Both routes share the `branding` rate limit (issue #158).
 Route::get('/branding', BrandingController::class)
-    ->middleware('cache.headers:public;max_age=300;etag')
+    ->middleware(['throttle:branding', 'cache.headers:public;max_age=300;etag'])
     ->name('branding.show');
 
 // Its own caching: immutable for a year under the current `v`, five
 // minutes otherwise (App\Http\Api\V1\BrandingImageController).
-Route::get('/branding/images/{slot}', BrandingImageController::class)->name('branding.images.show');
+Route::get('/branding/images/{slot}', BrandingImageController::class)
+    ->middleware('throttle:branding')
+    ->name('branding.images.show');
 
 // Spec section 28: two realms. Each has its own SPA origin, guard, session
 // cookie and CSRF cookie, set up by the `realm` middleware

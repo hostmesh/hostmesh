@@ -26,6 +26,7 @@ final class BrandingImageController
     #[ApiResponse(200, 'The image.', mediaType: 'image/png', format: 'binary')]
     #[ApiResponse(200, 'The image.', mediaType: 'image/jpeg', format: 'binary')]
     #[ApiResponse(200, 'The image.', mediaType: 'image/webp', format: 'binary')]
+    #[ApiResponse(429, 'Too many requests from this address: 300 a minute for this and `GET /branding` together. Retry after the seconds in `Retry-After`.', type: 'array{message: string}')]
     public function __invoke(Request $request, ImageSlot $slot, GetBrandingImage $query): Response
     {
         $file = $query->handle($slot);
