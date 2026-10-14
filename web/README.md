@@ -55,7 +55,15 @@ make -C infrastructure/development e2e ARGS="tests/admin-login.spec.ts"
 make -C infrastructure/development up       # back to development mode
 ```
 
-After a change to an app, run `e2e-up` again: it rebuilds. The report is in `e2e/playwright-report/` and the traces of failed tests in `e2e/test-results/`. To open a trace, serve Playwright's trace viewer from the `node` image, open http://localhost:9323 in a browser, and stop it with Ctrl+C:
+After a change to an app, run `e2e-up` again: it rebuilds. The report is in `e2e/playwright-report/` and the traces of failed tests in `e2e/test-results/`. Open them with Playwright's server in the `node` image, on http://localhost:9323, and stop it with Ctrl+C. The report lists every test and opens the trace of a failed one:
+
+```bash
+docker compose -f infrastructure/development/compose.yaml run --rm --no-deps \
+  -p 127.0.0.1:9323:9323 -w /workspace/web/e2e node \
+  pnpm exec playwright show-report --host 0.0.0.0 --port 9323 playwright-report
+```
+
+One trace on its own:
 
 ```bash
 docker compose -f infrastructure/development/compose.yaml run --rm --no-deps \
@@ -63,7 +71,9 @@ docker compose -f infrastructure/development/compose.yaml run --rm --no-deps \
   pnpm exec playwright show-trace --host 0.0.0.0 --port 9323 test-results/<test>/trace.zip
 ```
 
-Not with `pnpm exec playwright show-trace` on the host: it fails without Playwright's Chromium there, and before it runs, the host's pnpm reinstalls `web/node_modules` from the host's store. Run `… exec node pnpm install` afterwards if that happened.
+Opened as a file, `playwright-report/index.html` lists the tests but shows no trace: the trace viewer must be loaded over HTTP.
+
+Use the `node` image, not pnpm on the host: there `show-trace` fails without Playwright's Chromium, and `pnpm exec` first reinstalls `web/node_modules` from the host's store. Run `… exec node pnpm install` afterwards if that happened.
 
 Rules for a test:
 
