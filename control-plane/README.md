@@ -33,11 +33,9 @@ One test: `docker compose -f infrastructure/development/compose.yaml exec php ve
 
 ## Dependencies held back
 
-`composer.json` has no comments, so the reasons are here. Remove an entry when its reason is gone.
+`composer.json` has no comments, so the reasons are here, as a table of each `conflict` entry, why it is there and when it can go. Remove an entry when its reason is gone.
 
-| `conflict` entry | Why | Remove when |
-|---|---|---|
-| `brianium/paratest` 7.26.1 | It added a required argument to `WrapperWorker`, which Pest 5.3.1 constructs with four: `pest --parallel` stops with an `ArgumentCountError` before any test runs. 7.26.0 works. | A Pest release later than 5.3.1 is installed (the fix is on Pest's `5.x` branch). |
+None at the moment.
 
 ## API contract
 
