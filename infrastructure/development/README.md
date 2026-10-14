@@ -229,6 +229,8 @@ App\Domain\Identity\User::factory()->create(["name" => "Customer", "email" => "c
 
 **Tests fail with `database "hostmesh_test" does not exist`.** The database is created with the PostgreSQL volume. A volume from before the control plane existed does not have it. Create it without losing data: `docker compose exec postgres createdb -U hostmesh hostmesh_test`.
 
+**The contract test says `contracts/api/openapi.json is missing`, and `composer openapi` fails with `file_put_contents(/var/www/html/../contracts/api/openapi.json): Failed to open stream`.** The `php` container was created before `compose.yaml` mounted `contracts/` into it, so `../contracts` does not exist there. Run `make up`: it recreates the container with the current mounts. Check with `docker compose exec php ls ../contracts`.
+
 **Files in `control-plane/` are owned by root.** The `php` service was started without the Makefile, which sets your user and group id. Run `make down`, fix the ownership with `sudo chown -R "$(id -u):$(id -g)" ../../control-plane`, and start with `make up`.
 
 **`make e2e`: "The stack is not in end-to-end mode".** Run `make e2e-up`.
