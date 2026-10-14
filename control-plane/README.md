@@ -162,7 +162,7 @@ One record holds the product name, the logos, the favicon, the brand colors and 
 
 ## Rate limits
 
-Named limiters in `AppServiceProvider`, applied with `throttle:<name>` in `routes/api.php`. Past a limit the API answers `429` with `{"message": "Too Many Attempts."}` and a `Retry-After` header in seconds.
+Named limiters in `AppServiceProvider`, applied with `throttle:<name>` in `routes/api.php`. Past a limit the API answers `429` with `{"message": "Too Many Attempts."}` and a `Retry-After` header in seconds. The OpenAPI document shows both on every route behind `throttle`, through the Scramble extension `App\Infrastructure\OpenApi\DocumentRateLimits`. A controller that documents its own `429`, such as the branding ones that name their limit, keeps its description.
 
 | Limiter      | Routes                                                                            | Limit                                                                                   |
 |--------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|

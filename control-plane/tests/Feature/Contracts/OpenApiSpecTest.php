@@ -173,6 +173,60 @@ it('documents the rate limit of both public branding routes', function (string $
         ->and(array_keys($response['content']['application/json']['schema']['properties']))->toBe(['message']);
 })->with(['/branding', '/branding/images/{slot}']);
 
+// Issue #202: a route behind `throttle` documents 429, with the usual error
+// body and the Retry-After header, without an attribute on its controller.
+
+/** @return list<array{string, string}> the path and method in the document of every throttled operation */
+function throttledOperations(): array
+{
+    $operations = [];
+
+    foreach (Route::getRoutes()->getRoutes() as $route) {
+        $throttled = collect($route->gatherMiddleware())
+            ->contains(fn (mixed $middleware): bool => is_string($middleware) && ($middleware === 'throttle' || str_starts_with($middleware, 'throttle:')));
+
+        if (! $throttled || ! str_starts_with($route->uri(), 'api/v1/')) {
+            continue;
+        }
+
+        foreach (array_diff($route->methods(), ['HEAD']) as $method) {
+            $operations[] = [mb_substr($route->uri(), mb_strlen('api/v1')), mb_strtolower($method)];
+        }
+    }
+
+    return $operations;
+}
+
+it('documents 429 and Retry-After on every throttled route', function (): void {
+    $paths = generateOpenApiDocument()['paths'];
+    $operations = throttledOperations();
+
+    // Login and four two-factor operations in each realm, and the two public branding routes.
+    expect($operations)->toHaveCount(12);
+
+    foreach ($operations as [$path, $method]) {
+        $response = $paths[$path][$method]['responses']['429'] ?? null;
+
+        expect($response)->not->toBeNull(mb_strtoupper($method)." $path does not document 429")
+            ->and(array_keys($response['content']['application/json']['schema']['properties']))->toBe(['message'])
+            ->and($response['headers']['Retry-After']['required'] ?? null)->toBeTrue(mb_strtoupper($method)." $path does not document Retry-After")
+            ->and($response['headers']['Retry-After']['schema'])->toBe(['type' => 'integer']);
+    }
+});
+
+it('documents no 429 on a route without a throttle', function (): void {
+    $paths = generateOpenApiDocument()['paths'];
+
+    expect($paths['/health']['get']['responses'])->not->toHaveKey('429')
+        ->and($paths['/admin/auth/user']['get']['responses'])->not->toHaveKey('429');
+});
+
+it('keeps the 429 that a controller documents itself', function (): void {
+    $response = generateOpenApiDocument()['paths']['/branding']['get']['responses']['429'];
+
+    expect($response['description'])->toStartWith('Too many requests from this address: 300 a minute');
+});
+
 // Issue #62: the operation ID is the route name. An unnamed route gets an ID
 // that Scramble derives from the controller's namespace and class, and that
 // ID changes when another controller of the same name appears.
