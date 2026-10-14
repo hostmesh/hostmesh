@@ -17,6 +17,16 @@ SNAPSHOT = "clean"
 CAPABILITIES_KEY = "user.hostmesh.capabilities"
 IMAGE_KEY = "user.hostmesh.image"
 DEFAULT_IMAGE = "images:debian/13"
+# A virtual machine's ext4 filesystem with user quotas (decision 0015, issue
+# #169): a file on the node's own disk, so that its snapshot holds it.
+QUOTA_IMAGE = "/var/lib/hostmesh-quota.img"
+QUOTA_MOUNT = "/srv/hostmesh-quota"
+_QUOTA_SIZE = "256M"
+# systemd 257 starts this unit for a mount with `usrquota` once the quota
+# tools are installed. On ext4 with the quota feature the mount has already
+# turned the quotas on, so `quotaon` fails with "File exists" and the node
+# boots `degraded`. The name is `systemd-escape --path --template` of QUOTA_MOUNT.
+_QUOTAON_UNIT = "quotaon@srv-hostmesh\\x2dquota.service"
 # What Incus records on an instance about the image it was made from.
 SERIAL_KEY = "image.serial"
 FINGERPRINT_KEY = "volatile.base_image"
@@ -344,6 +354,8 @@ class NodeHarness:
             )
         for name in names:
             self._wait_until_booted(name)
+            if config.node_type == "vm":
+                self._make_quota_filesystem(self._node(name))
             # The snapshot is taken with the node stopped: a restore then
             # starts from a clean boot and not from a frozen moment.
             _incus(self._runner, ["stop", name])
@@ -351,6 +363,29 @@ class NodeHarness:
             _incus(self._runner, ["start", name])
         for name in names:
             self._wait_until_booted(name)
+
+    def _make_quota_filesystem(self, node: Node) -> None:
+        """An ext4 filesystem with the quota feature, mounted with user quotas.
+
+        As the quota probe of decision 0015 made it: a loop-mounted file, the
+        way a second disk would be set up. It is mounted at every boot, so a
+        restored snapshot has it. Containers cannot: they have no loop devices.
+        """
+        apt = ["env", "DEBIAN_FRONTEND=noninteractive", "apt-get"]
+        node.run([*apt, "update", "-qq"], timeout=600.0)
+        node.run([*apt, "install", "-y", "-qq", "--no-install-recommends", "quota"], timeout=600.0)
+        node.run(["truncate", "-s", _QUOTA_SIZE, QUOTA_IMAGE])
+        node.run(["mkfs.ext4", "-q", "-O", "quota", "-E", "quotatype=usrquota", QUOTA_IMAGE])
+        node.run(["mkdir", "-p", QUOTA_MOUNT])
+        node.run(
+            ["tee", "-a", "/etc/fstab"],
+            stdin=f"{QUOTA_IMAGE} {QUOTA_MOUNT} ext4 loop,usrquota 0 0\n",
+        )
+        node.run(["systemctl", "daemon-reload"])
+        node.run(["mount", QUOTA_MOUNT])
+        # Any user may write, as in /tmp: the tests write as unprivileged users.
+        node.run(["chmod", "1777", QUOTA_MOUNT])
+        node.run(["systemctl", "mask", _QUOTAON_UNIT])
 
     def _reset(self, names: Sequence[str]) -> None:
         for name in names:

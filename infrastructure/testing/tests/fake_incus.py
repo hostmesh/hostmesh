@@ -53,6 +53,10 @@ class FakeIncus:
         self.system_state = "running"
         self.address = "10.99.0.2 (eth0)"
         self.exec_result = _ok()
+        # A command on a node that fails, by its program name ("mkfs.ext4").
+        self.exec_failures: dict[str, Result] = {}
+        # What each command on a node read from standard input, in order.
+        self.stdins: list[tuple[tuple[str, ...], str]] = []
         # The Incus daemon starts by itself, some seconds after it comes up,
         # every instance that was running when it went down (issue #97).
         # A name here is started once, "before restore" or "after restore".
@@ -138,8 +142,10 @@ class FakeIncus:
                 if self.instances[name].state != "RUNNING":
                     return _error("Instance is not running")
                 return _ok(self.system_state + "\n")
-            case ("exec", _, "--", *_):
-                return self.exec_result
+            case ("exec", _, "--", program, *_):
+                if stdin is not None:
+                    self.stdins.append((call, stdin))
+                return self.exec_failures.get(program, self.exec_result)
             case ("stop", name) | ("stop", "--force", name):
                 if self.instances[name].state != "RUNNING":
                     return _error("The instance is already stopped")
