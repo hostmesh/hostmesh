@@ -3,7 +3,8 @@
 #
 # Tests of changed.sh and gate.sh, the two scripts that let a workflow report
 # on every pull request and still run its suite only when it has to (issue
-# #105, decision 0017). Run by the Hygiene workflow: `.github/scripts/test.sh`.
+# #105, decision 0017), and of service-images.sh (issue #181). Run by the
+# Hygiene workflow: `.github/scripts/test.sh`. Needs jq and yq 4.
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -98,6 +99,119 @@ check "no suite job to judge" 1 "" \
     gate "$(needs success true)"
 check "NEEDS is not JSON" 1 "" \
     gate "not json"
+
+images() { "$here/service-images.sh" "$@"; }
+
+fixtures=$(mktemp -d)
+trap 'rm -rf "$fixtures"' EXIT
+workflow=$fixtures/workflow.yml
+compose=$fixtures/compose.yaml
+
+cat > "$compose" <<'EOF'
+services:
+  postgres:
+    image: postgres:18.6-trixie
+  redis:
+    image: redis:8.10.2-trixie
+  php:
+    build:
+      context: ./php
+EOF
+
+# write_workflow POSTGRES_IMAGE REDIS_IMAGE: one job with two service containers.
+write_workflow() {
+    cat > "$workflow" <<EOF
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: $1
+        ports:
+          - 5432:5432
+      redis:
+        image: $2
+    steps:
+      - run: true
+EOF
+}
+
+# service-images.sh: the service containers of a workflow must have the
+# images of the services with the same names in a compose file.
+write_workflow postgres:18.6-trixie redis:8.10.2-trixie
+check "every service container has the image of compose.yaml" 0 \
+    $'postgres: postgres:18.6-trixie\nredis: redis:8.10.2-trixie' \
+    images "$workflow" "$compose"
+
+write_workflow postgres:18.6-trixie redis:8.10.3-trixie
+check "a service container with another tag" 1 \
+    $'postgres: postgres:18.6-trixie\n'"redis: redis:8.10.3-trixie in $workflow, redis:8.10.2-trixie in $compose" \
+    images "$workflow" "$compose"
+
+write_workflow postgres:18.7-trixie redis:8.10.3-trixie
+check "two service containers with other tags" 1 \
+    "postgres: postgres:18.7-trixie in $workflow, postgres:18.6-trixie in $compose"$'\n'"redis: redis:8.10.3-trixie in $workflow, redis:8.10.2-trixie in $compose" \
+    images "$workflow" "$compose"
+
+write_workflow postgres:18.6 redis:8.10.2-trixie
+check "the same version with another suffix" 1 \
+    "postgres: postgres:18.6 in $workflow, postgres:18.6-trixie in $compose"$'\nredis: redis:8.10.2-trixie' \
+    images "$workflow" "$compose"
+
+write_workflow ghcr.io/example/postgres:18.6-trixie redis:8.10.2-trixie
+check "the same tag from another registry" 1 \
+    "postgres: ghcr.io/example/postgres:18.6-trixie in $workflow, postgres:18.6-trixie in $compose"$'\nredis: redis:8.10.2-trixie' \
+    images "$workflow" "$compose"
+
+cat > "$workflow" <<'EOF'
+jobs:
+  checks:
+    services:
+      mariadb:
+        image: mariadb:12.0
+      php:
+        image: php:8.5.11-fpm-trixie
+EOF
+check "a service container that compose.yaml does not have, or builds" 1 \
+    "mariadb: mariadb:12.0 in $workflow, no such service in $compose"$'\n'"php: php:8.5.11-fpm-trixie in $workflow, no image in $compose" \
+    images "$workflow" "$compose"
+
+cat > "$workflow" <<'EOF'
+jobs:
+  unit:
+    services:
+      postgres:
+        image: postgres:18.6-trixie
+  feature:
+    services:
+      redis:
+        image: redis:8.10.1-trixie
+EOF
+check "service containers of several jobs" 1 \
+    $'postgres: postgres:18.6-trixie\n'"redis: redis:8.10.1-trixie in $workflow, redis:8.10.2-trixie in $compose" \
+    images "$workflow" "$compose"
+
+# A check that compares nothing would pass for good.
+cat > "$workflow" <<'EOF'
+jobs:
+  checks:
+    steps:
+      - run: true
+EOF
+check "a workflow without service containers" 2 "" \
+    images "$workflow" "$compose"
+check "a workflow that does not exist" 2 "" \
+    images "$fixtures/missing.yml" "$compose"
+write_workflow postgres:18.6-trixie redis:8.10.2-trixie
+check "a compose file that does not exist" 2 "" \
+    images "$workflow" "$fixtures/missing.yaml"
+check "no arguments" 2 "" \
+    images
+printf 'jobs: [unclosed\n' > "$fixtures/broken.yaml"
+check "a workflow that is not YAML" 2 "" \
+    images "$fixtures/broken.yaml" "$compose"
+check "a compose file that is not YAML" 2 "" \
+    images "$workflow" "$fixtures/broken.yaml"
 
 if [ "$failures" -gt 0 ]; then
     echo "$failures failed" >&2

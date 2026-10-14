@@ -43,6 +43,9 @@ jobs:
         run: |
           shellcheck .github/scripts/*.sh
           .github/scripts/test.sh
+      # Dependabot updates compose.yaml but not the workflow (issue #181).
+      - name: The control plane's service containers match compose.yaml
+        run: .github/scripts/service-images.sh .github/workflows/control-plane.yml infrastructure/development/compose.yaml
 
   spdx:
     name: SPDX identifiers

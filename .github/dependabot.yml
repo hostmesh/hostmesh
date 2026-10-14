@@ -154,7 +154,8 @@ updates:
         # The control plane's workflow runs both as service containers at
         # the same versions, and Dependabot does not update images in
         # workflows. They get a pull request of their own, to which the
-        # change of .github/workflows/control-plane.yml is added.
+        # change of .github/workflows/control-plane.yml is added. Until it
+        # is, the Hygiene workflow fails (.github/scripts/service-images.sh).
         exclude-patterns:
           - postgres
           - redis
