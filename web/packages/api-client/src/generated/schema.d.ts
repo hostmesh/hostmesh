@@ -846,6 +846,20 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "admin.auth.logout": {
@@ -932,6 +946,20 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "admin.auth.two-factor.challenge": {
@@ -958,6 +986,20 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "admin.auth.two-factor.confirm": {
@@ -988,6 +1030,20 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "admin.auth.two-factor.recovery-codes": {
@@ -1018,6 +1074,20 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "admin.auth.user": {
@@ -1211,6 +1281,8 @@ export interface operations {
             /** @description Too many requests from this address: 300 a minute for this and the branding images together. Retry after the seconds in `Retry-After`. */
             429: {
                 headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1250,6 +1322,8 @@ export interface operations {
             /** @description Too many requests from this address: 300 a minute for this and `GET /branding` together. Retry after the seconds in `Retry-After`. */
             429: {
                 headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1323,6 +1397,20 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "customer.auth.logout": {
@@ -1409,6 +1497,20 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "customer.auth.two-factor.challenge": {
@@ -1435,6 +1537,20 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "customer.auth.two-factor.confirm": {
@@ -1465,6 +1581,20 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "customer.auth.two-factor.recovery-codes": {
@@ -1495,6 +1625,20 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "customer.auth.user": {

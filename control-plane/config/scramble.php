@@ -4,6 +4,8 @@
 
 declare(strict_types=1);
 
+use App\Infrastructure\OpenApi\DocumentRateLimits;
+
 // Only the keys Hostmesh sets. Everything else keeps the package default
 // (vendor/dedoc/scramble/config/scramble.php).
 
@@ -19,6 +21,12 @@ return [
     'info' => [
         'version' => 'v1',
         'description' => 'The Hostmesh control plane API.',
+    ],
+
+    // Operation extensions of our own, run after Scramble's.
+    'extensions' => [
+        // 429 and Retry-After on every route behind `throttle` (issue #202).
+        DocumentRateLimits::class,
     ],
 
     'ui' => [
