@@ -4,6 +4,7 @@
 from hostmesh_testing.incus import HarnessError, IncusCli, Result, Runner
 from hostmesh_testing.nodes import (
     NODE_NAMES,
+    QUOTA_MOUNT,
     CommandFailed,
     Config,
     Node,
@@ -13,6 +14,7 @@ from hostmesh_testing.nodes import (
 
 __all__ = [
     "NODE_NAMES",
+    "QUOTA_MOUNT",
     "CommandFailed",
     "Config",
     "HarnessError",

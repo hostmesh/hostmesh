@@ -87,6 +87,89 @@ def test_the_snapshot_is_taken_between_a_stop_and_a_start() -> None:
     ]
 
 
+def _commands_on(fake: FakeIncus, name: str) -> list[tuple[str, ...]]:
+    """The commands run on a node, without the harness's boot checks."""
+    return [
+        call[3:]
+        for call in fake.calls
+        if call[:3] == ("exec", name, "--") and call[3:5] != ("systemctl", "is-system-running")
+    ]
+
+
+# Issue #169, decision 0015: a virtual machine carries an ext4 filesystem
+# with user quotas, made as the quota probe made it, inside its snapshot.
+_QUOTA_COMMANDS = [
+    ("env", "DEBIAN_FRONTEND=noninteractive", "apt-get", "update", "-qq"),
+    (
+        "env",
+        "DEBIAN_FRONTEND=noninteractive",
+        "apt-get",
+        "install",
+        "-y",
+        "-qq",
+        "--no-install-recommends",
+        "quota",
+    ),
+    ("truncate", "-s", "256M", "/var/lib/hostmesh-quota.img"),
+    ("mkfs.ext4", "-q", "-O", "quota", "-E", "quotatype=usrquota", "/var/lib/hostmesh-quota.img"),
+    ("mkdir", "-p", "/srv/hostmesh-quota"),
+    ("tee", "-a", "/etc/fstab"),
+    ("systemctl", "daemon-reload"),
+    ("mount", "/srv/hostmesh-quota"),
+    ("chmod", "1777", "/srv/hostmesh-quota"),
+]
+
+
+def test_a_virtual_machine_gets_the_quota_filesystem_before_its_snapshot() -> None:
+    fake = FakeIncus()
+
+    _harness(fake, Config(node_type="vm")).create()
+
+    for name in NODE_NAMES:
+        assert _commands_on(fake, name) == _QUOTA_COMMANDS
+    # Mounted at every boot, so a restored snapshot has it too.
+    assert {stdin for _, stdin in fake.stdins} == {
+        "/var/lib/hostmesh-quota.img /srv/hostmesh-quota ext4 loop,usrquota 0 0\n"
+    }
+    # Made while each node runs, before it is stopped for its snapshot.
+    for name in NODE_NAMES:
+        last_step = max(
+            index
+            for index, call in enumerate(fake.calls)
+            if call == ("exec", name, "--", "chmod", "1777", "/srv/hostmesh-quota")
+        )
+        assert last_step < fake.calls.index(("stop", name))
+
+
+def test_a_container_gets_no_quota_filesystem() -> None:
+    fake = FakeIncus()
+
+    _harness(fake).create()
+
+    assert all(_commands_on(fake, name) == [] for name in NODE_NAMES)
+
+
+def test_a_reset_does_not_make_the_quota_filesystem_again() -> None:
+    fake = FakeIncus()
+    config = Config(node_type="vm")
+    _harness(fake, config).up()
+    fake.calls.clear()
+
+    _harness(fake, config).up()
+
+    assert all(_commands_on(fake, name) == [] for name in NODE_NAMES)
+
+
+def test_a_failed_step_stops_the_creation_before_the_snapshot() -> None:
+    fake = FakeIncus()
+    fake.exec_failures = {"mkfs.ext4": Result(1, "", "mkfs.ext4: no space left\n")}
+
+    with pytest.raises(CommandFailed, match=r"mkfs\.ext4.*no space left"):
+        _harness(fake, Config(node_type="vm")).create()
+
+    assert "snapshot create" not in fake.verbs()
+
+
 def test_up_a_second_time_resets_and_creates_nothing() -> None:
     fake = FakeIncus()
     _harness(fake).up()
