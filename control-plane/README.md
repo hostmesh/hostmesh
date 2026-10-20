@@ -167,12 +167,21 @@ Named limiters in `AppServiceProvider`, applied with `throttle:<name>` in `route
 | Limiter      | Routes                                                                            | Limit                                                                                   |
 |--------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | `login`      | `POST …/auth/login` of both realms                                                | 5 a minute per email and address, 20 a minute per address; each realm counts on its own |
-| `two-factor` | the challenge, `confirm`, `recovery-codes` and `DELETE …/auth/two-factor`         | 5 a minute per account, 20 a minute per address; each realm counts on its own           |
+| `two-factor` | the challenge, `confirm`, `recovery-codes` and `disable`                          | 5 a minute per account, 20 a minute per address; each realm counts on its own           |
 | `branding`   | `GET /api/v1/branding` and `GET /api/v1/branding/images/{slot}`, counted together | 300 a minute per address                                                                |
 
 The `branding` limit is generous on purpose. A login page loads the branding once and an image or two, and browsers cache both. 300 a minute is about 100 uncached login pages a minute from one address, for the many people who can share one: an office, a campus, carrier-grade NAT.
 
-The address is the one PHP sees. The control plane trusts no proxy yet, so behind a CDN or a reverse proxy that is the proxy's address, and everyone behind it shares one budget.
+The address is the client's ([decision 0018](../docs/decisions/0018-trusted-proxies.md)). By default it is the address that connected to the web server. Behind a CDN or a reverse proxy, that is the proxy's address, and everyone behind it would share one budget. Name the proxies in `HOSTMESH_TRUSTED_PROXIES`:
+
+    HOSTMESH_TRUSTED_PROXIES=192.0.2.0/24,198.51.100.10,2001:db8::/32
+
+- **Format:** IPv4 and IPv6 addresses and CIDR ranges, separated by commas. For a CDN, its published ranges, for example https://www.cloudflare.com/ips/. Keep the list current when the CDN changes it.
+- **What it changes:** for a request from one of them, the client address is read from `X-Forwarded-For`, from the right, past every trusted hop. A request from any other address keeps the connecting address, whatever headers it sends.
+- **Only that header:** `Forwarded`, `X-Forwarded-Host`, `-Proto`, `-Port` and `-Prefix` are never read.
+- **Refused at boot:** a malformed entry, or one that trusts everyone (`*`, `REMOTE_ADDR`, `0.0.0.0/0`), stops the application.
+
+The audit log records the same address.
 
 ## Jobs
 

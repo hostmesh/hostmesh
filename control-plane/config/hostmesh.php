@@ -32,6 +32,14 @@ return [
     // malformed value stops the application at boot.
     'domain' => env('HOSTMESH_DOMAIN', 'hostmesh.test'),
 
+    // The proxies in front of the control plane, such as a CDN's ranges:
+    // IP addresses and CIDR ranges, separated by commas (decision 0018).
+    // From these, and only these, the client address is read from
+    // X-Forwarded-For; every other request keeps the address that connected.
+    // None by default. A malformed value, or one that would trust every
+    // address, stops the application at boot (App\Support\TrustedProxies).
+    'trusted_proxies' => env('HOSTMESH_TRUSTED_PROXIES', ''),
+
     // One realm per route group (spec section 28): its own guard, session
     // cookie, session table and CSRF cookie. Lifetimes are idle minutes.
     // Two-factor authentication is mandatory where two_factor_required is true (spec section 28: admin).

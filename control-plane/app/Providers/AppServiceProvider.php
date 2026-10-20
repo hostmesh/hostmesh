@@ -29,6 +29,7 @@ use App\Infrastructure\OpenApi\IncompleteOpenApiDocument;
 use App\Infrastructure\Provisioning\RandomJitter;
 use App\Infrastructure\TwoFactor\Google2faTotp;
 use App\Support\Realm;
+use App\Support\TrustedProxies;
 use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -67,6 +68,12 @@ class AppServiceProvider extends ServiceProvider
             unset($guards['web']);
             config(['auth.guards' => $guards]);
         }
+
+        // Read by Laravel's TrustProxies middleware (decision 0018). Always a
+        // list, also an empty one: left null, the middleware trusts every
+        // address on some hosting platforms' hostnames.
+        $trustedProxies = config('hostmesh.trusted_proxies');
+        config(['trustedproxy.proxies' => TrustedProxies::fromSetting(is_string($trustedProxies) ? $trustedProxies : '')->addresses]);
 
         $this->app->bind(Totp::class, Google2faTotp::class);
 
