@@ -17,15 +17,12 @@ const PROXY = '10.20.30.40';
 const CLIENT = '198.51.100.23';
 const STRANGER = '203.0.113.99';
 
-function setTrustedProxies(?string $setting): void
+/**
+ * phpunit.xml defines the setting, empty. Changed, never unset: the .env
+ * loader would then own it and put its own value back at the next boot.
+ */
+function setTrustedProxies(string $setting): void
 {
-    if ($setting === null) {
-        putenv('HOSTMESH_TRUSTED_PROXIES');
-        unset($_ENV['HOSTMESH_TRUSTED_PROXIES'], $_SERVER['HOSTMESH_TRUSTED_PROXIES']);
-
-        return;
-    }
-
     putenv('HOSTMESH_TRUSTED_PROXIES='.$setting);
     $_ENV['HOSTMESH_TRUSTED_PROXIES'] = $setting;
     $_SERVER['HOSTMESH_TRUSTED_PROXIES'] = $setting;
@@ -56,7 +53,7 @@ function probeFrom(mixed $test, string $address, array $headers = []): array
 }
 
 afterEach(function (): void {
-    setTrustedProxies(null);
+    setTrustedProxies('');
 });
 
 it('trusts no proxy without the setting, whatever a request claims', function (): void {

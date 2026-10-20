@@ -34,6 +34,9 @@
         <env name="DB_DATABASE" value="hostmesh_test"/>
         <env name="DB_URL" value=""/>
         <env name="HOSTMESH_DOMAIN" value="hostmesh.test"/>
+        <!-- Defined here, not only in .env, so that a test can change it and boot again:
+             the .env loader overwrites a variable it loaded itself (TrustedProxiesTest). -->
+        <env name="HOSTMESH_TRUSTED_PROXIES" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="REDIS_DB" value="15"/>
