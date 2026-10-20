@@ -36,6 +36,10 @@ RUN apt-get update \
 # The container runs as the host user, who has no home directory inside it.
 # pnpm keeps its store on the workspace's filesystem, in
 # web/node_modules/.pnpm-store, so packages are hard-linked, not copied.
-ENV HOME=/tmp/home
+# Set explicitly: by default pnpm picks the store by working directory, and
+# from web/packages/ui it made a second one in web/.pnpm-store (issue #146).
+# pnpm 12 reads its settings from pnpm_config_* variables, not npm_config_*.
+ENV HOME=/tmp/home \
+    pnpm_config_store_dir=/workspace/web/node_modules/.pnpm-store
 
 WORKDIR /workspace/web

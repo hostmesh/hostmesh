@@ -3,7 +3,7 @@
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
 # hostname over HTTPS, the API's health endpoint, the versions
-# of the node service and its Chromium build, the ACME and DNS test doubles,
+# of the node service, its pnpm store and its Chromium build, the ACME and DNS test doubles,
 # using the system resolver and trust store.
 # Runs every check and exits non-zero if any of them failed.
 
@@ -116,6 +116,26 @@ check_node() {
     fi
 }
 
+# pnpm keeps one store, in web/node_modules/.pnpm-store. Left to itself,
+# pnpm picks the store by working directory: from web/packages/ui, where the
+# shadcn-vue CLI runs, it used a second one in web/.pnpm-store (issue #146).
+check_pnpm_store() {
+    local name="pnpm uses web/node_modules/.pnpm-store from every directory of the workspace"
+    local want=/workspace/web/node_modules/.pnpm-store dir got bad=""
+    for dir in /workspace/web /workspace/web/packages/ui; do
+        got=$(docker compose exec -T -w "$dir" node pnpm store path 2>/dev/null)
+        case "$got" in
+            "$want"/*) ;;
+            *) bad="$bad ${dir#/workspace/}: ${got:-none};" ;;
+        esac
+    done
+    if [ -z "$bad" ]; then
+        pass "$name"
+    else
+        fail "$name" "Wanted a store under $want, got${bad%;}. Run: make up"
+    fi
+}
+
 # The component tests of @hostmesh/ui run in the Chromium build that one
 # Playwright release drives. The image installs it for PLAYWRIGHT_VERSION,
 # which must equal the playwright entry of the catalog in
@@ -185,6 +205,7 @@ done
 check_api_health
 check_worker
 check_node
+check_pnpm_store
 check_playwright
 check_pebble
 check_challtestsrv

@@ -52,7 +52,7 @@ Run them as `make -C infrastructure/development <target>`, or as `make <target>`
 | `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                                                                              |
 | `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                                                                                   |
 | `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile and restarts the `node` service so that it serves both apps. Safe to repeat. |
-| `smoke`   | Checks PostgreSQL, Redis, the app and agent hostnames over HTTPS, the API's health endpoint, the queue worker, the `node` service's Node and pnpm versions and its Chromium build, and the ACME and DNS test doubles. Exits non-zero if anything fails.                           |
+| `smoke`   | Checks PostgreSQL, Redis, the app and agent hostnames over HTTPS, the API's health endpoint, the queue worker, the `node` service's Node and pnpm versions, its pnpm store and its Chromium build, and the ACME and DNS test doubles. Exits non-zero if anything fails.           |
 | `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                                                                                  |
 | `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                                                                               |
 
@@ -118,7 +118,7 @@ A job that was dispatched but never ran shows as `pending` in the table `job_his
 
 ## Web workspace
 
-Node runs in the `node` service as your user, with `web/` mounted at `/workspace/web` and `contracts/` mounted read-only at `/workspace/contracts`. pnpm keeps its store in `web/node_modules/.pnpm-store`, on the same filesystem as the workspace, so packages are hard-linked instead of copied; deleting `web/node_modules` deletes the store too. The service runs commands only; it serves nothing.
+Node runs in the `node` service as your user, with `web/` mounted at `/workspace/web` and `contracts/` mounted read-only at `/workspace/contracts`. pnpm keeps its store in `web/node_modules/.pnpm-store`, on the same filesystem as the workspace, so packages are hard-linked instead of copied; deleting `web/node_modules` deletes the store too. The image sets it with `pnpm_config_store_dir`, so every directory of the workspace uses it; left to itself, pnpm made a second store in `web/.pnpm-store` when run from `web/packages/ui` (issue #146). The smoke test checks it. The service runs commands only; it serves nothing.
 
 The image pins Node and pnpm to the versions in `web/.nvmrc` and the `packageManager` field of `web/package.json`. The smoke test fails when they differ; change all three together and run `make up`, which rebuilds the image.
 
