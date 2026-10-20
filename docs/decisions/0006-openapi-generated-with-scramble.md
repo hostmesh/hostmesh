@@ -31,3 +31,13 @@ Scramble is a runtime dependency of the control plane (`"dedoc/scramble": "^0.13
 - `info.version` stays `v1` until a `/api/v2` exists. Releases of Hostmesh do not change the contract.
 - No security schemes are documented yet. They arrive with authentication.
 - If API documentation is ever to be served, that is a new decision.
+
+## Amendment, 2026-10-20 (issue #160)
+
+Paths were not the only part that followed route order. The document transformer in `AppServiceProvider` now also keeps these stable:
+
+- `components.responses` is sorted by name, as Scramble already sorts the schemas.
+- Top-level `tags` are sorted by the weight of their `#[Group]` attribute, then by name. Scramble sorts them by weight only and keeps route order among equals.
+- No path or operation gets a `servers` entry of its own. Scramble gives a route bound with `Route::domain()` a server built with the scheme of `APP_URL`; every route is on the API host, under the one relative server.
+
+`OpenApiSpecTest` has a test for each.
