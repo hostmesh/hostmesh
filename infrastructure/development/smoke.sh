@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
-# hostname over HTTPS, the API's health endpoint, the versions
-# of the node service, its pnpm store and its Chromium build, the ACME and DNS test doubles,
-# using the system resolver and trust store.
+# hostname over HTTPS, the API's health endpoint, that the worker runs a
+# dispatched job, the versions of the node service, its pnpm store and its
+# Chromium build, and the ACME and DNS test doubles, using the system
+# resolver and trust store.
 # Runs every check and exits non-zero if any of them failed.
 
 set -u
@@ -81,19 +82,19 @@ check_api_health() {
 
 # Queued jobs run in the worker service (spec section 24: Laravel queues on
 # Redis). Without it a dispatched job stays `pending` in job_history.
-# A running container is not enough: before `make install` it only waits
-# for vendor/ and .env. The check looks for the listener itself, by the
-# start of its command line, which the waiting shell does not have.
+# A running listener is not enough: one on the wrong connection or queue
+# looked healthy (issue #156). The control plane's `smoke:queue` dispatches a
+# job the way the application does and waits until a worker has run it. The
+# job writes nothing to job_history, only a marker in the cache that the
+# command removes.
 check_worker() {
-    local name="The worker service runs queue:listen"
+    local name="The worker consumes a job dispatched to the application's queue within 15 s"
     if ! docker compose ps --status running --services 2>/dev/null | grep -qx worker; then
         fail "$name" "Is the stack up? Run: make up"
-    elif docker compose exec -T worker sh -c \
-        'for f in /proc/[0-9]*/cmdline; do tr "\0" " " < "$f" 2>/dev/null; echo; done | grep -q "^php artisan queue:listen"' \
-        >/dev/null 2>&1; then
+    elif docker compose exec -T php php artisan smoke:queue --timeout=15 >/dev/null 2>&1; then
         pass "$name"
     else
-        fail "$name" "The worker is up but not listening. Run: make install, then: docker compose logs worker"
+        fail "$name" "No worker ran the job. Run: make install, then: docker compose logs worker"
     fi
 }
 

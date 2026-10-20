@@ -11,6 +11,7 @@ use App\Application\Services\AuditContext;
 use App\Application\Services\LoginAddressHasher;
 use App\Console\EndToEnd\Environment;
 use App\Console\EndToEnd\SeedCommand;
+use App\Console\Smoke\QueueCommand;
 use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Audit\Policies\AuditEventPolicy;
@@ -240,6 +241,12 @@ class AppServiceProvider extends ServiceProvider
         // app/Console/Commands on purpose, so Laravel does not discover it.
         if (Environment::allows($this->app->environment())) {
             $this->commands([SeedCommand::class]);
+        }
+
+        // Issue #156: the queue probe of the development stack's smoke test.
+        // Outside app/Console/Commands for the same reason.
+        if (in_array($this->app->environment(), QueueCommand::ENVIRONMENTS, true)) {
+            $this->commands([QueueCommand::class]);
         }
     }
 }
