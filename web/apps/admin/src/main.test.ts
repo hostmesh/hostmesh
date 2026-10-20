@@ -1,5 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// Issue #203: everything main.ts imports, loaded while the file is
+// collected, as every other test file loads what it tests. Collecting has no
+// timeout. Imported inside the test, the whole app counted against the test's
+// timeout, and its load time grows with the load of the machine. The test now
+// runs main.ts alone.
+import '@hostmesh/ui'
+import 'pinia'
+import 'vue'
+import 'vue-router'
+import './App.vue'
+import './router'
+import './style.css'
 import { mockApi } from './test/api'
 import { guestRoutes } from './test/fixtures'
 
@@ -21,9 +34,7 @@ afterEach(() => {
 })
 
 describe('entry point', () => {
-  // The whole app is imported inside the test, so its load time counts
-  // against the timeout: about a second alone, four to five in a full run.
-  it('applies the system color mode and mounts the app', { timeout: 20_000 }, async () => {
+  it('applies the system color mode and mounts the app', async () => {
     stubSystemColorScheme(true)
     mockApi(guestRoutes())
     document.body.innerHTML = '<div id="app"></div>'
