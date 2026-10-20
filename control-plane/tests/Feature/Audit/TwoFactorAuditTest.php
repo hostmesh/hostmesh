@@ -122,7 +122,7 @@ it('records the use of a recovery code and how many are left', function (string 
 it('records that two-factor was disabled', function (string $origin, string $prefix): void {
     [$account, $browser] = signedInForAudit($this, $origin);
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
         ->assertNoContent();
 
     $event = AuditTrail::last();
@@ -153,7 +153,7 @@ it('records nothing for a refused change', function (string $origin, string $pre
     [, $browser] = signedInForAudit($this, $origin);
     $before = AuditTrail::all()->count();
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => 'wrong-password', 'code' => Browser::code()])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => 'wrong-password', 'code' => Browser::code()])
         ->assertUnprocessable();
     $browser->post($origin, $prefix.'/auth/two-factor')->assertStatus(409);
 
@@ -211,7 +211,7 @@ it('does not turn two-factor off when the audit event cannot be written', functi
     [$account, $browser] = signedInForAudit($this, $origin);
     $this->app->instance(AuditLog::class, InMemoryAuditLog::failing());
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
         ->assertStatus(500);
 
     expect($account->fresh()->hasTwoFactor())->toBeTrue();

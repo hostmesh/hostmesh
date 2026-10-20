@@ -34,7 +34,7 @@ const ENDPOINTS = [
         ['POST', '/auth/two-factor'],
         ['POST', '/auth/two-factor/confirm'],
         ['POST', '/auth/two-factor/recovery-codes'],
-        ['DELETE', '/auth/two-factor'],
+        ['POST', '/auth/two-factor/disable'],
     ],
 ];
 
