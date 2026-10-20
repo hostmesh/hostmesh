@@ -48,6 +48,36 @@ describe('the guard', () => {
     },
   )
 
+  it('shows the account screen to a logged-in customer', async () => {
+    mockApi(signedInRoutes())
+    const { router, wrapper } = await mountApp('/account')
+
+    expect(router.currentRoute.value.name).toBe('account')
+    expect(wrapper.get('main h1').text()).toBe('Account')
+  })
+
+  it('sends a guest from the account screen to the login form and remembers it', async () => {
+    mockApi(guestRoutes())
+    const { router } = await mountApp('/account')
+
+    expect(router.currentRoute.value.name).toBe('login')
+    expect(router.currentRoute.value.query.redirect).toBe('/account')
+  })
+
+  it('links the dashboard and the account screen in the main navigation', async () => {
+    mockApi(signedInRoutes())
+    const { router, wrapper } = await mountApp('/')
+    const nav = wrapper.get('nav[aria-label="Main"]')
+
+    expect(nav.findAll('a').map((link) => link.text())).toEqual(['Dashboard', 'Account'])
+
+    await nav.findAll('a')[1]?.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/account')
+    expect(document.activeElement).toBe(wrapper.get('main h1').element)
+  })
+
   it('has no enrollment screen: the path is unknown', async () => {
     mockApi(signedInRoutes())
     const { router } = await mountApp('/two-factor/setup')

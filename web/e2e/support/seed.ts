@@ -15,7 +15,7 @@ export interface Administrator extends Account {
 export interface Seed {
   branding: { product_name: string, primary_light: string }
   administrators: Record<'login' | 'wrong-code' | 'second-factor' | 'branding' | 'logout' | 'isolation', Administrator>
-  customers: Record<'login' | 'logout', Account>
+  customers: Record<'login' | 'logout' | 'two-factor', Account>
 }
 
 function read(): Seed {

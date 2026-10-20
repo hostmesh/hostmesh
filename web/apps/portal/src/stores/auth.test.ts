@@ -145,6 +145,112 @@ describe('two-factor challenge', () => {
   })
 })
 
+// Issue #139: a customer manages two-factor from the account screen.
+describe('two-factor enrollment', () => {
+  const enrollment = { secret: 'JBSWY3DPEHPK3PXP', provisioning_uri: 'otpauth://totp/Acme:ada%40example.com?secret=JBSWY3DPEHPK3PXP' }
+
+  it('starts enrollment and returns the secret and its URI', async () => {
+    mockApi({ 'POST /customer/auth/two-factor': json({ data: enrollment }) })
+
+    expect(await useAuthStore().startEnrollment()).toEqual({ ok: true, value: enrollment })
+  })
+
+  it('returns the message when two-factor is already on', async () => {
+    mockApi({ 'POST /customer/auth/two-factor': json({ message: 'Two-factor authentication is already on.' }, 409) })
+
+    expect(await useAuthStore().startEnrollment()).toEqual({
+      ok: false,
+      errors: {},
+      message: 'Two-factor authentication is already on.',
+    })
+  })
+
+  it('confirms with a code, returns the recovery codes and reloads the user', async () => {
+    const api = mockApi({
+      'POST /customer/auth/two-factor/confirm': json({ data: { recovery_codes: ['aaaaa-bbbbb'] } }),
+      'GET /customer/auth/user': json(userBody),
+    })
+    const auth = useAuthStore()
+
+    const result = await auth.confirmEnrollment('123456')
+
+    expect(result).toEqual({ ok: true, value: ['aaaaa-bbbbb'] })
+    expect(await api.sent('POST /customer/auth/two-factor/confirm')[0]?.json()).toEqual({ code: '123456' })
+    expect(auth.user?.two_factor_enabled).toBe(true)
+  })
+
+  it('returns the error of a wrong code and loads nothing', async () => {
+    const errors = { code: ['The two-factor code is invalid.'] }
+    const api = mockApi({ 'POST /customer/auth/two-factor/confirm': json({ message: errors.code[0], errors }, 422) })
+
+    expect(await useAuthStore().confirmEnrollment('000000')).toEqual({ ok: false, errors, message: '' })
+    expect(api.sent('GET /customer/auth/user')).toHaveLength(0)
+  })
+
+  it('reports an API that cannot be reached', async () => {
+    mockApi({ 'POST /customer/auth/two-factor': () => Promise.reject(new TypeError('Failed to fetch')) })
+
+    expect(await useAuthStore().startEnrollment()).toEqual({ ok: false, errors: {}, message: UNREACHABLE })
+  })
+})
+
+describe('two-factor management', () => {
+  const input = { password: 'correct-password', code: '123456' }
+
+  it('replaces the recovery codes with the password and a code in the body', async () => {
+    const api = mockApi({
+      'POST /customer/auth/two-factor/recovery-codes': json({ data: { recovery_codes: ['ccccc-ddddd'] } }),
+    })
+
+    expect(await useAuthStore().regenerateRecoveryCodes(input)).toEqual({ ok: true, value: ['ccccc-ddddd'] })
+    const request = api.sent('POST /customer/auth/two-factor/recovery-codes')[0]
+    expect(await request?.json()).toEqual(input)
+    expect(request?.url).not.toContain('?')
+  })
+
+  it('turns two-factor off with the password and a code in the body, and reloads the user', async () => {
+    const api = mockApi({
+      'POST /customer/auth/two-factor/disable': noContent(),
+      'GET /customer/auth/user': json({ data: { ...account, two_factor_enabled: false } }),
+    })
+    const auth = useAuthStore()
+
+    expect(await auth.disableTwoFactor(input)).toEqual({ ok: true, value: undefined })
+    // Issue #212: never in the URL.
+    const request = api.sent('POST /customer/auth/two-factor/disable')[0]
+    expect(await request?.json()).toEqual(input)
+    expect(request?.url).not.toContain('?')
+    expect(auth.status).toBe('authenticated')
+    expect(auth.user?.two_factor_enabled).toBe(false)
+  })
+
+  it('returns the field errors and keeps two-factor on', async () => {
+    const errors = { password: ['The password is incorrect.'] }
+    const api = mockApi({
+      'GET /customer/auth/user': json(userBody),
+      'POST /customer/auth/two-factor/disable': json({ message: errors.password[0], errors }, 422),
+      'POST /customer/auth/two-factor/recovery-codes': json({ message: errors.password[0], errors }, 422),
+    })
+    const auth = useAuthStore()
+    await auth.restore()
+
+    expect(await auth.disableTwoFactor(input)).toEqual({ ok: false, errors, message: '' })
+    expect(await auth.regenerateRecoveryCodes(input)).toEqual({ ok: false, errors, message: '' })
+    expect(api.sent('GET /customer/auth/user')).toHaveLength(1)
+    expect(auth.user?.two_factor_enabled).toBe(true)
+  })
+
+  it('reports too many attempts', async () => {
+    mockApi({ 'POST /customer/auth/two-factor/disable': json({ message: 'Too Many Attempts.' }, 429) })
+
+    expect(await useAuthStore().disableTwoFactor(input)).toEqual({
+      ok: false,
+      errors: {},
+      message: 'Too many attempts. Wait a minute and try again.',
+    })
+  })
+})
+
 describe('logout', () => {
   it('ends the session', async () => {
     const api = mockApi({ 'GET /customer/auth/user': json(userBody), 'POST /customer/auth/logout': noContent() })

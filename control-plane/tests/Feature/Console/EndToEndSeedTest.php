@@ -82,6 +82,20 @@ it('creates customers without two-factor', function (): void {
     }
 });
 
+// Issue #139: the portal's account flow turns two-factor on for its
+// customer. A run that stopped half-way must not leave it on for the next.
+it('has a customer for the two-factor flow and turns its two-factor off when it runs again', function (): void {
+    $entry = seeded()['customers']['two-factor'];
+    $user = User::query()->where('email', $entry['email'])->sole();
+    $user->beginTwoFactorEnrollment(app(Totp::class)->generateSecret());
+    $user->confirmTwoFactor([]);
+
+    seeded();
+
+    expect($user->refresh()->hasTwoFactor())->toBeFalse()
+        ->and($user->two_factor_secret)->toBeNull();
+});
+
 it('sets the branding the tests look for', function (): void {
     seeded();
 

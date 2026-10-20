@@ -36,7 +36,7 @@ final readonly class Fixtures
     public const array ADMINISTRATORS = ['login', 'wrong-code', 'second-factor', 'branding', 'logout', 'isolation'];
 
     /** @var list<string> */
-    public const array CUSTOMERS = ['login', 'logout'];
+    public const array CUSTOMERS = ['login', 'logout', 'two-factor'];
 
     public function __construct(
         protected Totp $totp,
@@ -124,6 +124,10 @@ final readonly class Fixtures
 
         $user = User::query()->firstOrNew(['email' => $entry['email']]);
         $user->fill(['name' => $entry['name'], 'password' => $entry['password']])->save();
+
+        // The portal's account flow turns it on (issue #139); a run that
+        // stopped half-way left it on.
+        $user->disableTwoFactor();
 
         return $entry;
     }

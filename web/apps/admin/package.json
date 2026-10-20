@@ -11,7 +11,6 @@
     "@hostmesh/api-client": "workspace:*",
     "@hostmesh/ui": "workspace:*",
     "pinia": "catalog:",
-    "uqr": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:"
   },
