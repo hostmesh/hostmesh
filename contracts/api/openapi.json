@@ -356,82 +356,6 @@
             }
         },
         "/admin/auth/two-factor": {
-            "delete": {
-                "operationId": "admin.auth.two-factor.disable",
-                "description": "Needs the current password and a valid code. Removes the secret and the recovery codes.\nWhere two-factor is mandatory, the account must enroll again before it can use anything else.\nLimited to 5 attempts per minute for one account.",
-                "summary": "Disable two-factor authentication",
-                "tags": [
-                    "Disable"
-                ],
-                "parameters": [
-                    {
-                        "name": "password",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "code",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "maxLength": 16
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Two-factor authentication is off.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "429": {
-                        "description": "Too many requests. Retry after the seconds in `Retry-After`.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview."
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        },
-                        "headers": {
-                            "Retry-After": {
-                                "description": "Seconds until the limit lets a request through again.",
-                                "required": true,
-                                "schema": {
-                                    "type": "integer"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
             "post": {
                 "operationId": "admin.auth.two-factor.enroll",
                 "description": "Returns a new TOTP secret and its `otpauth://` URI for a QR code.\nTwo-factor is not on until `POST auth/two-factor/confirm` succeeds.\nCalling this again replaces an unconfirmed secret.\nAnswers 409 when two-factor is already on.",
@@ -610,6 +534,75 @@
                                     "required": [
                                         "data"
                                     ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "429": {
+                        "description": "Too many requests. Retry after the seconds in `Retry-After`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "description": "Seconds until the limit lets a request through again.",
+                                "required": true,
+                                "schema": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/auth/two-factor/disable": {
+            "post": {
+                "operationId": "admin.auth.two-factor.disable",
+                "description": "Needs the current password and a valid code. Removes the secret and the recovery codes.\nWhere two-factor is mandatory, the account must enroll again before it can use anything else.\nLimited to 5 attempts per minute for one account.",
+                "summary": "Disable two-factor authentication",
+                "tags": [
+                    "Disable"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordAndCodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "Two-factor authentication is off.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
                                 }
                             }
                         }
@@ -1407,82 +1400,6 @@
             }
         },
         "/customer/auth/two-factor": {
-            "delete": {
-                "operationId": "customer.auth.two-factor.disable",
-                "description": "Needs the current password and a valid code. Removes the secret and the recovery codes.\nWhere two-factor is mandatory, the account must enroll again before it can use anything else.\nLimited to 5 attempts per minute for one account.",
-                "summary": "Disable two-factor authentication",
-                "tags": [
-                    "Disable"
-                ],
-                "parameters": [
-                    {
-                        "name": "password",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "code",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "maxLength": 16
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Two-factor authentication is off.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "429": {
-                        "description": "Too many requests. Retry after the seconds in `Retry-After`.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview."
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        },
-                        "headers": {
-                            "Retry-After": {
-                                "description": "Seconds until the limit lets a request through again.",
-                                "required": true,
-                                "schema": {
-                                    "type": "integer"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
             "post": {
                 "operationId": "customer.auth.two-factor.enroll",
                 "description": "Returns a new TOTP secret and its `otpauth://` URI for a QR code.\nTwo-factor is not on until `POST auth/two-factor/confirm` succeeds.\nCalling this again replaces an unconfirmed secret.\nAnswers 409 when two-factor is already on.",
@@ -1661,6 +1578,75 @@
                                     "required": [
                                         "data"
                                     ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "429": {
+                        "description": "Too many requests. Retry after the seconds in `Retry-After`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "description": "Seconds until the limit lets a request through again.",
+                                "required": true,
+                                "schema": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/customer/auth/two-factor/disable": {
+            "post": {
+                "operationId": "customer.auth.two-factor.disable",
+                "description": "Needs the current password and a valid code. Removes the secret and the recovery codes.\nWhere two-factor is mandatory, the account must enroll again before it can use anything else.\nLimited to 5 attempts per minute for one account.",
+                "summary": "Disable two-factor authentication",
+                "tags": [
+                    "Disable"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordAndCodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "Two-factor authentication is off.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
                                 }
                             }
                         }

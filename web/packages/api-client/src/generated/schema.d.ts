@@ -112,13 +112,7 @@ export interface paths {
          *     Answers 409 when two-factor is already on.
          */
         post: operations["admin.auth.two-factor.enroll"];
-        /**
-         * Disable two-factor authentication
-         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
-         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
-         *     Limited to 5 attempts per minute for one account.
-         */
-        delete: operations["admin.auth.two-factor.disable"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -160,6 +154,28 @@ export interface paths {
          *     for this session. The recovery codes in the response are shown only once.
          */
         post: operations["admin.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/two-factor/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable two-factor authentication
+         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
+         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
+         *     Limited to 5 attempts per minute for one account.
+         */
+        post: operations["admin.auth.two-factor.disable"];
         delete?: never;
         options?: never;
         head?: never;
@@ -389,13 +405,7 @@ export interface paths {
          *     Answers 409 when two-factor is already on.
          */
         post: operations["customer.auth.two-factor.enroll"];
-        /**
-         * Disable two-factor authentication
-         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
-         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
-         *     Limited to 5 attempts per minute for one account.
-         */
-        delete: operations["customer.auth.two-factor.disable"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -437,6 +447,28 @@ export interface paths {
          *     for this session. The recovery codes in the response are shown only once.
          */
         post: operations["customer.auth.two-factor.confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/auth/two-factor/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable two-factor authentication
+         * @description Needs the current password and a valid code. Removes the secret and the recovery codes.
+         *     Where two-factor is mandatory, the account must enroll again before it can use anything else.
+         *     Limited to 5 attempts per minute for one account.
+         */
+        post: operations["customer.auth.two-factor.disable"];
         delete?: never;
         options?: never;
         head?: never;
@@ -922,46 +954,6 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
-    "admin.auth.two-factor.disable": {
-        parameters: {
-            query: {
-                password: string;
-                code: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Two-factor authentication is off. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": string;
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            403: components["responses"]["AuthorizationException"];
-            422: components["responses"]["ValidationException"];
-            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
-            429: {
-                headers: {
-                    /** @description Seconds until the limit lets a request through again. */
-                    "Retry-After": number;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error overview. */
-                        message: string;
-                    };
-                };
-            };
-        };
-    };
     "admin.auth.two-factor.challenge": {
         parameters: {
             query?: never;
@@ -1025,6 +1017,47 @@ export interface operations {
                             recovery_codes: string[];
                         };
                     };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.auth.two-factor.disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordAndCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Two-factor authentication is off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
             401: components["responses"]["AuthenticationException"];
@@ -1473,46 +1506,6 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
-    "customer.auth.two-factor.disable": {
-        parameters: {
-            query: {
-                password: string;
-                code: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Two-factor authentication is off. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": string;
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            403: components["responses"]["AuthorizationException"];
-            422: components["responses"]["ValidationException"];
-            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
-            429: {
-                headers: {
-                    /** @description Seconds until the limit lets a request through again. */
-                    "Retry-After": number;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error overview. */
-                        message: string;
-                    };
-                };
-            };
-        };
-    };
     "customer.auth.two-factor.challenge": {
         parameters: {
             query?: never;
@@ -1576,6 +1569,47 @@ export interface operations {
                             recovery_codes: string[];
                         };
                     };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "customer.auth.two-factor.disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordAndCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Two-factor authentication is off. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
             401: components["responses"]["AuthenticationException"];

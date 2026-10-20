@@ -173,6 +173,18 @@ it('documents the rate limit of both public branding routes', function (string $
         ->and(array_keys($response['content']['application/json']['schema']['properties']))->toBe(['message']);
 })->with(['/branding', '/branding/images/{slot}']);
 
+// Issue #212: the password and the code go in the body. Scramble documents
+// the parameters of a DELETE as a query string, so this is no DELETE.
+it('documents disabling two-factor with the password and the code in the body', function (string $realm): void {
+    $paths = generateOpenApiDocument()['paths'];
+    $operation = $paths["/$realm/auth/two-factor/disable"]['post'] ?? null;
+
+    expect($operation)->not->toBeNull("POST /$realm/auth/two-factor/disable is missing")
+        ->and($operation['parameters'] ?? [])->toBe([])
+        ->and($operation['requestBody']['content']['application/json']['schema'])->toBe(['$ref' => '#/components/schemas/PasswordAndCodeRequest'])
+        ->and($paths["/$realm/auth/two-factor"])->not->toHaveKey('delete');
+})->with(['admin', 'customer']);
+
 // Issue #202: a route behind `throttle` documents 429, with the usual error
 // body and the Retry-After header, without an attribute on its controller.
 

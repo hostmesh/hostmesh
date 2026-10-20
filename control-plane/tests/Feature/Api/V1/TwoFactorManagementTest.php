@@ -33,7 +33,7 @@ function signedIn(mixed $test, string $origin): array
 it('disables two-factor with the current password and a valid code', function (string $origin, string $prefix): void {
     [$account, $browser] = signedIn($this, $origin);
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
         ->assertNoContent();
 
     $fresh = $account->fresh();
@@ -43,10 +43,21 @@ it('disables two-factor with the current password and a valid code', function (s
         ->and($fresh->two_factor_recovery_codes)->toBeNull();
 })->with('realms');
 
+// Issue #212: a DELETE has no documented body, so the password went into the
+// query string. Disabling is a POST now, and the DELETE is gone.
+it('does not disable two-factor with a DELETE', function (string $origin, string $prefix): void {
+    [$account, $browser] = signedIn($this, $origin);
+
+    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
+        ->assertMethodNotAllowed();
+
+    expect($account->fresh()->hasTwoFactor())->toBeTrue();
+})->with('realms');
+
 it('does not disable two-factor without the current password', function (string $origin, string $prefix, string $sessionCookie, string $csrfCookie, int $lifetime, array $body): void {
     [$account, $browser] = signedIn($this, $origin);
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', $body + ['code' => Browser::code()])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', $body + ['code' => Browser::code()])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['password']);
 
@@ -59,9 +70,9 @@ it('does not disable two-factor without the current password', function (string 
 it('does not disable two-factor without a valid code', function (string $origin, string $prefix): void {
     [$account, $browser] = signedIn($this, $origin);
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => Browser::wrongCode()])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => Browser::wrongCode()])
         ->assertUnprocessable()->assertJsonValidationErrors(['code']);
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => Browser::PASSWORD])
         ->assertUnprocessable()->assertJsonValidationErrors(['code']);
 
     expect($account->fresh()->hasTwoFactor())->toBeTrue();
@@ -74,7 +85,7 @@ it('does not accept the code of the login again to disable two-factor', function
     $browser->logIn($origin, $account->email)->assertOk();
     $browser->post($origin, $prefix.'/auth/two-factor/challenge', ['code' => $code])->assertNoContent();
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => $code])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => $code])
         ->assertUnprocessable()->assertJsonValidationErrors(['code']);
 
     expect($account->fresh()->hasTwoFactor())->toBeTrue();
@@ -84,16 +95,16 @@ it('does not spend the code when the password is wrong', function (string $origi
     [, $browser] = signedIn($this, $origin);
     $code = Browser::code();
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => 'wrong-password', 'code' => $code])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => 'wrong-password', 'code' => $code])
         ->assertUnprocessable();
-    $browser->delete($origin, $prefix.'/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => $code])
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => $code])
         ->assertNoContent();
 })->with('realms');
 
 it('sends an administrator back to enrollment after disabling, and nowhere else', function (): void {
     [, $browser] = signedIn($this, Browser::ADMIN);
 
-    $browser->delete(Browser::ADMIN, '/api/v1/admin/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
+    $browser->post(Browser::ADMIN, '/api/v1/admin/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
         ->assertNoContent();
 
     $browser->get(Browser::ADMIN, '/api/v1/admin/auth/user')
@@ -109,7 +120,7 @@ it('sends an administrator back to enrollment after disabling, and nowhere else'
 it('leaves a customer signed in without two-factor after disabling', function (): void {
     [, $browser] = signedIn($this, Browser::PORTAL);
 
-    $browser->delete(Browser::PORTAL, '/api/v1/customer/auth/two-factor', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
+    $browser->post(Browser::PORTAL, '/api/v1/customer/auth/two-factor/disable', ['password' => Browser::PASSWORD, 'code' => Browser::code()])
         ->assertNoContent();
 
     $browser->get(Browser::PORTAL, '/api/v1/customer/auth/user')
@@ -157,7 +168,7 @@ it('refuses both for an account without two-factor', function (): void {
 
     $body = ['password' => Browser::PASSWORD, 'code' => Browser::code()];
 
-    $browser->delete(Browser::PORTAL, '/api/v1/customer/auth/two-factor', $body)
+    $browser->post(Browser::PORTAL, '/api/v1/customer/auth/two-factor/disable', $body)
         ->assertUnprocessable()->assertJsonValidationErrors(['code']);
     $browser->post(Browser::PORTAL, '/api/v1/customer/auth/two-factor/recovery-codes', $body)
         ->assertUnprocessable()->assertJsonValidationErrors(['code']);
@@ -170,7 +181,7 @@ it('needs a completed second factor for both', function (string $origin, string 
 
     $body = ['password' => Browser::PASSWORD, 'code' => Browser::code()];
 
-    $browser->delete($origin, $prefix.'/auth/two-factor', $body)->assertForbidden();
+    $browser->post($origin, $prefix.'/auth/two-factor/disable', $body)->assertForbidden();
     $browser->post($origin, $prefix.'/auth/two-factor/recovery-codes', $body)->assertForbidden();
 
     expect($account->fresh()->hasTwoFactor())->toBeTrue();
