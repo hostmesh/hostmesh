@@ -13,6 +13,14 @@
 
 Agents authenticate with client certificates (mutual TLS, spec section 5). A CDN or reverse proxy that terminates TLS, for example Cloudflare with proxying switched on, ends the TLS session before it reaches Hostmesh, and the client certificate is lost. Give `agent.<domain>` a DNS record that points straight at the server ("DNS only"). The other three hostnames may sit behind a CDN.
 
+## Behind a CDN
+
+Behind a CDN, the address that connects to Nginx is the CDN's. The control plane reads the client's from `X-Forwarded-For`, but only for requests from the proxies named in `HOSTMESH_TRUSTED_PROXIES` in its `.env`. List the CDN's published ranges there (for Cloudflare, https://www.cloudflare.com/ips/), separated by commas. Without it, all clients behind the CDN share one budget of each rate limit, and the audit log records the CDN's addresses. See "Rate limits" in `control-plane/README.md` and decision [0018](../../docs/decisions/0018-trusted-proxies.md).
+
+Configure it there, not with Nginx's `realip` module (`set_real_ip_from`, `real_ip_header`). Both at once do no harm, but then the list lives in two places. Nginx passes the client's headers to PHP-FPM as they are; nothing in this file needs to change.
+
+`agent.<domain>` is never behind a CDN (above), so the setting does not concern it.
+
 ## Content Security Policy
 
 Both static apps ship a strict policy: no inline script or style, and `connect-src` limited to the API origin. `img-src` also names the API origin, because the logos and the favicon of the branding configuration are served by the API. The policy is defined once, in `control-plane/config/hostmesh.php`. `control-plane/tests/Feature/Platform/ContentSecurityPolicyTest.php` fails when the header in the example differs from it, so change the config first and copy the new value here.

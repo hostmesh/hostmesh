@@ -22,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // gets its X-Request-Id.
         $middleware->api(prepend: [CaptureRequestContext::class]);
 
+        // Decision 0018: from a trusted proxy (HOSTMESH_TRUSTED_PROXIES),
+        // only the client address. Host, scheme, port and prefix stay what
+        // the web server says.
+        $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR);
+
         $middleware->alias([
             // The first middleware of each realm's route group (routes/api.php).
             'realm' => UseSessionRealm::class,
