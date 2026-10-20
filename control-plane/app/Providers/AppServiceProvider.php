@@ -38,6 +38,7 @@ use Dedoc\Scramble\Support\Generator\Path;
 use Dedoc\Scramble\Support\Generator\Response as OpenApiResponse;
 use Dedoc\Scramble\Support\Generator\Schema;
 use Dedoc\Scramble\Support\Generator\Server;
+use Dedoc\Scramble\Support\Generator\Tag;
 use Dedoc\Scramble\Support\Generator\Types\UnknownType;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Config\Repository;
@@ -137,7 +138,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Keeps the generated document identical on every machine: Scramble
-        // builds the server URL from APP_URL and lists paths in route order.
+        // builds the server URL from APP_URL and lists paths, shared
+        // responses and tags in the order it meets them (issue #160).
         Scramble::configure()->withDocumentTransformers(function (OpenApi $document, OpenApiContext $context): void {
             $diagnostics = $context->diagnostics->all();
 
@@ -148,6 +150,29 @@ class AppServiceProvider extends ServiceProvider
             $document->servers = [new Server('/'.$context->config->apiPath()->serverPath())];
 
             usort($document->paths, fn (Path $a, Path $b): int => $a->path <=> $b->path);
+
+            // Every route is on the API host, under the one server above. A
+            // route bound to a domain would get a server of its own, built
+            // with the scheme of APP_URL.
+            foreach ($document->paths as $path) {
+                $path->servers = [];
+
+                foreach ($path->operations as $operation) {
+                    $operation->servers = [];
+                }
+            }
+
+            // Keyed by class name and published under its short name, as
+            // the schemas are, which Scramble sorts itself.
+            uksort(
+                $document->components->responses,
+                fn (string $a, string $b): int => [class_basename($a), $a] <=> [class_basename($b), $b],
+            );
+
+            // By the weight of their #[Group], then by name: Scramble sorts
+            // by weight only and keeps route order among equals.
+            usort($document->tags, fn (Tag $a, Tag $b): int => [$a->getAttribute('weight', PHP_INT_MAX), $a->name]
+                <=> [$b->getAttribute('weight', PHP_INT_MAX), $b->name]);
         });
 
         // A response documented as a file (`format: binary`, set by a

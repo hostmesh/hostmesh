@@ -10,8 +10,11 @@ use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
+use Tests\Fixtures\OpenApi\AardvarkGroupController;
 use Tests\Fixtures\OpenApi\ThrowingRulesController;
 use Tests\Fixtures\OpenApi\UnknownTypeController;
+use Tests\Fixtures\OpenApi\WeightedGroupController;
+use Tests\Fixtures\OpenApi\ZebraGroupController;
 
 use function Pest\Laravel\get;
 
@@ -89,6 +92,43 @@ it('lists paths in alphabetical order, whatever the order of the routes', functi
 
     expect($paths)->toBe($sorted)
         ->and(array_values(array_intersect($paths, ['/zebra', '/aardvark'])))->toBe(['/aardvark', '/zebra']);
+});
+
+// Issue #160: Scramble adds error responses and tags in the order it meets
+// them, so a new route could reorder them in the committed document.
+it('lists the shared responses in alphabetical order', function (): void {
+    $names = array_keys(generateOpenApiDocument()['components']['responses']);
+    $sorted = $names;
+    sort($sorted, SORT_STRING);
+
+    expect($names)->not->toBeEmpty()
+        ->and($names)->toBe($sorted);
+});
+
+it('lists tags by weight, then by name, whatever the order of the routes', function (): void {
+    Route::get('/api/v1/zebra-group', ZebraGroupController::class)->name('zebra-group');
+    Route::get('/api/v1/aardvark-group', AardvarkGroupController::class)->name('aardvark-group');
+    Route::get('/api/v1/weighted-group', WeightedGroupController::class)->name('weighted-group');
+
+    $tags = array_column(generateOpenApiDocument()['tags'] ?? [], 'name');
+
+    expect($tags)->toBe(['Middle', 'Aardvark', 'Zebra']);
+});
+
+// A route bound to a domain would get a server of its own, built with the
+// scheme of APP_URL. Every route is on the API host, under the one server.
+it('gives no path or operation a server of its own', function (): void {
+    Route::domain('{tenant}.example.com')->get('/api/v1/domain-bound', ZebraGroupController::class)->name('domain-bound');
+
+    $before = generateOpenApi();
+    $path = json_decode($before, true, flags: JSON_THROW_ON_ERROR)['paths']['/domain-bound'];
+
+    config(['app.url' => 'http://elsewhere.example']);
+    URL::forceRootUrl('http://elsewhere.example');
+
+    expect($path)->not->toHaveKey('servers')
+        ->and($path['get'])->not->toHaveKey('servers')
+        ->and(generateOpenApi())->toBe($before);
 });
 
 it('serves no API documentation', function (string $uri): void {
