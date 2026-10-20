@@ -20,7 +20,9 @@ return [
 
     'allowed_headers' => ['Accept', 'Content-Type', 'X-Requested-With', 'X-XSRF-TOKEN'],
 
-    'exposed_headers' => [],
+    // Response headers the apps may read. X-Request-Id names the request in
+    // the audit log, so an app can show it with an error (issue #149).
+    'exposed_headers' => ['X-Request-Id'],
 
     // Seconds a browser may cache a preflight answer.
     'max_age' => 600,

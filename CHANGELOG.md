@@ -225,6 +225,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The control plane no longer registers Laravel's stock `storage/{path}` routes (`GET`, `HEAD` and `PUT`, closures): the `local` disk is not served. A test reads the route list and fails on any route that is not under `/api/v1` with a controller in `App\Http\Api\V1`, so a route the framework or a package registers by itself is caught (issue #161).
 - `GET /api/v1/branding` and `GET /api/v1/branding/images/{slot}` share a rate limit of 300 requests a minute per client address (limiter `branding`), generous enough for a login page behind a shared address. Both document `429` in the OpenAPI document, and the typed client is regenerated. `control-plane/README.md` has a new "Rate limits" section with every limiter (issue #158).
 - Every route behind `throttle` documents `429` in the OpenAPI document, with the usual `{message}` body and a required `Retry-After` header (an integer). Until now only the two public branding routes documented it. The Scramble operation extension `App\Infrastructure\OpenApi\DocumentRateLimits` adds it from the route's middleware, and a contract test fails for a throttled route without it. The typed client is regenerated (issue #202).
+- CORS exposes `X-Request-Id` (`exposed_headers` in `control-plane/config/cors.php`), so the two apps can read the request ID of a response, for example to show it with an error. Other origins still get no CORS header (issue #149).
 
 ---
 
