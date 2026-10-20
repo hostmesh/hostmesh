@@ -4,14 +4,14 @@ The two Vue 3 single-page applications and the packages they share. Both apps ar
 
 ## Layout
 
-| Path                   | Package                | Contents                                                                                                        |
-|------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------|
-| `apps/admin/`          | `@hostmesh/admin`      | The admin app: login with mandatory two-factor, the application layout, the branding screen.                    |
-| `apps/portal/`         | `@hostmesh/portal`     | The customer portal: login, the two-factor challenge, the application layout, brand colors applied at run time. |
-| `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens, built with shadcn-vue. See its [README](packages/ui/README.md).            |
-| `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`.                          |
-| `e2e/`                 | `@hostmesh/e2e`        | Playwright tests against the stack in end-to-end mode: the Slice 0 exit test.                                   |
-| `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                                           |
+| Path                   | Package                | Contents                                                                                                                                                       |
+|------------------------|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `apps/admin/`          | `@hostmesh/admin`      | The admin app: login with mandatory two-factor, the application layout, the branding screen.                                                                   |
+| `apps/portal/`         | `@hostmesh/portal`     | The customer portal: login, the two-factor challenge, the account screen with two-factor enrollment, the application layout, brand colors applied at run time. |
+| `packages/ui/`         | `@hostmesh/ui`         | Shared components and design tokens, built with shadcn-vue. See its [README](packages/ui/README.md).                                                           |
+| `packages/api-client/` | `@hostmesh/api-client` | The typed API client. `src/generated/` is generated from `contracts/api/openapi.json`.                                                                         |
+| `e2e/`                 | `@hostmesh/e2e`        | Playwright tests against the stack in end-to-end mode: the Slice 0 exit test.                                                                                  |
+| `themes/`              |                        | Optional operator themes, selected at build time with `THEME=<name>`.                                                                                          |
 
 Shared packages export their TypeScript source, so they have no build step. Both apps depend on them as `workspace:*` packages, and a test in each app (`src/workspace.test.ts`) checks that they resolve.
 
@@ -91,7 +91,7 @@ Rules for a test:
 
 - Import `test` and `expect` from `support/test`, never from `@playwright/test`: that fixture fails a test on an uncaught error or a Content Security Policy violation.
 - Find elements by role or label, or by an existing `data-test` attribute. Wait with `expect(…)`, never with a timeout.
-- Accounts come from `support/seed` (`php artisan e2e:seed`, `control-plane/app/Console/EndToEnd/Fixtures.php`). A test that passes a two-factor challenge gets an administrator of its own: add a key to `Fixtures::ADMINISTRATORS` and to the `Seed` type.
+- Accounts come from `support/seed` (`php artisan e2e:seed`, `control-plane/app/Console/EndToEnd/Fixtures.php`). A test that passes a two-factor challenge gets an administrator of its own: add a key to `Fixtures::ADMINISTRATORS` and to the `Seed` type. A test that changes a customer's two-factor gets a customer of its own, in `Fixtures::CUSTOMERS`; the seed turns two-factor off for every customer it makes. A test that needs several codes for one account takes each from `codeAfter()` in `support/totp`: the API accepts every time step only once.
 - Type only credentials that `e2e:seed` made for the run, never a fixed one. The trace of a failed test records what was typed, and the CI artifact can be downloaded by anyone for 7 days (decision 0016, amended).
 - Do not repeat tests with `--repeat-each`: the login throttle counts every attempt. Repeat `make e2e`.
 

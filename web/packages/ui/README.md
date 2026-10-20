@@ -18,18 +18,19 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`: the package re-ex
 
 ## Layout
 
-| Path                         | Contents                                                                                        |
-|------------------------------|-------------------------------------------------------------------------------------------------|
-| `src/index.ts`               | The public exports.                                                                             |
-| `src/styles/tokens.css`      | The design tokens, light under `:root` and dark under `.dark`.                                  |
-| `src/styles/index.css`       | The stylesheet apps import: tokens, the Tailwind mapping, the base layer.                       |
-| `src/styles/variants.css`    | Tailwind variants the components use, copied from shadcn-vue.                                   |
-| `src/components/ui/`         | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                        |
-| `src/components/data-table/` | The data-table pattern: `DataTable` and its column helper.                                      |
-| `src/components/form/`       | The form pattern: `FormField` and `toTypedSchema`.                                              |
-| `src/lib/utils.ts`           | `cn()`, from shadcn-vue.                                                                        |
-| `src/composables/`           | `useColorMode()`.                                                                               |
-| `src/test/`                  | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components. |
+| Path                         | Contents                                                                                                            |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `src/index.ts`               | The public exports.                                                                                                 |
+| `src/styles/tokens.css`      | The design tokens, light under `:root` and dark under `.dark`.                                                      |
+| `src/styles/index.css`       | The stylesheet apps import: tokens, the Tailwind mapping, the base layer.                                           |
+| `src/styles/variants.css`    | Tailwind variants the components use, copied from shadcn-vue.                                                       |
+| `src/components/ui/`         | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                                            |
+| `src/components/data-table/` | The data-table pattern: `DataTable` and its column helper.                                                          |
+| `src/components/form/`       | The form pattern: `FormField` and `toTypedSchema`.                                                                  |
+| `src/components/qr-code/`    | `QrCode`: a QR code as an inline SVG, in the scannable pair of tokens. Used by both apps for two-factor enrollment. |
+| `src/lib/utils.ts`           | `cn()`, from shadcn-vue.                                                                                            |
+| `src/composables/`           | `useColorMode()`.                                                                                                   |
+| `src/test/`                  | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components.                     |
 
 Inside the package, CLI code is imported as `#ui/components/ui/<name>`, `#ui/lib/<name>` and `#ui/composables/<name>`. These are Node subpath imports, declared under `imports` in `package.json`: one entry for each directory the CLI writes to. The `paths` of `tsconfig.json` are for the CLI and are wider (`#ui/*`), so a path outside those directories typechecks and then fails in Vite; add it to `imports` first.
 

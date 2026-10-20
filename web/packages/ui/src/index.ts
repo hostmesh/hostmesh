@@ -13,6 +13,7 @@ export * from '#ui/components/ui/sonner'
 export * from '#ui/components/ui/table'
 export { default as DataTable } from './components/data-table/DataTable.vue'
 export { default as FormField } from './components/form/FormField.vue'
+export { default as QrCode } from './components/qr-code/QrCode.vue'
 export { toTypedSchema } from './components/form/typed-schema'
 // Re-exported so that apps write forms without depending on vee-validate and
 // Zod, and with the Zod version the adapter is tested against.

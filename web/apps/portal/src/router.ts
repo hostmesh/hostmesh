@@ -8,6 +8,7 @@ import { useAuthStore, type SessionState } from './stores/auth'
 import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
 import TwoFactorChallengeView from './views/TwoFactorChallengeView.vue'
+import AccountView from './views/account/AccountView.vue'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -28,6 +29,7 @@ export function createAppRouter(history: RouterHistory): Router {
     history,
     routes: [
       { path: '/', name: 'home', component: HomeView },
+      { path: '/account', name: 'account', component: AccountView },
       { path: '/login', name: 'login', component: LoginView, meta: { requires: 'guest' } },
       {
         path: '/two-factor',

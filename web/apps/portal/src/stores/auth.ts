@@ -19,6 +19,17 @@ export type AuthStatus = 'unknown' | SessionState
 
 export type ChallengeInput = { code: string } | { recovery_code: string }
 
+export interface Enrollment {
+  secret: string
+  provisioning_uri: string
+}
+
+/** What turning two-factor off and replacing the recovery codes ask for. */
+export interface PasswordAndCode {
+  password: string
+  code: string
+}
+
 const done: Result = { ok: true, value: undefined }
 
 // A call that got no response throws; every action reports it the same way.
@@ -81,6 +92,44 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  function startEnrollment(): Promise<Result<Enrollment>> {
+    return attempt(async () => {
+      const { data, error, response } = await api.POST('/customer/auth/two-factor')
+      return data ? { ok: true, value: data.data } : failure(response, error)
+    })
+  }
+
+  /** Turns two-factor on and returns the recovery codes, which the API shows only once. */
+  function confirmEnrollment(code: string): Promise<Result<string[]>> {
+    return attempt(async () => {
+      const { data, error, response } = await api.POST('/customer/auth/two-factor/confirm', { body: { code } })
+      if (!data) {
+        return failure(response, error)
+      }
+      await restore()
+      return { ok: true, value: data.data.recovery_codes }
+    })
+  }
+
+  /** Every earlier recovery code stops working. The new ones are shown only once. */
+  function regenerateRecoveryCodes(input: PasswordAndCode): Promise<Result<string[]>> {
+    return attempt(async () => {
+      const { data, error, response } = await api.POST('/customer/auth/two-factor/recovery-codes', { body: input })
+      return data ? { ok: true, value: data.data.recovery_codes } : failure(response, error)
+    })
+  }
+
+  function disableTwoFactor(input: PasswordAndCode): Promise<Result> {
+    return attempt(async () => {
+      const { error, response } = await api.POST('/customer/auth/two-factor/disable', { body: input })
+      if (!response.ok) {
+        return failure(response, error)
+      }
+      await restore()
+      return done
+    })
+  }
+
   function logout(): Promise<Result> {
     return attempt(async () => {
       const { error, response } = await api.POST('/customer/auth/logout')
@@ -93,5 +142,17 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  return { status, user, restore, login, completeChallenge, logout, expire }
+  return {
+    status,
+    user,
+    restore,
+    login,
+    completeChallenge,
+    startEnrollment,
+    confirmEnrollment,
+    regenerateRecoveryCodes,
+    disableTwoFactor,
+    logout,
+    expire,
+  }
 })

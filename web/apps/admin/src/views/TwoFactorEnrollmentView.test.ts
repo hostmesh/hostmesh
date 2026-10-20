@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
+import { QrCode } from '@hostmesh/ui'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import QrCode from '../components/QrCode.vue'
 import { json, mockApi, noContent } from '../test/api'
 import { userBody } from '../test/fixtures'
 import { mountView, submitted } from '../test/view'

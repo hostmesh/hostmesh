@@ -1,10 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <script setup lang="ts">
-import { Button, Card, CardContent, CardHeader, FormField, Input, toTypedSchema, useForm, z } from '@hostmesh/ui'
+import { Button, Card, CardContent, CardHeader, FormField, Input, QrCode, toTypedSchema, useForm, z } from '@hostmesh/ui'
 import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import QrCode from '../components/QrCode.vue'
 import LoginLayout from '../layouts/LoginLayout.vue'
 import { focusFirstInvalid } from '../lib/form-errors'
 import { safeRedirect } from '../lib/redirect'
