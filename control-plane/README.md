@@ -235,6 +235,10 @@ The command is `app/Console/Commands/CreateAdministratorCommand.php`, thin like 
 
 `php artisan e2e:seed` creates the accounts and branding of the Playwright suite (`web/e2e`) and prints their generated passwords and TOTP secrets as JSON. It exists only when `APP_ENV` is `e2e` (the stack of `infrastructure/development/compose.e2e.yaml`) or `testing`: `AppServiceProvider` does not register it anywhere else, and the command refuses again when it runs. Do not call it yourself; `make -C infrastructure/development e2e` does. Its classes are in `app/Console/EndToEnd/`. Console commands are an entry point next to `Http`: they call the application layer and nothing depends on them (`tests/Arch/LayeringTest.php`).
 
+## Queue smoke command
+
+`php artisan smoke:queue [--timeout=15]` dispatches a job the way the application dispatches any job, to the default connection and queue, and waits until a worker has run it. It exits non-zero when no worker did within the timeout. The smoke test of the development stack calls it, so a worker that listens on the wrong connection or queue fails (issue #156). The job writes nothing to `job_history`, only a marker in the cache that the command removes. It exists only when `APP_ENV` is `local` or `testing`: `AppServiceProvider` does not register it anywhere else. Its classes are in `app/Console/Smoke/`.
+
 ## Requirements
 
 PHP 8.5 with the extensions `pdo_pgsql`, `redis`, `intl`, `pcntl`, `fileinfo` and PCOV (or Xdebug) for coverage. See [decision 0004](../docs/decisions/0004-php-8-5-for-the-control-plane.md). `upload_max_filesize` and `post_max_size` must be at least 2M (the PHP default) for logo uploads.
