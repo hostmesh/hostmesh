@@ -1,10 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import { defineConfig } from 'vitest/config'
 
+import CoverageGuard from './coverage-guard'
+
 export default defineConfig({
   test: {
-    // Each project is configured by the Vite or Vitest config in its directory.
-    projects: ['apps/*', 'packages/*'],
+    // Each project is configured by the Vite or Vitest config in its
+    // directory, except `workspace`: the tooling at the root of the workspace.
+    projects: [
+      'apps/*',
+      'packages/*',
+      { test: { name: 'workspace', environment: 'node', include: ['*.test.ts'] } },
+    ],
+    // The guard acts on runs with coverage only (issue #145).
+    reporters: ['default', new CoverageGuard()],
     // `pnpm test:coverage` (spec section 37, issue #121). One measurement
     // for the four projects: jsdom, Node and the browser all report to it.
     coverage: {
@@ -24,7 +33,8 @@ export default defineConfig({
         'packages/ui/src/components/ui/**',
       ],
       reporter: ['text-summary'],
-      // The run fails below any of these, over the workspace as a whole.
+      // The run fails below any of these, over the workspace as a whole. On
+      // a report that covers no file they pass; CoverageGuard fails it.
       thresholds: {
         statements: 95,
         branches: 95,

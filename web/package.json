@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "typecheck": "pnpm --recursive run typecheck",
+    "typecheck": "pnpm --recursive run typecheck && tsc --noEmit --project tsconfig.node.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "build": "pnpm --filter \"./apps/*\" run build",
@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-vue": "catalog:",
