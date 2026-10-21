@@ -3,6 +3,7 @@
 import { Button, toast } from '@hostmesh/ui'
 import { useRouter } from 'vue-router'
 
+import AppFooter from '../components/AppFooter.vue'
 import AppLogo from '../components/AppLogo.vue'
 import { useAuthStore } from '../stores/auth'
 
@@ -40,5 +41,6 @@ async function logOut(): Promise<void> {
     <main class="flex-1 p-6">
       <slot />
     </main>
+    <AppFooter class="border-t" />
   </div>
 </template>

@@ -3,8 +3,9 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
+import { useBrandingStore } from '../stores/branding'
 import { mockApi, noContent } from '../test/api'
-import { signedInRoutes } from '../test/fixtures'
+import { brandingBody, signedInRoutes } from '../test/fixtures'
 import { mountView } from '../test/view'
 import AppLayout from './AppLayout.vue'
 
@@ -27,6 +28,16 @@ describe('AppLayout', () => {
     expect(wrapper.get('header').text()).toContain('Hostmesh')
     expect(wrapper.get('header').text()).toContain('Ada Lovelace')
     expect(wrapper.get('main h1').text()).toBe('Dashboard')
+  })
+
+  it('ends with the footer of branding, outside the main landmark', async () => {
+    mockApi(signedInRoutes())
+    const { wrapper } = await mountView(Page, '/somewhere')
+    useBrandingStore().apply(brandingBody.data)
+    await flushPromises()
+
+    expect(wrapper.get('footer a').attributes('href')).toBe('https://acme.example/support')
+    expect(wrapper.find('main footer').exists()).toBe(false)
   })
 
   it('logs out and goes to the login form', async () => {
