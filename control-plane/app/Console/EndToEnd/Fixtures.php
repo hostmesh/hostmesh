@@ -32,6 +32,9 @@ final readonly class Fixtures
 
     public const string PRIMARY_LIGHT = '#0b3d91';
 
+    /** The one link of the portal's footer (issue #228); terms and privacy stay unset. */
+    public const string SUPPORT_URL = 'https://support.e2e.hostmesh.test/';
+
     /** @var list<string> */
     public const array ADMINISTRATORS = ['login', 'wrong-code', 'second-factor', 'branding', 'logout', 'isolation'];
 
@@ -48,7 +51,7 @@ final readonly class Fixtures
 
     /**
      * @return array{
-     *     branding: array{product_name: string, primary_light: string},
+     *     branding: array{product_name: string, primary_light: string, support_url: string},
      *     administrators: array<string, array{name: string, email: string, password: string, totp_secret: string}>,
      *     customers: array<string, array{name: string, email: string, password: string}>,
      * }
@@ -63,7 +66,7 @@ final readonly class Fixtures
             primaryForegroundLight: '#ffffff',
             primaryDark: '#9cc2ff',
             primaryForegroundDark: '#0a1a33',
-            supportUrl: null,
+            supportUrl: self::SUPPORT_URL,
             termsUrl: null,
             privacyUrl: null,
         ));
@@ -81,7 +84,7 @@ final readonly class Fixtures
         }
 
         return [
-            'branding' => ['product_name' => self::PRODUCT_NAME, 'primary_light' => self::PRIMARY_LIGHT],
+            'branding' => ['product_name' => self::PRODUCT_NAME, 'primary_light' => self::PRIMARY_LIGHT, 'support_url' => self::SUPPORT_URL],
             'administrators' => $administrators,
             'customers' => $customers,
         ];

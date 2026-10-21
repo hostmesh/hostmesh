@@ -36,7 +36,7 @@ it('prints the accounts and the branding as JSON', function (): void {
     expect(array_keys($seed))->toBe(['branding', 'administrators', 'customers'])
         ->and(array_keys($seed['administrators']))->toBe(Fixtures::ADMINISTRATORS)
         ->and(array_keys($seed['customers']))->toBe(Fixtures::CUSTOMERS)
-        ->and($seed['branding'])->toBe(['product_name' => 'Hostmesh E2E', 'primary_light' => '#0b3d91'])
+        ->and($seed['branding'])->toBe(['product_name' => 'Hostmesh E2E', 'primary_light' => '#0b3d91', 'support_url' => 'https://support.e2e.hostmesh.test/'])
         ->and($seed['administrators']['login']['email'])->toBe('admin-login@e2e.hostmesh.test')
         ->and($seed['customers']['login']['email'])->toBe('customer-login@e2e.hostmesh.test');
 });
@@ -103,6 +103,11 @@ it('sets the branding the tests look for', function (): void {
 
     expect($branding->productName)->toBe('Hostmesh E2E');
     expect(BrandingRecord::current()?->primary_light)->toBe('#0b3d91');
+    // Issue #228: one link for the portal's footer; the two others stay
+    // unset, so the suite also sees that the footer leaves them out.
+    expect($branding->supportUrl)->toBe('https://support.e2e.hostmesh.test/')
+        ->and($branding->termsUrl)->toBeNull()
+        ->and($branding->privacyUrl)->toBeNull();
 });
 
 it('converges when it runs again, with new credentials', function (): void {
