@@ -36,7 +36,7 @@ final readonly class Fixtures
     public const string SUPPORT_URL = 'https://support.e2e.hostmesh.test/';
 
     /** @var list<string> */
-    public const array ADMINISTRATORS = ['login', 'wrong-code', 'second-factor', 'branding', 'logout', 'isolation'];
+    public const array ADMINISTRATORS = ['login', 'wrong-code', 'second-factor', 'branding', 'logout', 'isolation', 'account'];
 
     /** @var list<string> */
     public const array CUSTOMERS = ['login', 'logout', 'two-factor'];

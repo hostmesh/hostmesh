@@ -215,6 +215,66 @@ describe('two-factor enrollment', () => {
   })
 })
 
+// Issue #138: from the account screen, with the password and a code.
+describe('recovery codes and turning two-factor off', () => {
+  const input = { password: 'correct-password', code: '123456' }
+
+  it('replaces the recovery codes with the password and a code in the body', async () => {
+    const api = mockApi({ 'POST /admin/auth/two-factor/recovery-codes': json({ data: { recovery_codes: ['ccccc-ddddd'] } }) })
+
+    expect(await useAuthStore().regenerateRecoveryCodes(input)).toEqual({ ok: true, value: ['ccccc-ddddd'] })
+    const request = api.sent('POST /admin/auth/two-factor/recovery-codes')[0]
+    expect(await request?.json()).toEqual(input)
+    expect(request?.url).not.toContain('?')
+  })
+
+  // Spec section 28: two-factor is required in admin, so the session owes
+  // enrollment straight away.
+  it('turns two-factor off with the password and a code in the body, and owes enrollment', async () => {
+    const api = mockApi({
+      'GET /admin/auth/user': json(userBody),
+      'POST /admin/auth/two-factor/disable': noContent(),
+    })
+    const auth = useAuthStore()
+    await auth.restore()
+    api.routes['GET /admin/auth/user'] = pending('enrollment')
+
+    expect(await auth.disableTwoFactor(input)).toEqual({ ok: true, value: undefined })
+    // Issue #212: never in the URL.
+    const request = api.sent('POST /admin/auth/two-factor/disable')[0]
+    expect(await request?.json()).toEqual(input)
+    expect(request?.url).not.toContain('?')
+    expect(auth.status).toBe('enrollment')
+    expect(auth.user).toBeNull()
+  })
+
+  it('returns the field errors and keeps two-factor on', async () => {
+    const errors = { password: ['The password is incorrect.'] }
+    const api = mockApi({
+      'GET /admin/auth/user': json(userBody),
+      'POST /admin/auth/two-factor/disable': json({ message: errors.password[0], errors }, 422),
+      'POST /admin/auth/two-factor/recovery-codes': json({ message: errors.password[0], errors }, 422),
+    })
+    const auth = useAuthStore()
+    await auth.restore()
+
+    expect(await auth.disableTwoFactor(input)).toEqual({ ok: false, errors, message: '' })
+    expect(await auth.regenerateRecoveryCodes(input)).toEqual({ ok: false, errors, message: '' })
+    expect(api.sent('GET /admin/auth/user')).toHaveLength(1)
+    expect(auth.status).toBe('authenticated')
+  })
+
+  it('reports too many attempts', async () => {
+    mockApi({ 'POST /admin/auth/two-factor/disable': json({ message: 'Too Many Attempts.' }, 429) })
+
+    expect(await useAuthStore().disableTwoFactor(input)).toEqual({
+      ok: false,
+      errors: {},
+      message: 'Too many attempts. Wait a minute and try again.',
+    })
+  })
+})
+
 describe('logout', () => {
   it('ends the session', async () => {
     const api = mockApi({ 'GET /admin/auth/user': json(userBody), 'POST /admin/auth/logout': noContent() })

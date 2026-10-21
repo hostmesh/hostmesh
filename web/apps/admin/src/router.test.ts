@@ -115,6 +115,22 @@ describe('the guard', () => {
 
     expect(router.currentRoute.value.fullPath).toBe('/login?redirect=/branding')
   })
+
+  it('opens the account screen for a logged-in user', async () => {
+    mockApi(signedInRoutes())
+    const { router, wrapper } = await mountApp('/account')
+
+    expect(router.currentRoute.value.name).toBe('account')
+    expect(wrapper.get('main h1').text()).toBe('Account')
+    expect(wrapper.get('nav a[href="/account"]').text()).toBe('Account')
+  })
+
+  it('remembers the account screen for a guest', async () => {
+    mockApi(guestRoutes())
+    const { router } = await mountApp('/account')
+
+    expect(router.currentRoute.value.fullPath).toBe('/login?redirect=/account')
+  })
 })
 
 describe('logging in through the app', () => {

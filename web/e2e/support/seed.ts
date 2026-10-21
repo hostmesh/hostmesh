@@ -14,7 +14,7 @@ export interface Administrator extends Account {
 /** What `php artisan e2e:seed` prints (control-plane/app/Console/EndToEnd/Fixtures.php). */
 export interface Seed {
   branding: { product_name: string, primary_light: string, support_url: string }
-  administrators: Record<'login' | 'wrong-code' | 'second-factor' | 'branding' | 'logout' | 'isolation', Administrator>
+  administrators: Record<'login' | 'wrong-code' | 'second-factor' | 'branding' | 'logout' | 'isolation' | 'account', Administrator>
   customers: Record<'login' | 'logout' | 'two-factor', Account>
 }
 
