@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // The files at the root of the workspace that run in Node: the Vitest
-// configuration and its coverage guard, with the guard's test.
+// configuration and its coverage guard, with the guard's test, and the test
+// of the ESLint configuration.
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2022"],
     "types": ["node"]
   },
-  "include": ["vitest.config.ts", "coverage-guard.ts", "coverage-guard.test.ts"]
+  "include": ["vitest.config.ts", "coverage-guard.ts", "coverage-guard.test.ts", "eslint.config.test.ts"]
 }

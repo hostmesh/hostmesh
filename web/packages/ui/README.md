@@ -133,7 +133,7 @@ const onSubmit = handleSubmit((values) => {
 </template>
 ```
 
-`useForm` is vee-validate's and `z` is Zod's, re-exported so that an app depends on neither and writes its schemas with the Zod version the adapter is tested against. `toTypedSchema` adapts a Zod 4 schema (any Standard Schema) to vee-validate 4. It reports errors only; pass `initialValues` to `useForm`. A schema describes input ergonomics; the API validates again and remains the authority (spec section 29). A full example is in `src/components/form/__fixtures__/ExampleForm.vue`; it exists for the tests and is not exported.
+`useForm` is vee-validate's and `z` is Zod's, re-exported so that an app depends on neither and writes its schemas with the Zod version the adapter is tested against. This `z` runs with `jitless` (`src/components/form/zod.ts`): the production policy forbids the `new Function` zod would otherwise probe for. ESLint rejects importing `zod` itself in an app. `toTypedSchema` adapts a Zod 4 schema (any Standard Schema) to vee-validate 4. It reports errors only; pass `initialValues` to `useForm`. A schema describes input ergonomics; the API validates again and remains the authority (spec section 29). A full example is in `src/components/form/__fixtures__/ExampleForm.vue`; it exists for the tests and is not exported.
 
 ## Adding a component
 
