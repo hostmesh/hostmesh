@@ -231,6 +231,16 @@ Rules for a new one-shot job:
 
 The command is `app/Console/Commands/CreateAdministratorCommand.php`, thin like a controller; the work is in `App\Application\Commands\CreateAdministrator`.
 
+## Resetting an administrator's second factor
+
+`php artisan administrator:reset-two-factor <email>` is for an administrator who lost both the authenticator and the recovery codes (spec section 28). Two-factor is required in the admin realm, so without it the account is locked out. Run it with shell access to the control plane, after you have made sure the request really comes from that administrator.
+
+- It removes the secret and the recovery codes and ends all of the administrator's sessions (the rows of `admin_sessions` with their ID), so the next login, with the password, leads into two-factor enrollment. A session that had passed the second factor would otherwise stay signed in and could enroll a new one without the password.
+- It refuses an address no administrator has, and an administrator without a second factor, and changes nothing then. A customer's address is not an administrator's.
+- It writes one audit event with the system as actor: `administrator.two_factor_reset`.
+
+The command is `app/Console/Commands/ResetAdministratorTwoFactorCommand.php`; the work is in `App\Application\Commands\ResetAdministratorTwoFactor`.
+
 ## End-to-end seed command
 
 `php artisan e2e:seed` creates the accounts and branding of the Playwright suite (`web/e2e`) and prints their generated passwords and TOTP secrets as JSON. It exists only when `APP_ENV` is `e2e` (the stack of `infrastructure/development/compose.e2e.yaml`) or `testing`: `AppServiceProvider` does not register it anywhere else, and the command refuses again when it runs. Do not call it yourself; `make -C infrastructure/development e2e` does. Its classes are in `app/Console/EndToEnd/`. Console commands are an entry point next to `Http`: they call the application layer and nothing depends on them (`tests/Arch/LayeringTest.php`).

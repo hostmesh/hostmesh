@@ -7,6 +7,7 @@ declare(strict_types=1);
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\Browser;
 
 // Spec sections 28 and 37: admin and portal sessions are isolated. Each
@@ -124,6 +125,23 @@ it('expires an idle admin session sooner than a portal session', function (): vo
     $this->travel(121)->minutes();
 
     $browser->get(Browser::PORTAL, '/api/v1/customer/auth/user')->assertUnauthorized();
+});
+
+// The session row names its account, so a session can be ended by account
+// (issue #136). One process serves the whole test, as a long-running
+// server would: the guard that names the account must be this request's.
+it('records the account of each session in the table of its realm', function (): void {
+    $administrator = Administrator::factory()->withTwoFactor()->create();
+    $user = User::factory()->create();
+    $browser = new Browser($this);
+
+    $browser->signIn(Browser::ADMIN, $administrator);
+    $browser->logIn(Browser::PORTAL, $user->email)->assertOk();
+
+    expect(DB::table('admin_sessions')->where('id', $browser->sessionId(Browser::ADMIN_SESSION))->value('user_id'))
+        ->toBe($administrator->id)
+        ->and(DB::table('portal_sessions')->where('id', $browser->sessionId(Browser::PORTAL_SESSION))->value('user_id'))
+        ->toBe($user->id);
 });
 
 it('does not let admin garbage collection delete a live portal session', function (): void {
