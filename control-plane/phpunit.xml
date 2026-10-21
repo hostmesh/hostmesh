@@ -25,20 +25,37 @@
         </exclude>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="BROADCAST_CONNECTION" value="null"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="DB_DATABASE" value="hostmesh_test"/>
-        <env name="DB_URL" value=""/>
-        <env name="HOSTMESH_DOMAIN" value="hostmesh.test"/>
+        <!-- End-to-end mode sets APP_ENV, DB_DATABASE and REDIS_DB on the container (issue #231).
+             PHPUnit leaves a variable that is already set alone unless the entry is forced, and a
+             forced <env> does not reach $_SERVER, which Laravel reads first: every variable is
+             set both ways. Child processes inherit the environment. -->
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <env name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_DATABASE" value="hostmesh_test" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="HOSTMESH_DOMAIN" value="hostmesh.test" force="true"/>
         <!-- Defined here, not only in .env, so that a test can change it and boot again:
              the .env loader overwrites a variable it loaded itself (TrustedProxiesTest). -->
-        <env name="HOSTMESH_TRUSTED_PROXIES" value=""/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="REDIS_DB" value="15"/>
+        <env name="HOSTMESH_TRUSTED_PROXIES" value="" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="REDIS_DB" value="15" force="true"/>
+        <server name="APP_ENV" value="testing"/>
+        <server name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <server name="BCRYPT_ROUNDS" value="4"/>
+        <server name="BROADCAST_CONNECTION" value="null"/>
+        <server name="CACHE_STORE" value="array"/>
+        <server name="DB_CONNECTION" value="pgsql"/>
+        <server name="DB_DATABASE" value="hostmesh_test"/>
+        <server name="DB_URL" value=""/>
+        <server name="HOSTMESH_DOMAIN" value="hostmesh.test"/>
+        <server name="HOSTMESH_TRUSTED_PROXIES" value=""/>
+        <server name="MAIL_MAILER" value="array"/>
+        <server name="QUEUE_CONNECTION" value="sync"/>
+        <server name="REDIS_DB" value="15"/>
     </php>
 </phpunit>
