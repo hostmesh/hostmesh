@@ -96,6 +96,20 @@ it('has a customer for the two-factor flow and turns its two-factor off when it 
         ->and($user->two_factor_secret)->toBeNull();
 });
 
+// Issue #138: the admin app's account flow turns two-factor off for its
+// administrator and sets it up again with a secret of its own. A run that
+// stopped half-way must not leave it off, or on with that secret.
+it('has an administrator for the account flow and gives it the seeded secret again when it runs again', function (): void {
+    $entry = seeded()['administrators']['account'];
+    $administrator = Administrator::query()->where('email', $entry['email'])->sole();
+    $administrator->disableTwoFactor();
+
+    $again = seeded()['administrators']['account'];
+
+    expect($administrator->refresh()->hasTwoFactor())->toBeTrue()
+        ->and($administrator->two_factor_secret)->toBe($again['totp_secret']);
+});
+
 it('sets the branding the tests look for', function (): void {
     seeded();
 
