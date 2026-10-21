@@ -16,9 +16,10 @@ export { default as FormField } from './components/form/FormField.vue'
 export { default as QrCode } from './components/qr-code/QrCode.vue'
 export { toTypedSchema } from './components/form/typed-schema'
 // Re-exported so that apps write forms without depending on vee-validate and
-// Zod, and with the Zod version the adapter is tested against.
+// Zod, and with the Zod version the adapter is tested against. This `z`
+// never evaluates code, which the production policy forbids.
 export { useForm } from 'vee-validate'
-export { z } from 'zod'
+export { z } from './components/form/zod'
 export {
   createDataTableColumnHelper,
   dataTableFeatures,

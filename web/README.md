@@ -89,7 +89,7 @@ Use the `node` image, not pnpm on the host: there `show-trace` fails without Pla
 
 Rules for a test:
 
-- Import `test` and `expect` from `support/test`, never from `@playwright/test`: that fixture fails a test on an uncaught error or a Content Security Policy violation.
+- Import `test` and `expect` from `support/test`, never from `@playwright/test`: that fixture fails a test on an uncaught error or a Content Security Policy violation (a console message about the policy or a `securitypolicyviolation` event; the browser logs no message for a blocked `new Function` that the page catches).
 - Find elements by role or label, or by an existing `data-test` attribute. Wait with `expect(…)`, never with a timeout.
 - Accounts come from `support/seed` (`php artisan e2e:seed`, `control-plane/app/Console/EndToEnd/Fixtures.php`). A test that passes a two-factor challenge gets an administrator of its own: add a key to `Fixtures::ADMINISTRATORS` and to the `Seed` type. A test that changes a customer's two-factor gets a customer of its own, in `Fixtures::CUSTOMERS`; the seed turns two-factor off for every customer it makes. A test that needs several codes for one account takes each from `codeAfter()` in `support/totp`: the API accepts every time step only once.
 - Type only credentials that `e2e:seed` made for the run, never a fixed one. The trace of a failed test records what was typed, and the CI artifact can be downloaded by anyone for 7 days (decision 0016, amended).
