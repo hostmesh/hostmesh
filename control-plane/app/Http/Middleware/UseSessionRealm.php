@@ -72,10 +72,13 @@ final class UseSessionRealm extends EnsureFrontendRequestsAreStateful
         // The session driver, the session.store singleton and the guards
         // capture the session configuration when they are built. Under
         // PHP-FPM nothing is built yet; in tests and under a long-running
-        // server the previous request's instances must go.
+        // server the previous request's instances must go. `auth.driver` is
+        // the default guard the database session handler asks for the
+        // account of the session (issue #136).
         $this->sessions->forgetDrivers();
         $this->app->forgetInstance('session.store');
         $this->auth->forgetGuards();
+        $this->app->forgetInstance('auth.driver');
         $this->auth->shouldUse($settings->guard);
 
         $request->attributes->set(self::ATTRIBUTE, $settings);

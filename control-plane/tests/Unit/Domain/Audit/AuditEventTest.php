@@ -17,7 +17,7 @@ it('names an actor type with a short stable name, never a class name', function 
 });
 
 it('names an action in lower case with dots', function (): void {
-    expect(AuditAction::cases())->toHaveCount(16);
+    expect(AuditAction::cases())->toHaveCount(17);
 
     foreach (AuditAction::cases() as $action) {
         expect($action->value)->toMatch('/^[a-z_]+(\.[a-z_]+)+$/')
