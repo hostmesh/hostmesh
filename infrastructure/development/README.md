@@ -175,7 +175,7 @@ Pest runs inside the `php` service, which reaches both doubles by service name (
 
 ## End-to-end mode
 
-`make e2e-up` switches the stack to the mode the Playwright suite runs in (`web/README.md`, decision 0016): Caddy serves the built apps from `web/apps/*/dist` with the security headers of `infrastructure/nginx/hostmesh.conf.example` (`Caddyfile.e2e`), and the `php` and `worker` services run with `APP_ENV=e2e` on the database `hostmesh_e2e` and on Redis databases 2 and 3 (`compose.e2e.yaml`). Your development database is not touched. `make e2e` seeds and runs the suite; `make up` switches back.
+`make e2e-up` switches the stack to the mode the Playwright suite runs in (`web/README.md`, decision 0016): Caddy serves the built apps from `web/apps/*/dist` with the security headers of `infrastructure/nginx/hostmesh.conf.example` (`Caddyfile.e2e`), and the `php` and `worker` services run with `APP_ENV=e2e` on the database `hostmesh_e2e` and on Redis databases 2 and 3 (`compose.e2e.yaml`). Your development database is not touched. `make e2e` seeds and runs the suite; `make up` switches back. `composer check` works in either mode: `phpunit.xml` overrides those variables, so the control plane's tests always run as `testing` on `hostmesh_test` and Redis database 15.
 
 The hostnames are the same in both modes, so only one runs at a time. While the stack is in end-to-end mode a browser on your machine sees the built apps and the seeded branding ("Hostmesh E2E"), and the accounts of "Logging in locally" do not exist there.
 
