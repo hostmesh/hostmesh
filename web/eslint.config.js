@@ -15,6 +15,11 @@ const networkProperties = ['window', 'globalThis', 'self'].flatMap((object) =>
 
 // HTTP clients that would bypass the generated one.
 const httpLibraries = ['openapi-fetch', 'axios', 'ky', 'ofetch', 'superagent', 'wretch']
+const restrictedHttpImports = httpLibraries.map((name) => ({ name, message: apiClientOnly }))
+
+// The production policy forbids eval, so zod must run with `jitless`
+// (issue #144).
+const uiZodOnly = 'Import z from @hostmesh/ui: it runs zod without eval, which the production policy forbids.'
 
 // The files the shadcn-vue CLI writes stay as upstream formats them, so that
 // re-running the CLI gives a clean diff (decision 0009). For them, the Vue
@@ -73,7 +78,24 @@ export default defineConfig(
       ],
       'no-restricted-imports': [
         'error',
-        { paths: httpLibraries.map((name) => ({ name, message: apiClientOnly })) },
+        { paths: restrictedHttpImports },
+      ],
+    },
+  },
+  {
+    // The apps take zod from @hostmesh/ui, which sets `jitless` before any
+    // schema exists. A later block replaces the options of a rule rather
+    // than adding to them, so this one repeats the HTTP libraries. A path
+    // does not cover its subpaths, and a pattern does not cover the bare
+    // name: zod needs both.
+    files: ['apps/**/*.{ts,vue}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [...restrictedHttpImports, { name: 'zod', message: uiZodOnly }],
+          patterns: [{ group: ['zod/*'], message: uiZodOnly }],
+        },
       ],
     },
   },
