@@ -19,7 +19,7 @@ catalog:
   "@lucide/vue": ^1.55.0
   # Exact, and the same as `playwright` below: both drive the Chromium build
   # the node image installs (decisions 0009 and 0016).
-  "@playwright/test": 1.64.0
+  "@playwright/test": 1.64.1
   "@standard-schema/spec": ^1.1.0
   "@tailwindcss/vite": ^4.3.3
   "@tanstack/vue-table": ^9.2.8
@@ -45,7 +45,7 @@ catalog:
   pinia: ^4.0.3
   # Exact: each Playwright release drives one Chromium build, and the node
   # image installs the build of this version (decision 0009).
-  playwright: 1.64.0
+  playwright: 1.64.1
   reka-ui: ^2.11.0
   tailwind-merge: ^3.7.0
   tailwindcss: ^4.3.3
