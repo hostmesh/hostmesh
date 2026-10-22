@@ -92,10 +92,15 @@ return [
     // than 12 count as 12, the floor the database enforces. ip_address and
     // user_agent are cleared together after address_days, at least 1.
     // These are engineering defaults, not legal findings.
+    // Both jobs change at most batch_size events per statement. A run
+    // starts no new batch after run_seconds and hands the rest to a new
+    // run; keep it well below a job's timeout of 60 seconds.
     'audit' => [
         'retention' => [
             'event_months' => (int) env('HOSTMESH_AUDIT_EVENT_RETENTION_MONTHS', 24),
             'address_days' => (int) env('HOSTMESH_AUDIT_ADDRESS_RETENTION_DAYS', 90),
+            'batch_size' => (int) env('HOSTMESH_AUDIT_RETENTION_BATCH_SIZE', 10000),
+            'run_seconds' => (int) env('HOSTMESH_AUDIT_RETENTION_RUN_SECONDS', 40),
         ],
     ],
 ];

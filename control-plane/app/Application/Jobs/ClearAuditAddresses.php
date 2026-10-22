@@ -6,13 +6,17 @@ declare(strict_types=1);
 
 namespace App\Application\Jobs;
 
+use App\Application\Commands\DispatchOneShotJob;
 use App\Application\Services\AuditRetention;
+use App\Domain\Audit\RetentionPolicy;
 use App\Domain\Provisioning\JobHistoryEntry;
 use App\Domain\Provisioning\JobType;
 
 /**
  * Spec section 21: clears `ip_address` and `user_agent` of audit events
  * older than their retention. Scheduled daily (bootstrap/app.php).
+ * A run that is out of time hands the rest to a new run, with a row of
+ * its own, until nothing is left (issue #238).
  */
 final class ClearAuditAddresses extends OneShotJob
 {
@@ -23,6 +27,8 @@ final class ClearAuditAddresses extends OneShotJob
 
     protected function perform(JobHistoryEntry $entry): void
     {
-        app(AuditRetention::class)->clearExpiredAddresses();
+        if (! app(AuditRetention::class)->clearExpiredAddresses()) {
+            app(DispatchOneShotJob::class)->handle(self::class, RetentionPolicy::RESOURCE_TYPE, RetentionPolicy::RESOURCE_ID);
+        }
     }
 }

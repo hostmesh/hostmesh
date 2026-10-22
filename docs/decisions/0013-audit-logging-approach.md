@@ -80,3 +80,10 @@ Found while implementing. Approved by the owner on 2026-10-08.
 - **Session actions.** Login and logout change a session, not a row. If the event cannot be written, a login is undone (the session is logged out again) and a logout does not happen.
 - **Display names.** The read API returns `null` for the name of an account that is gone. The client shows the placeholder.
 - **Not built in #27:** the scheduled retention job and clearing `ip_address` when an account is erased. No account can be deleted yet. The trigger already encodes both exceptions.
+
+## Amendment, 2026-10-22 (issue #238)
+
+Found while batching the retention jobs. Approved by the owner on 2026-10-22.
+
+- **A fourth index.** `audit_events_addresses_created_at_index` on `created_at`, partial: `WHERE ip_address IS NOT NULL OR user_agent IS NOT NULL`. The job that clears addresses looks for expired events that still hold one. Through the index on `created_at` alone, every batch read past all the events cleared before it: on 4 million events, picking a batch of 10,000 took 1.2 s after 820,000 were cleared, and kept growing. A daily run would read through every event between 90 days and 24 months old to find one day's worth. With the partial index the same pick took 40 ms. The index holds only the events of about the last 90 days, and each new event costs one more index entry.
+- **The retention jobs work in batches** of at most 10,000 events, each its own transaction, and a run that has used its time (40 s) dispatches a new run for the rest (`control-plane/README.md`, "Scheduled jobs").

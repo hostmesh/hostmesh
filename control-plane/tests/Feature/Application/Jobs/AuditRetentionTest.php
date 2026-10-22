@@ -12,6 +12,7 @@ use App\Domain\Audit\RetentionPolicy;
 use App\Domain\Provisioning\JobHistoryEntry;
 use App\Domain\Provisioning\JobStatus;
 use App\Domain\Provisioning\JobType;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -215,4 +216,148 @@ describe('the schedule', function (): void {
 
         expect(JobHistoryEntry::query()->count())->toBe(0);
     });
+});
+
+// Issue #238: a long backlog must not become one long transaction. Each
+// batch is a statement of its own, and a run that uses up its time hands
+// the rest to a new run with a row of its own. A run time of 0 makes
+// every run stop after its first batch.
+describe('in batches', function (): void {
+    /**
+     * The statements of a kind that run inside $work, each with the
+     * transaction level it ran at.
+     *
+     * @return list<int>
+     */
+    function retentionStatements(string $verb, Closure $work): array
+    {
+        $levels = [];
+
+        DB::listen(function (QueryExecuted $query) use ($verb, &$levels): void {
+            if (str_starts_with(ltrim($query->sql), $verb.' ')) {
+                $levels[] = $query->connection->transactionLevel();
+            }
+        });
+
+        $work();
+
+        return $levels;
+    }
+
+    beforeEach(function (): void {
+        config(['hostmesh.audit.retention.batch_size' => 2]);
+    });
+
+    it('deletes in batches of the configured size, none inside a transaction of its own making', function (): void {
+        foreach (range(1, 5) as $ignored) {
+            auditEventAged('25 months');
+        }
+        $kept = auditEventAged('1 month');
+        $level = DB::transactionLevel();
+
+        $statements = retentionStatements('DELETE', fn () => runRetentionJob(PruneAuditEvents::class));
+
+        // 2, 2 and 1: a short batch means nothing is left.
+        expect($statements)->toBe([$level, $level, $level])
+            ->and(remainingAuditEvents())->toBe([$kept])
+            ->and(JobHistoryEntry::query()->count())->toBe(1);
+    });
+
+    it('clears in batches of the configured size, none inside a transaction of its own making', function (): void {
+        foreach (range(1, 5) as $ignored) {
+            auditEventAged('100 days');
+        }
+        $kept = auditEventAged('1 day');
+        $level = DB::transactionLevel();
+
+        $statements = retentionStatements('UPDATE audit_events', fn () => runRetentionJob(ClearAuditAddresses::class));
+
+        expect($statements)->toBe([$level, $level, $level])
+            ->and(DB::table('audit_events')->whereNotNull('ip_address')->pluck('id')->all())->toBe([$kept])
+            ->and(JobHistoryEntry::query()->count())->toBe(1);
+    });
+
+    it('hands the rest of a deletion to a new run when its time is up', function (): void {
+        config(['hostmesh.audit.retention.run_seconds' => 0]);
+
+        foreach (range(1, 5) as $ignored) {
+            auditEventAged('25 months');
+        }
+        $kept = auditEventAged('1 month');
+
+        runRetentionJob(PruneAuditEvents::class);
+
+        $entries = JobHistoryEntry::query()->orderBy('id')->get();
+
+        // 2, 2 and 1, one run each.
+        expect(remainingAuditEvents())->toBe([$kept])
+            ->and($entries)->toHaveCount(3)
+            ->and($entries->pluck('type')->unique()->all())->toBe([JobType::PruneAuditEvents])
+            ->and($entries->pluck('status')->unique()->all())->toBe([JobStatus::Succeeded])
+            ->and($entries->pluck('resource_id')->unique()->all())->toBe([RetentionPolicy::RESOURCE_ID]);
+    });
+
+    it('hands the rest of a clearing to a new run when its time is up', function (): void {
+        config(['hostmesh.audit.retention.run_seconds' => 0]);
+
+        foreach (range(1, 4) as $ignored) {
+            auditEventAged('100 days');
+        }
+
+        runRetentionJob(ClearAuditAddresses::class);
+
+        $entries = JobHistoryEntry::query()->get();
+
+        // 2 and 2, then a run that finds nothing left.
+        expect(DB::table('audit_events')->whereNotNull('ip_address')->count())->toBe(0)
+            ->and($entries)->toHaveCount(3)
+            ->and($entries->pluck('type')->unique()->all())->toBe([JobType::ClearAuditAddresses])
+            ->and($entries->pluck('status')->unique()->all())->toBe([JobStatus::Succeeded]);
+    });
+
+    it('starts no new run when it finished in time', function (): void {
+        foreach (range(1, 4) as $ignored) {
+            auditEventAged('25 months');
+        }
+
+        runRetentionJob(PruneAuditEvents::class);
+
+        expect(remainingAuditEvents())->toBe([])
+            ->and(JobHistoryEntry::query()->count())->toBe(1);
+    });
+
+    it('still never deletes an event younger than the floor', function (): void {
+        config([
+            'hostmesh.audit.retention.event_months' => 6,
+            'hostmesh.audit.retention.run_seconds' => 0,
+        ]);
+
+        foreach (range(1, 3) as $ignored) {
+            auditEventAged('13 months');
+        }
+        $kept = auditEventAged('12 months -1 minute');
+
+        runRetentionJob(PruneAuditEvents::class);
+
+        expect(remainingAuditEvents())->toBe([$kept])
+            ->and(JobHistoryEntry::query()->pluck('status')->unique()->all())->toBe([JobStatus::Succeeded]);
+    });
+});
+
+it('stops well inside the job timeout by default', function (): void {
+    $runSeconds = config()->integer('hostmesh.audit.retention.run_seconds');
+
+    expect(config()->integer('hostmesh.audit.retention.batch_size'))->toBe(10000)
+        ->and($runSeconds)->toBe(40)
+        ->and($runSeconds)->toBeLessThan((new PruneAuditEvents('unused'))->timeout)
+        ->and($runSeconds)->toBeLessThan((new ClearAuditAddresses('unused'))->timeout);
+});
+
+// The clearing job looks for events that still hold an address. Without an
+// index on exactly those, every batch reads past all the events cleared
+// before it (measured in issue #238: 1.2 s per batch after 820,000).
+it('indexes the events that still hold an address by their age', function (): void {
+    $definition = DB::scalar("SELECT indexdef FROM pg_indexes WHERE tablename = 'audit_events' AND indexname = 'audit_events_addresses_created_at_index'");
+
+    expect($definition)->toBe('CREATE INDEX audit_events_addresses_created_at_index ON public.audit_events USING btree (created_at) WHERE ((ip_address IS NOT NULL) OR (user_agent IS NOT NULL))');
 });
