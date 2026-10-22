@@ -10,6 +10,7 @@ use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Tests\Fixtures\OpenApi\AardvarkGroupController;
 use Tests\Fixtures\OpenApi\ThrowingRulesController;
 use Tests\Fixtures\OpenApi\UnknownTypeController;
@@ -363,4 +364,54 @@ it('documents the metadata of an audit event as an object of scalar values', fun
         'type' => 'object',
         'additionalProperties' => ['type' => ['boolean', 'integer', 'string', 'null']],
     ]);
+});
+
+/**
+ * The GET operations that answer a collection: a `data` array.
+ *
+ * @param  array<string, mixed>  $document
+ * @return array<string, array<string, mixed>>
+ */
+function listOperations(array $document): array
+{
+    $lists = [];
+
+    foreach ($document['paths'] as $path => $operations) {
+        $schema = $operations['get']['responses']['200']['content']['application/json']['schema'] ?? null;
+
+        if (($schema['properties']['data']['type'] ?? null) === 'array') {
+            $lists[$path] = $operations['get'];
+        }
+    }
+
+    return $lists;
+}
+
+// Issue #143, decision 0019: every list is cursor paginated with the same
+// parameters and the same meta, filtered by flat parameters and sorted by
+// `sort=<field>` or `sort=-<field>` from the values the endpoint offers.
+it('lists every collection the same way', function (): void {
+    $document = json_decode((string) file_get_contents(committedOpenApiPath()), true, flags: JSON_THROW_ON_ERROR);
+    $lists = listOperations($document);
+
+    expect($lists)->not->toBeEmpty();
+
+    foreach ($lists as $path => $operation) {
+        $parameters = collect($operation['parameters'] ?? [])->keyBy('name');
+        $body = $operation['responses']['200']['content']['application/json']['schema'];
+
+        expect($parameters->get('per_page')['schema'] ?? null)->toBe(['type' => 'integer', 'minimum' => 1, 'maximum' => 100], "$path: per_page")
+            ->and($parameters->get('cursor')['schema']['type'] ?? null)->toBe('string', "$path: cursor")
+            ->and($parameters->has('page'))->toBeFalse("$path: offset pages")
+            ->and($body['required'])->toBe(['data', 'links', 'meta'], "$path: body")
+            ->and($body['properties']['meta']['required'])->toBe(['path', 'per_page', 'next_cursor', 'prev_cursor'], "$path: meta");
+
+        if ($parameters->has('sort')) {
+            $reference = $parameters->get('sort')['schema']['$ref'] ?? '';
+            $values = $document['components']['schemas'][Str::afterLast($reference, '/')]['enum'] ?? [];
+
+            expect($values)->not->toBeEmpty("$path: sort values")
+                ->each->toMatch('/^-?[a-z][a-z_]*$/');
+        }
+    }
 });

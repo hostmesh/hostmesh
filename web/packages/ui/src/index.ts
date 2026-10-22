@@ -8,6 +8,7 @@ export * from '#ui/components/ui/dialog'
 export * from '#ui/components/ui/field'
 export * from '#ui/components/ui/input'
 export * from '#ui/components/ui/label'
+export * from '#ui/components/ui/native-select'
 export * from '#ui/components/ui/separator'
 export * from '#ui/components/ui/sonner'
 export * from '#ui/components/ui/table'
@@ -24,6 +25,7 @@ export {
   createDataTableColumnHelper,
   dataTableFeatures,
   type DataTableFeatures,
+  type DataTableSorting,
 } from './components/data-table/features'
 export { cn } from '#ui/lib/utils'
 // Re-exported so that apps raise toasts without depending on vue-sonner.

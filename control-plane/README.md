@@ -49,6 +49,16 @@ Run it after any change to a route, a request, a response or an API enum, and co
 
 The document is the same on every machine: the server URL is the relative `/api/v1`, the title and version are fixed in `config/scramble.php`, paths, shared responses and tags are sorted, and no path has a server of its own. Scramble's documentation pages are switched off, because the control plane serves no UI. See [decision 0006](../docs/decisions/0006-openapi-generated-with-scramble.md).
 
+### Lists
+
+Every list endpoint follows [decision 0019](../docs/decisions/0019-list-endpoints.md):
+
+- **Pages:** cursor pagination only. `per_page` (1 to 100, a default per endpoint) and `cursor`; the response has `data`, `links` and `meta` with `path`, `per_page`, `next_cursor` and `prev_cursor`. Paginate with `cursorPaginate()` and return an API Resource collection. Check a cursor's values before they reach the query, as `ListAuditEvents::cursor()` does: one that does not fit answers the first page.
+- **Filters:** flat query parameters named after the field, validated in the form request. An unknown value is a 422.
+- **Order:** `sort=<field>` or `sort=-<field>`, validated against a string-backed enum of the values the endpoint offers (`App\Application\Queries\AuditEventSort`), so the OpenAPI document lists them. End the order in a unique column.
+
+`OpenApiSpecTest.php` checks every operation that answers a `data` array for these parameters and this response.
+
 ### Operation IDs
 
 The operation ID of an endpoint is its route name, and every route under `/api/v1` has one. The typed client's operation names come from these IDs, so they are part of the contract.
@@ -138,11 +148,12 @@ Security-relevant actions are written to `audit_events` ([decision 0013](../docs
 - **Retention.** Events are deleted after 24 months and `ip_address` and `user_agent` cleared after 90 days, by two daily jobs ("Scheduled jobs" under "Jobs"). Every batch that changed anything records a `system` event on the resource `audit_log`, `audit_log.events_deleted` or `audit_log.addresses_cleared`, with `count` and `cutoff` in `metadata`, in the batch's own transaction: the log explains its own gaps.
 - **What an event holds:** `actor_type` (`administrator`, `user`, `node`, `system`) and `actor_id`, `action`, `resource` and `resource_id`, `metadata`, `ip_address`, `user_agent`, `request_id` and `created_at`. Identifiers only: never a name, an email address, a password, a secret or a recovery code. A failed login for an unknown address stores a keyed hash of the address in `metadata.email_hash`.
 - **Request ID.** Every response from an API route carries `X-Request-Id`. A request that matches no route (404, 405) has none. The same value is stored with the events of that request. CORS exposes the header, so the two apps can read it too.
-- **Reading.** `GET /api/v1/admin/audit-events`, with the permission `audit-event.view`. Names are looked up when the log is read and are null for an account that is gone.
+- **Reading.** `GET /api/v1/admin/audit-events`, with the permission `audit-event.view`: newest first, or oldest first with `sort=created_at` (decision 0019). Names are looked up when the log is read and are null for an account that is gone. The admin app shows it at `/audit`.
 
 Rules for a new audited action:
 
 - Add a case to `App\Domain\Audit\AuditAction`. A value is stored forever: never rename one.
+- After regenerating the OpenAPI document and the typed client, give the action a label in `web/apps/admin/src/views/audit/labels.ts`: the web typecheck fails until it has one.
 - Add an event in `app/Application/Events` that implements `Audited` and builds its `AuditEvent` from identifiers.
 - Dispatch it from the application command, inside the transaction that makes the change. `RecordAuditEvent` writes it at once, and its exception must roll the change back. Never dispatch from a controller, and never queue the listener: `tests/Arch/AuditTest.php` fails for both.
 - Test three things: the stored event, that it holds no personal data or secret (`Tests\Support\AuditTrail::assertHoldsNone()`), and that the action does not happen when the log cannot be written (`$this->app->instance(AuditLog::class, InMemoryAuditLog::failing())`).

@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace App\Http\Api\V1\Admin\Audit;
 
 use App\Application\Queries\AuditEventFilter;
+use App\Application\Queries\AuditEventSort;
 use App\Application\Queries\ListAuditEvents;
 use App\Domain\Audit\ActorType;
 use App\Domain\Audit\AuditAction;
@@ -36,6 +37,7 @@ final class ListAuditEventsRequest extends FormRequest
             // Compared with `from` only when there is one: on its own,
             // `after_or_equal:from` would refuse every `to`.
             'to' => ['sometimes', 'date', Rule::when($this->filled('from'), ['after_or_equal:from'])],
+            'sort' => ['sometimes', Rule::enum(AuditEventSort::class)],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
             'cursor' => ['sometimes', 'string', 'max:1024'],
         ];
@@ -52,6 +54,11 @@ final class ListAuditEventsRequest extends FormRequest
             from: $this->date('from')?->toImmutable(),
             to: $this->date('to')?->toImmutable(),
         );
+    }
+
+    public function sort(): AuditEventSort
+    {
+        return $this->enum('sort', AuditEventSort::class) ?? AuditEventSort::NewestFirst;
     }
 
     public function perPage(): int

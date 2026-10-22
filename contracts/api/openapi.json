@@ -14,7 +14,7 @@
         "/admin/audit-events": {
             "get": {
                 "operationId": "admin.audit-events.index",
-                "description": "The audit log, newest first. Filter by actor, resource, action and time; `from` and `to` are inclusive.\nA date without a time means midnight: `to=2026-10-08` leaves out the events of that day.\nPass `meta.next_cursor` as `cursor` for the next page. An event holds identifiers only: `actor.name` and\n`resource.name` are looked up now and are null when the account no longer exists.\nNeeds the `audit-event.view` permission.",
+                "description": "The audit log, newest first; `sort=created_at` lists it oldest first. Filter by actor, resource, action and\ntime; `from` and `to` are inclusive. A date without a time means midnight: `to=2026-10-08` leaves out the\nevents of that day. Pass `meta.next_cursor` as `cursor` for the next page, with the same `sort`.\nAn event holds identifiers only: `actor.name` and `resource.name` are looked up now and are null when the\naccount no longer exists.\nNeeds the `audit-event.view` permission.",
                 "summary": "List audit events",
                 "tags": [
                     "ListAuditEvents"
@@ -73,6 +73,13 @@
                         "schema": {
                             "type": "string",
                             "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "schema": {
+                            "$ref": "#/components/schemas/AuditEventSort"
                         }
                     },
                     {
@@ -2046,6 +2053,15 @@
                     "abilities"
                 ],
                 "title": "AuditEventResource"
+            },
+            "AuditEventSort": {
+                "type": "string",
+                "description": "The orders the audit log is listed in, as the `sort` parameter names them (decision 0019): a field, with a leading `-` for descending.\n",
+                "enum": [
+                    "-created_at",
+                    "created_at"
+                ],
+                "title": "AuditEventSort"
             },
             "BrandingResource": {
                 "type": "object",
