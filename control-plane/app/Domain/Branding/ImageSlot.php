@@ -18,7 +18,7 @@ enum ImageSlot: string
 
     /**
      * The raster types a slot can hold and the extension each is stored
-     * under. No SVG until there is a sanitization decision.
+     * under. No SVG (decision 0020).
      */
     public const array EXTENSIONS = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
 

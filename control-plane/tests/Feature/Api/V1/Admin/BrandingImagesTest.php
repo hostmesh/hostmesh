@@ -18,8 +18,8 @@ use Tests\Support\Browser;
 use Tests\Support\Images;
 use Tests\Support\InMemoryAuditLog;
 
-// Issue #29: logo and favicon uploads. Raster images only (no SVG until
-// there is a sanitization decision). The type is read from the bytes, the
+// Issue #29: logo and favicon uploads. Raster images only, no SVG
+// (decision 0020). The type is read from the bytes, the
 // file goes to a Laravel filesystem disk, and the client's file name and
 // content type are never used. Every change is audited (decision 0013).
 
