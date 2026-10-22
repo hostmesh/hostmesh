@@ -33,7 +33,7 @@ it('tells the client at login which step comes next', function (): void {
                     'name' => $account->name,
                     'email' => $account->email,
                     'two_factor_enabled' => $step === 'challenge',
-                    'abilities' => ['view' => true, 'update' => $origin === Browser::PORTAL, 'manage_two_factor' => true],
+                    'abilities' => ['view' => true, 'update' => $origin === Browser::PORTAL, 'manage_two_factor' => true, 'change_password' => true],
                 ],
                 'meta' => ['second_factor' => $step],
             ]);

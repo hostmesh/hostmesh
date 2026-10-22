@@ -14,7 +14,7 @@ export const account = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
   two_factor_enabled: true,
-  abilities: { view: true, update: true, manage_two_factor: true },
+  abilities: { view: true, update: true, manage_two_factor: true, change_password: true },
 } satisfies components['schemas']['UserResource']
 
 export const userBody = { data: account } satisfies UserBody

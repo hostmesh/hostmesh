@@ -24,7 +24,7 @@ use Tests\Support\Browser;
 uses(RefreshDatabase::class);
 
 // The policy's method for each key of `abilities`.
-const REPORTED = ['view' => 'view', 'update' => 'update', 'manage_two_factor' => 'manageTwoFactor'];
+const REPORTED = ['view' => 'view', 'update' => 'update', 'manage_two_factor' => 'manageTwoFactor', 'change_password' => 'changePassword'];
 
 // The endpoints each ability guards, relative to the realm's prefix. An
 // ability without an endpoint yet (`update`) is only compared with the policy.
@@ -36,6 +36,7 @@ const ENDPOINTS = [
         ['POST', '/auth/two-factor/recovery-codes'],
         ['POST', '/auth/two-factor/disable'],
     ],
+    'change_password' => [['POST', '/auth/password']],
 ];
 
 dataset('accounts', [
@@ -72,22 +73,22 @@ it('reports what the role allows', function (string $origin, string $prefix, Adm
     'owner' => [
         Browser::ADMIN, '/api/v1/admin',
         fn (): Administrator => Administrator::factory()->withTwoFactor()->withRoles(Role::Owner)->create(),
-        ['view' => true, 'update' => true, 'manage_two_factor' => true],
+        ['view' => true, 'update' => true, 'manage_two_factor' => true, 'change_password' => true],
     ],
     'read-only administrator' => [
         Browser::ADMIN, '/api/v1/admin',
         fn (): Administrator => Administrator::factory()->withTwoFactor()->withRoles(Role::ReadOnly)->create(),
-        ['view' => true, 'update' => false, 'manage_two_factor' => true],
+        ['view' => true, 'update' => false, 'manage_two_factor' => true, 'change_password' => true],
     ],
     'administrator without a role' => [
         Browser::ADMIN, '/api/v1/admin',
         fn (): Administrator => Administrator::factory()->withTwoFactor()->create(),
-        ['view' => true, 'update' => false, 'manage_two_factor' => true],
+        ['view' => true, 'update' => false, 'manage_two_factor' => true, 'change_password' => true],
     ],
     'customer' => [
         Browser::PORTAL, '/api/v1/customer',
         fn (): User => User::factory()->create(),
-        ['view' => true, 'update' => true, 'manage_two_factor' => true],
+        ['view' => true, 'update' => true, 'manage_two_factor' => true, 'change_password' => true],
     ],
 ]);
 

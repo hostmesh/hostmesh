@@ -181,6 +181,7 @@ Named limiters in `AppServiceProvider`, applied with `throttle:<name>` in `route
 |--------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | `login`      | `POST …/auth/login` of both realms                                                | 5 a minute per email and address, 20 a minute per address; each realm counts on its own |
 | `two-factor` | the challenge, `confirm`, `recovery-codes` and `disable`                          | 5 a minute per account, 20 a minute per address; each realm counts on its own           |
+| `password`   | `POST …/auth/password` of both realms                                             | 5 a minute per account, 20 a minute per address; each realm counts on its own           |
 | `branding`   | `GET /api/v1/branding` and `GET /api/v1/branding/images/{slot}`, counted together | 300 a minute per address                                                                |
 
 The `branding` limit is generous on purpose. A login page loads the branding once and an image or two, and browsers cache both. 300 a minute is about 100 uncached login pages a minute from one address, for the many people who can share one: an office, a campus, carrier-grade NAT.
@@ -272,6 +273,22 @@ The command is `app/Console/Commands/CreateAdministratorCommand.php`, thin like 
 - It writes one audit event with the system as actor: `user.created`.
 
 The command is `app/Console/Commands/CreateCustomerCommand.php`; the work is in `App\Application\Commands\CreateCustomer`.
+
+## Passwords
+
+An account changes its own password on its account screen, through `POST /api/v1/{admin,customer}/auth/password` ([decision 0023](../docs/decisions/0023-changing-and-resetting-passwords.md)):
+
+- **What it asks for:** `current_password`, `new_password`, and `code` from the authenticator where two-factor is on (always in admin). A wrong password does not spend the code.
+- **The rule:** 15 characters to 72 bytes (bcrypt reads no further), no rule about which characters, and none that [Pwned Passwords](https://haveibeenpwned.com/Passwords) knows. The check sends the first five characters of the password's SHA-1 to `api.pwnedpasswords.com`, waits at most 5 seconds and accepts the password when the service cannot be reached. `HOSTMESH_PASSWORD_BREACH_CHECK=false` switches it off where the control plane has no outbound access.
+- **Sessions:** the account's other sessions end; the one that changed the password goes on.
+- **Audit:** `auth.password_changed`, by the account itself.
+
+A lost password is reset by an operator with shell access, until an emailed link comes with the mail work of Slice 6 (#260):
+
+    php artisan administrator:reset-password <email>
+    php artisan customer:reset-password <email>
+
+A new password (40 random characters) is printed once and is in no log or audit event. The account's sessions end, two-factor stays as it was, and `administrator.password_reset` or `user.password_reset` is recorded with the system as actor. An address the realm does not have is refused. The work is in `App\Application\Commands\ResetPassword`; changing is `App\Application\Commands\ChangePassword`.
 
 ## Resetting an administrator's second factor
 

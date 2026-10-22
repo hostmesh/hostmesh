@@ -24,7 +24,7 @@ it('logs in and returns the account', function (string $origin): void {
                 'email' => $account->email,
                 'two_factor_enabled' => false,
                 // No role: an administrator may not update administrators.
-                'abilities' => ['view' => true, 'update' => $origin === Browser::PORTAL, 'manage_two_factor' => true],
+                'abilities' => ['view' => true, 'update' => $origin === Browser::PORTAL, 'manage_two_factor' => true, 'change_password' => true],
             ],
             'meta' => ['second_factor' => $origin === Browser::ADMIN ? 'enrollment' : 'none'],
         ]);
@@ -42,7 +42,7 @@ it('reports the current user', function (string $origin, string $prefix): void {
             'name' => $account->name,
             'email' => $account->email,
             'two_factor_enabled' => $origin === Browser::ADMIN,
-            'abilities' => ['view' => true, 'update' => $origin === Browser::PORTAL, 'manage_two_factor' => true],
+            'abilities' => ['view' => true, 'update' => $origin === Browser::PORTAL, 'manage_two_factor' => true, 'change_password' => true],
         ]]);
 })->with('realms');
 

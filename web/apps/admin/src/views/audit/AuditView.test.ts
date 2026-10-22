@@ -274,7 +274,7 @@ describe('AuditView', () => {
 
       const options = wrapper.findAll('select#audit-action option')
       expect(options[0]?.text()).toBe('Any action')
-      expect(options).toHaveLength(21)
+      expect(options).toHaveLength(24)
       expect(options.find((option) => option.attributes('value') === 'audit_log.events_deleted')?.text()).toBe(
         'Audit events deleted',
       )

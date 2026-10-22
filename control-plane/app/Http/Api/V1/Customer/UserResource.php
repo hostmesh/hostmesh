@@ -16,7 +16,7 @@ final class UserResource extends JsonResource
 {
     use ReportsAbilities;
 
-    /** @return array{id: string, name: string, email: string, two_factor_enabled: bool, abilities: array{view: bool, update: bool, manage_two_factor: bool}} */
+    /** @return array{id: string, name: string, email: string, two_factor_enabled: bool, abilities: array{view: bool, update: bool, manage_two_factor: bool, change_password: bool}} */
     public function toArray(Request $request): array
     {
         return [
@@ -28,6 +28,7 @@ final class UserResource extends JsonResource
                 'view' => $this->allows($request, 'view'),
                 'update' => $this->allows($request, 'update'),
                 'manage_two_factor' => $this->allows($request, 'manageTwoFactor'),
+                'change_password' => $this->allows($request, 'changePassword'),
             ],
         ];
     }

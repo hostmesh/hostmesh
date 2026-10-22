@@ -21,11 +21,14 @@ enum AuditAction: string
     case TwoFactorChallengeFailed = 'auth.two_factor.challenge_failed';
     case RecoveryCodeUsed = 'auth.two_factor.recovery_code_used';
     case RecoveryCodesRegenerated = 'auth.two_factor.recovery_codes_regenerated';
+    case PasswordChanged = 'auth.password_changed';
     case AdministratorCreated = 'administrator.created';
     case AdministratorRoleAssigned = 'administrator.role_assigned';
     case AdministratorRoleRevoked = 'administrator.role_revoked';
     case AdministratorTwoFactorReset = 'administrator.two_factor_reset';
+    case AdministratorPasswordReset = 'administrator.password_reset';
     case UserCreated = 'user.created';
+    case UserPasswordReset = 'user.password_reset';
     case BrandingUpdated = 'branding.updated';
     case BrandingImageReplaced = 'branding.image_replaced';
     case BrandingImageRemoved = 'branding.image_removed';

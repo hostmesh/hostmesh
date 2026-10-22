@@ -36,4 +36,10 @@ final class UserPolicy
     {
         return $actor instanceof User && $actor->is($user);
     }
+
+    /** One's own password (decision 0023). */
+    public function changePassword(Administrator|User $actor, User $user): bool
+    {
+        return $actor instanceof User && $actor->is($user);
+    }
 }

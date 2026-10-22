@@ -5,6 +5,7 @@ import { ColorModeSetting } from '@hostmesh/ui'
 import AppNav from '../../components/AppNav.vue'
 import AppLayout from '../../layouts/AppLayout.vue'
 import { useAuthStore } from '../../stores/auth'
+import ChangePasswordForm from './ChangePasswordForm.vue'
 import TwoFactorSection from './TwoFactorSection.vue'
 
 // Issue #139: the customer's own account. The router lets only a complete
@@ -60,6 +61,19 @@ const auth = useAuthStore()
           Preferences
         </h2>
         <ColorModeSetting />
+      </section>
+      <section
+        v-if="auth.user?.abilities.change_password"
+        aria-labelledby="password-heading"
+        class="flex flex-col gap-4"
+      >
+        <h2
+          id="password-heading"
+          class="text-lg font-semibold"
+        >
+          Password
+        </h2>
+        <ChangePasswordForm :needs-code="auth.user.two_factor_enabled" />
       </section>
       <TwoFactorSection v-if="auth.user?.abilities.manage_two_factor" />
     </div>

@@ -254,8 +254,9 @@ it('documents 429 and Retry-After on every throttled route', function (): void {
     $paths = generateOpenApiDocument()['paths'];
     $operations = throttledOperations();
 
-    // Login and four two-factor operations in each realm, and the two public branding routes.
-    expect($operations)->toHaveCount(12);
+    // Login, four two-factor operations and the password change in each
+    // realm, and the two public branding routes.
+    expect($operations)->toHaveCount(14);
 
     foreach ($operations as [$path, $method]) {
         $response = $paths[$path][$method]['responses']['429'] ?? null;
