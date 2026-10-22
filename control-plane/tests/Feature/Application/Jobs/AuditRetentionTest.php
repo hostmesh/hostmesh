@@ -8,6 +8,8 @@ use App\Application\Commands\DispatchOneShotJob;
 use App\Application\Jobs\ClearAuditAddresses;
 use App\Application\Jobs\OneShotJob;
 use App\Application\Jobs\PruneAuditEvents;
+use App\Application\Services\AuditRetention;
+use App\Domain\Audit\AuditLog;
 use App\Domain\Audit\RetentionPolicy;
 use App\Domain\Provisioning\JobHistoryEntry;
 use App\Domain\Provisioning\JobStatus;
@@ -16,6 +18,8 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Tests\Support\AuditTrail;
+use Tests\Support\InMemoryAuditLog;
 
 // Spec section 21 and decision 0013: events are kept for 24 months and
 // ip_address and user_agent for 90 days, applied by scheduled jobs that
@@ -49,11 +53,16 @@ function auditEventAged(string $age): string
     return $id;
 }
 
-/** @return list<string> */
+/**
+ * The events a test wrote, without the ones the retention jobs record about
+ * themselves.
+ *
+ * @return list<string>
+ */
 function remainingAuditEvents(): array
 {
     /** @var list<string> */
-    return DB::table('audit_events')->orderBy('id')->pluck('id')->all();
+    return DB::table('audit_events')->where('resource', '!=', RetentionPolicy::RESOURCE_TYPE)->orderBy('id')->pluck('id')->all();
 }
 
 /** @param  class-string<OneShotJob>  $job */
@@ -225,7 +234,8 @@ describe('the schedule', function (): void {
 describe('in batches', function (): void {
     /**
      * The statements of a kind that run inside $work, each with the
-     * transaction level it ran at.
+     * transaction level it ran at. Under RefreshDatabase the test itself
+     * is one level.
      *
      * @return list<int>
      */
@@ -248,7 +258,7 @@ describe('in batches', function (): void {
         config(['hostmesh.audit.retention.batch_size' => 2]);
     });
 
-    it('deletes in batches of the configured size, none inside a transaction of its own making', function (): void {
+    it('deletes in batches of the configured size, each in a transaction of its own', function (): void {
         foreach (range(1, 5) as $ignored) {
             auditEventAged('25 months');
         }
@@ -258,12 +268,12 @@ describe('in batches', function (): void {
         $statements = retentionStatements('DELETE', fn () => runRetentionJob(PruneAuditEvents::class));
 
         // 2, 2 and 1: a short batch means nothing is left.
-        expect($statements)->toBe([$level, $level, $level])
+        expect($statements)->toBe([$level + 1, $level + 1, $level + 1])
             ->and(remainingAuditEvents())->toBe([$kept])
             ->and(JobHistoryEntry::query()->count())->toBe(1);
     });
 
-    it('clears in batches of the configured size, none inside a transaction of its own making', function (): void {
+    it('clears in batches of the configured size, each in a transaction of its own', function (): void {
         foreach (range(1, 5) as $ignored) {
             auditEventAged('100 days');
         }
@@ -272,7 +282,7 @@ describe('in batches', function (): void {
 
         $statements = retentionStatements('UPDATE audit_events', fn () => runRetentionJob(ClearAuditAddresses::class));
 
-        expect($statements)->toBe([$level, $level, $level])
+        expect($statements)->toBe([$level + 1, $level + 1, $level + 1])
             ->and(DB::table('audit_events')->whereNotNull('ip_address')->pluck('id')->all())->toBe([$kept])
             ->and(JobHistoryEntry::query()->count())->toBe(1);
     });
@@ -360,4 +370,102 @@ it('indexes the events that still hold an address by their age', function (): vo
     $definition = DB::scalar("SELECT indexdef FROM pg_indexes WHERE tablename = 'audit_events' AND indexname = 'audit_events_addresses_created_at_index'");
 
     expect($definition)->toBe('CREATE INDEX audit_events_addresses_created_at_index ON public.audit_events USING btree (created_at) WHERE ((ip_address IS NOT NULL) OR (user_agent IS NOT NULL))');
+});
+
+// Issue #239: the audit log explains its own gaps. Every batch that deleted
+// or cleared anything records one `system` event in its own transaction
+// (decision 0013: a change and its event commit together), with how many
+// events it changed and the cutoff. No address, no personal data.
+describe('its own audit events', function (): void {
+    /** PostgreSQL's now() less an interval, as the event records it. */
+    function retentionCutoff(string $interval): string
+    {
+        return (string) DB::scalar(
+            "SELECT to_char((now() - interval '$interval') AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')",
+        );
+    }
+
+    /** @return list<stdClass> */
+    function retentionEvents(): array
+    {
+        return array_values(AuditTrail::all()->where('resource', RetentionPolicy::RESOURCE_TYPE)->all());
+    }
+
+    it('records a deletion as a system event on the audit log', function (): void {
+        auditEventAged('25 months');
+        auditEventAged('26 months');
+        auditEventAged('1 month');
+
+        runRetentionJob(PruneAuditEvents::class);
+
+        $events = retentionEvents();
+
+        expect($events)->toHaveCount(1)
+            ->and($events[0]->action)->toBe('audit_log.events_deleted')
+            ->and($events[0]->actor_type)->toBe('system')
+            ->and($events[0]->actor_id)->toBeNull()
+            ->and($events[0]->resource_id)->toBe(RetentionPolicy::RESOURCE_ID)
+            ->and(AuditTrail::metadata($events[0]))->toBe(['count' => 2, 'cutoff' => retentionCutoff('24 months')])
+            ->and($events[0]->ip_address)->toBeNull()
+            ->and($events[0]->user_agent)->toBeNull()
+            ->and($events[0]->request_id)->toBeNull();
+    });
+
+    it('records a clearing as a system event on the audit log', function (): void {
+        auditEventAged('100 days');
+        auditEventAged('1 day');
+
+        runRetentionJob(ClearAuditAddresses::class);
+
+        $events = retentionEvents();
+
+        expect($events)->toHaveCount(1)
+            ->and($events[0]->action)->toBe('audit_log.addresses_cleared')
+            ->and($events[0]->actor_type)->toBe('system')
+            ->and($events[0]->resource_id)->toBe(RetentionPolicy::RESOURCE_ID)
+            ->and(AuditTrail::metadata($events[0]))->toBe(['count' => 1, 'cutoff' => retentionCutoff('90 days')])
+            ->and($events[0]->ip_address)->toBeNull()
+            ->and($events[0]->user_agent)->toBeNull();
+    });
+
+    it('records one event per batch', function (): void {
+        config(['hostmesh.audit.retention.batch_size' => 2]);
+
+        foreach (range(1, 5) as $ignored) {
+            auditEventAged('25 months');
+        }
+
+        runRetentionJob(PruneAuditEvents::class);
+
+        $counts = array_map(fn (stdClass $event): mixed => AuditTrail::metadata($event)['count'], retentionEvents());
+
+        expect($counts)->toBe([2, 2, 1]);
+    });
+
+    it('records nothing when there was nothing to do', function (): void {
+        auditEventAged('1 day');
+
+        runRetentionJob(PruneAuditEvents::class);
+        runRetentionJob(ClearAuditAddresses::class);
+
+        expect(retentionEvents())->toBe([]);
+    });
+
+    it('deletes nothing when its event cannot be written', function (): void {
+        $expired = auditEventAged('25 months');
+        $this->app->instance(AuditLog::class, InMemoryAuditLog::failing());
+
+        expect(fn () => app(AuditRetention::class)->deleteExpiredEvents())
+            ->toThrow(RuntimeException::class, 'The audit log cannot be written.')
+            ->and(remainingAuditEvents())->toBe([$expired]);
+    });
+
+    it('clears nothing when its event cannot be written', function (): void {
+        $expired = auditEventAged('100 days');
+        $this->app->instance(AuditLog::class, InMemoryAuditLog::failing());
+
+        expect(fn () => app(AuditRetention::class)->clearExpiredAddresses())
+            ->toThrow(RuntimeException::class, 'The audit log cannot be written.')
+            ->and(DB::table('audit_events')->where('id', $expired)->value('ip_address'))->toBe('203.0.113.7');
+    });
 });
