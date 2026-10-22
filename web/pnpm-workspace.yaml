@@ -16,33 +16,33 @@ overrides:
 # (decision 0007). Packages refer to an entry with "catalog:".
 catalog:
   "@eslint/js": ^10.0.1
-  "@lucide/vue": ^1.55.0
+  "@lucide/vue": ^1.59.0
   # Exact, and the same as `playwright` below: both drive the Chromium build
   # the node image installs (decisions 0009 and 0016).
   "@playwright/test": 1.64.0
   "@standard-schema/spec": ^1.1.0
   "@tailwindcss/vite": ^4.3.3
-  "@tanstack/vue-table": ^9.2.8
+  "@tanstack/vue-table": ^9.3.1
   "@types/node": ^24.19.2
   "@vitejs/plugin-vue": ^6.0.10
-  "@vitest/browser-playwright": ^5.0.3
+  "@vitest/browser-playwright": ^5.0.5
   # Exact, and equal to the version of vitest in the lockfile: the provider
   # names vitest as an exact peer. Raise the two together.
-  "@vitest/coverage-v8": 5.0.3
+  "@vitest/coverage-v8": 5.0.5
   "@vue/test-utils": ^2.5.1
   # 14.x, the major reka-ui depends on, so the bundle holds one copy
   # (decision 0009). Raise it when reka-ui moves to 15.
   "@vueuse/core": ^14.4.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
-  eslint: ^10.12.0
+  eslint: ^10.13.0
   eslint-plugin-vue: ^10.11.1
   globals: ^17.12.0
-  jsdom: ^30.1.2
+  jsdom: ^30.1.3
   openapi-fetch: ^0.17.0
   openapi-typescript: ^7.13.0
   otpauth: ^9.5.2
-  pinia: ^4.0.3
+  pinia: ^4.1.0
   # Exact: each Playwright release drives one Chromium build, and the node
   # image installs the build of this version (decision 0009).
   playwright: 1.64.0
@@ -52,20 +52,20 @@ catalog:
   tw-animate-css: ^1.4.0
   # 6.0.x only: typescript-eslint accepts <6.1.0 and vue-tsc fails on 7.
   typescript: ~6.0.3
-  typescript-eslint: ^8.71.1
+  typescript-eslint: ^8.71.2
   # QR code of the two-factor provisioning URI (decision 0011): the matrix
   # only, the admin app draws it.
   uqr: ^0.1.3
   vee-validate: ^4.15.1
   vite: ^8.3.4
-  vitest: ^5.0.3
+  vitest: ^5.0.5
   vitest-browser-vue: ^3.1.0
-  vue: ^3.5.43
+  vue: ^3.5.44
   vue-eslint-parser: ^10.4.0
   vue-router: ^5.4.0
   vue-sonner: ^2.0.9
   vue-tsc: ^3.3.11
-  zod: ^4.6.5
+  zod: ^4.6.7
 # openapi-typescript 7.13.0 declares typescript ^5.x and has no release for
 # TypeScript 6 yet. It generates the same output on 6.0 (decision 0007).
 # Remove this when it declares TypeScript 6.
