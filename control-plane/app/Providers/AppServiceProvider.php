@@ -116,6 +116,8 @@ class AppServiceProvider extends ServiceProvider
             return new RetentionPolicy(
                 $config->integer('hostmesh.audit.retention.event_months'),
                 $config->integer('hostmesh.audit.retention.address_days'),
+                $config->integer('hostmesh.audit.retention.batch_size'),
+                $config->integer('hostmesh.audit.retention.run_seconds'),
             );
         });
     }

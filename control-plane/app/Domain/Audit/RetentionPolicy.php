@@ -11,7 +11,9 @@ use InvalidArgumentException;
 /**
  * How long the audit log keeps what (spec section 21, decision 0013):
  * events for `eventMonths`, `ip_address` and `user_agent` for
- * `addressDays`. Both are configurable defaults.
+ * `addressDays`. Both are configurable defaults. The jobs that apply it
+ * change at most `batchSize` events per statement and start no new batch
+ * after `runSeconds` (issue #238).
  */
 final readonly class RetentionPolicy
 {
@@ -36,13 +38,25 @@ final readonly class RetentionPolicy
     /**
      * @param  int  $eventMonths  raised to the floor when it is shorter
      * @param  int  $addressDays  at least 1
+     * @param  int  $batchSize  events per statement, at least 1
+     * @param  int  $runSeconds  after this, a run starts no new batch; 0 is one batch per run
      */
     public function __construct(
         int $eventMonths,
         public int $addressDays,
+        public int $batchSize,
+        public int $runSeconds,
     ) {
         if ($addressDays < 1) {
             throw new InvalidArgumentException('Addresses must be kept for at least 1 day.');
+        }
+
+        if ($batchSize < 1) {
+            throw new InvalidArgumentException('A batch must hold at least 1 event.');
+        }
+
+        if ($runSeconds < 0) {
+            throw new InvalidArgumentException('The run time cannot be negative.');
         }
 
         $this->eventMonths = max(self::FLOOR_MONTHS, $eventMonths);

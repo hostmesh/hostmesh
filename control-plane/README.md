@@ -134,6 +134,7 @@ Rules for a new resource:
 Security-relevant actions are written to `audit_events` ([decision 0013](../docs/decisions/0013-audit-logging-approach.md)). It is a plain table: it gives no tamper evidence against someone who controls the database.
 
 - **Append-only.** Triggers refuse `UPDATE`, `DELETE` and `TRUNCATE`. Two exceptions are built in: `ip_address` and `user_agent` can be set to null, and an event older than 12 months can be deleted.
+- **Indexes:** on actor, on resource, on `created_at`, and on `created_at` of the events that still hold an address (for the clearing job).
 - **Retention.** Events are deleted after 24 months and `ip_address` and `user_agent` cleared after 90 days, by two daily jobs ("Scheduled jobs" under "Jobs").
 - **What an event holds:** `actor_type` (`administrator`, `user`, `node`, `system`) and `actor_id`, `action`, `resource` and `resource_id`, `metadata`, `ip_address`, `user_agent`, `request_id` and `created_at`. Identifiers only: never a name, an email address, a password, a secret or a recovery code. A failed login for an unknown address stores a keyed hash of the address in `metadata.email_hash`.
 - **Request ID.** Every response from an API route carries `X-Request-Id`. A request that matches no route (404, 405) has none. The same value is stored with the events of that request. CORS exposes the header, so the two apps can read it too.
@@ -226,7 +227,9 @@ Scheduled tasks are defined in `withSchedule` in `bootstrap/app.php`. A task dis
 | `prune_audit_events`     | daily, 03:00 UTC | Deletes audit events older than `HOSTMESH_AUDIT_EVENT_RETENTION_MONTHS` (default 24). Fewer than 12 count as 12, the floor the database trigger enforces |
 | `clear_audit_addresses`  | daily, 03:00 UTC | Clears `ip_address` and `user_agent` of audit events older than `HOSTMESH_AUDIT_ADDRESS_RETENTION_DAYS` (default 90, at least 1)                         |
 
-Both read `audit.retention` in `config/hostmesh.php` and cut off at PostgreSQL's `now()`, the clock the trigger checks. The periods are engineering defaults (decision 0013): a data-protection adviser should confirm them before the beta gate.
+Both read `audit.retention` in `config/hostmesh.php` and cut off at PostgreSQL's `now()`, taken once at the start of a run, the clock the trigger checks. The periods are engineering defaults (decision 0013): a data-protection adviser should confirm them before the beta gate.
+
+They work in batches, oldest first: each batch is one statement and its own transaction, of at most `HOSTMESH_AUDIT_RETENTION_BATCH_SIZE` events (default 10,000). A run starts no new batch after `HOSTMESH_AUDIT_RETENTION_RUN_SECONDS` (default 40, well below a job's `timeout` of 60) and then dispatches a new run, with a row of its own, for the rest. A long backlog therefore shows as a chain of `succeeded` rows. Measured on 4 million events (issue #238), a run deletes about 6 million events or clears about 500,000. Clearing finds its events through the partial index `audit_events_addresses_created_at_index`; keep the condition in `AuditRetention` the same as the index's.
 
 ## Testing
 
