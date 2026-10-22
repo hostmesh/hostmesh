@@ -212,11 +212,10 @@ docker compose exec php php artisan administrator:create owner@hostmesh.test --n
 
 The role is `owner` unless `--role=read-only` is given. The first admin login leads to the two-factor setup: scan the QR code with any authenticator app.
 
-No command creates a customer yet. Create one with tinker; the factory sets the password `correct-password`. `XDG_CONFIG_HOME` gives tinker a directory it can write its configuration to: the `php` service runs as your user, which has no home directory in the container, and tinker stops without one.
+Create a customer the same way. The password is generated and shown once too; log in at https://app.hostmesh.test. Two-factor is off until the customer turns it on on the account screen.
 
 ```bash
-docker compose exec -e XDG_CONFIG_HOME=/tmp php php artisan tinker --execute='
-App\Domain\Identity\User::factory()->create(["name" => "Customer", "email" => "customer@hostmesh.test"]);'
+docker compose exec php php artisan customer:create customer@hostmesh.test --name="Customer"
 ```
 
 ## Troubleshooting

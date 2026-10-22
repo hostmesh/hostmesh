@@ -21,6 +21,7 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   'administrator.role_assigned': 'Role assigned',
   'administrator.role_revoked': 'Role revoked',
   'administrator.two_factor_reset': 'Two-factor reset',
+  'user.created': 'Customer created',
   'branding.updated': 'Branding updated',
   'branding.image_replaced': 'Branding image replaced',
   'branding.image_removed': 'Branding image removed',
