@@ -30,6 +30,7 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`: the package re-ex
 | `src/components/qr-code/`    | `QrCode`: a QR code as an inline SVG, in the scannable pair of tokens. Used by both apps for two-factor enrollment. |
 | `src/lib/utils.ts`           | `cn()`, from shadcn-vue.                                                                                            |
 | `src/composables/`           | `useColorMode()`.                                                                                                   |
+| `src/vite/`                  | `colorModeEarly()`, the Vite plugin of the early color-mode script (`@hostmesh/ui/vite`). Runs in Node.             |
 | `src/test/`                  | The test stylesheet with its token fixtures, and the tests and samples of the CLI's components.                     |
 
 Inside the package, CLI code is imported as `#ui/components/ui/<name>`, `#ui/lib/<name>` and `#ui/composables/<name>`. These are Node subpath imports, declared under `imports` in `package.json`: one entry for each directory the CLI writes to. The `paths` of `tsconfig.json` are for the CLI and are wider (`#ui/*`), so a path outside those directories typechecks and then fails in Vite; add it to `imports` first.
@@ -81,6 +82,16 @@ const { preference, mode } = useColorMode()
 ```
 
 `preference` is `'auto'`, `'light'` or `'dark'`. `'auto'`, the default, follows the system setting, also when it changes. Setting it to `'light'` or `'dark'` stores the choice in `localStorage` under `hostmesh-color-mode`. `mode` is what is applied.
+
+The app's bundle runs after the page is parsed, so on its own a dark system would see the light page first. The Vite plugin `colorModeEarly()` from `@hostmesh/ui/vite` prevents that ([decision 0021](../../../docs/decisions/0021-early-color-mode-script.md)): it loads a small classic script in `<head>` that applies the same mode before the first paint. The script is a file from `'self'` (`/assets/color-mode-<hash>.js`), so the Content Security Policy needs no change. Both apps add it in `vite.config.ts`:
+
+```ts
+import { colorModeEarly } from '@hostmesh/ui/vite'
+
+export default defineConfig({ plugins: [vue(), tailwindcss(), colorModeEarly()] })
+```
+
+When `useColorMode()` changes how it stores or applies the mode, change `src/vite/color-mode.ts` with it.
 
 ## Data tables
 
