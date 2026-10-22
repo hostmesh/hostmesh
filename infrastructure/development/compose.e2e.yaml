@@ -18,6 +18,8 @@ services:
 
   worker: *e2e-application
 
+  scheduler: *e2e-application
+
   caddy:
     volumes:
       - ./Caddyfile.e2e:/etc/caddy/Caddyfile:ro

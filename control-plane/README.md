@@ -134,6 +134,7 @@ Rules for a new resource:
 Security-relevant actions are written to `audit_events` ([decision 0013](../docs/decisions/0013-audit-logging-approach.md)). It is a plain table: it gives no tamper evidence against someone who controls the database.
 
 - **Append-only.** Triggers refuse `UPDATE`, `DELETE` and `TRUNCATE`. Two exceptions are built in: `ip_address` and `user_agent` can be set to null, and an event older than 12 months can be deleted.
+- **Retention.** Events are deleted after 24 months and `ip_address` and `user_agent` cleared after 90 days, by two daily jobs ("Scheduled jobs" under "Jobs").
 - **What an event holds:** `actor_type` (`administrator`, `user`, `node`, `system`) and `actor_id`, `action`, `resource` and `resource_id`, `metadata`, `ip_address`, `user_agent`, `request_id` and `created_at`. Identifiers only: never a name, an email address, a password, a secret or a recovery code. A failed login for an unknown address stores a keyed hash of the address in `metadata.email_hash`.
 - **Request ID.** Every response from an API route carries `X-Request-Id`. A request that matches no route (404, 405) has none. The same value is stored with the events of that request. CORS exposes the header, so the two apps can read it too.
 - **Reading.** `GET /api/v1/admin/audit-events`, with the permission `audit-event.view`. Names are looked up when the log is read and are null for an account that is gone.
@@ -211,6 +212,21 @@ Rules for a new one-shot job:
 - Never put a secret in a `JobFailure` message. It is stored and shown to administrators. Classify the failures you expect: of any other exception the row keeps the class name only.
 - Dispatch it through `App\Application\Commands\DispatchOneShotJob`, inside the transaction that asks for it. Never call `dispatch()` on the job yourself: it would run without a row.
 - Test it on the real Redis queue with `Tests\Support\QueueRunner`, and move time with `$this->travel()`.
+
+### Scheduled jobs
+
+Scheduled tasks are defined in `withSchedule` in `bootstrap/app.php`. A task dispatches a one-shot job through `DispatchOneShotJob` and does no work itself, so every run leaves its row in `job_history`.
+
+- **Production:** run the scheduler once per installation, either `php artisan schedule:run` from cron every minute (`* * * * * cd /path/to/control-plane && php artisan schedule:run >> /dev/null 2>&1`) or `php artisan schedule:work` as a supervised process. Development runs it in the `scheduler` service (`infrastructure/development/README.md`).
+- **No overlap guard and no single-server lock:** both are cache locks (spec section 24). A scheduled job must be safe to run twice, as every job must be.
+- **A job that acts on no single resource** names what it acts on with a stable `resource_type` and a fixed UUID, kept as constants next to the domain concept (decision 0014, amendment of 2026-10-22).
+
+| Job                      | When             | What it does                                                                                                                                               |
+|--------------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `prune_audit_events`     | daily, 03:00 UTC | Deletes audit events older than `HOSTMESH_AUDIT_EVENT_RETENTION_MONTHS` (default 24). Fewer than 12 count as 12, the floor the database trigger enforces |
+| `clear_audit_addresses`  | daily, 03:00 UTC | Clears `ip_address` and `user_agent` of audit events older than `HOSTMESH_AUDIT_ADDRESS_RETENTION_DAYS` (default 90, at least 1)                         |
+
+Both read `audit.retention` in `config/hostmesh.php` and cut off at PostgreSQL's `now()`, the clock the trigger checks. The periods are engineering defaults (decision 0013): a data-protection adviser should confirm them before the beta gate.
 
 ## Testing
 

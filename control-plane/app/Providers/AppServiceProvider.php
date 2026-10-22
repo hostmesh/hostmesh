@@ -15,6 +15,7 @@ use App\Console\Smoke\QueueCommand;
 use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Audit\Policies\AuditEventPolicy;
+use App\Domain\Audit\RetentionPolicy;
 use App\Domain\Branding\BrandingRecord;
 use App\Domain\Branding\Policies\BrandingPolicy;
 use App\Domain\Identity\Administrator;
@@ -106,6 +107,17 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(Jitter::class, RandomJitter::class);
+
+        // Spec section 21: both periods are configurable defaults. Built on
+        // each use, like the retry policy.
+        $this->app->bind(RetentionPolicy::class, function (Application $app): RetentionPolicy {
+            $config = $app->make(Repository::class);
+
+            return new RetentionPolicy(
+                $config->integer('hostmesh.audit.retention.event_months'),
+                $config->integer('hostmesh.audit.retention.address_days'),
+            );
+        });
     }
 
     /**

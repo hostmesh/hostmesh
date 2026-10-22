@@ -3,9 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0 AND MIT
 // Derived from the Laravel application skeleton (laravel/laravel, MIT).
 
+use App\Application\Commands\DispatchOneShotJob;
+use App\Application\Jobs\ClearAuditAddresses;
+use App\Application\Jobs\PruneAuditEvents;
+use App\Domain\Audit\RetentionPolicy;
 use App\Http\Middleware\CaptureRequestContext;
 use App\Http\Middleware\RequireSecondFactor;
 use App\Http\Middleware\UseSessionRealm;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -40,6 +45,19 @@ return Application::configure(basePath: dirname(__DIR__))
             before: SubstituteBindings::class,
             prepend: RequireSecondFactor::class,
         );
+    })
+    ->withSchedule(function (Schedule $schedule): void {
+        // Spec section 21: the audit log's retention, daily. Each run goes
+        // through the job infrastructure and leaves a row in job_history.
+        // Not limited to one server: that is a cache lock (spec section
+        // 24). Two schedulers would run a job twice, which changes nothing.
+        foreach ([PruneAuditEvents::class, ClearAuditAddresses::class] as $job) {
+            $schedule->call(fn (DispatchOneShotJob $dispatch) => $dispatch->handle(
+                $job,
+                RetentionPolicy::RESOURCE_TYPE,
+                RetentionPolicy::RESOURCE_ID,
+            ))->name($job::type()->value)->dailyAt('03:00');
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

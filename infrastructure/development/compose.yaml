@@ -90,6 +90,32 @@ services:
       redis:
         condition: service_healthy
 
+  # Runs scheduled tasks (bootstrap/app.php in the control plane), such as
+  # the audit log's retention. schedule:work starts schedule:run in a fresh
+  # PHP process every minute, so a code change needs no restart. A task
+  # dispatches a job to the worker; it does no work here.
+  scheduler:
+    build:
+      context: ./php
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    init: true
+    # A fresh checkout has neither vendor/ nor .env until `make install`.
+    command:
+      - sh
+      - -c
+      - >-
+        until [ -f vendor/autoload.php ] && [ -f .env ]; do sleep 2; done;
+        exec php artisan schedule:work
+    restart: unless-stopped
+    volumes:
+      - ../../control-plane:/var/www/html
+      - ../../contracts:/var/www/contracts
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   node:
     build:
       context: ./node
