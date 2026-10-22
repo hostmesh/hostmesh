@@ -51,3 +51,10 @@ Checked on 2026-10-08 against the installed `laravel/framework` 13.34.0:
 - `waiting` has no deadline here. A job that waits forever is rechecked forever. The first real waiting job (domain verification, section 10) brings its own deadline.
 - Nothing calls `retry_reconcile` yet. The admin endpoint and its audit event come with the resources it acts on.
 - Cost of changing our mind: low. The policy is one value object and the outcome handling is one method.
+
+## Amendment, 2026-10-22 (issue #147)
+
+Found while implementing the audit log's retention jobs. Approved by the owner on 2026-10-22.
+
+- **A job that acts on no single resource** still fills `resource_type` and `resource_id`, which stay required. It names what it acts on with a short stable type and a fixed UUID, kept as constants next to the domain concept, as the branding's only row already does for its audit events. The audit log's retention jobs (`prune_audit_events`, `clear_audit_addresses`) use `resource_type = 'audit_log'` and `App\Domain\Audit\RetentionPolicy::RESOURCE_ID`. A fixed ID, once used, is stored in rows that are kept: never change one.
+- **Scheduled jobs** are dispatched by the Laravel scheduler (`withSchedule` in `bootstrap/app.php`) through `DispatchOneShotJob`, so each run has its row. A scheduled task never does the work itself. The scheduler is not limited to one server and has no overlap guard, because both are cache locks; a scheduled job must be safe to run twice.

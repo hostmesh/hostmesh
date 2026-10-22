@@ -9,7 +9,7 @@ One command starts the services Hostmesh needs for local development, on the hos
 | `api.hostmesh.test`   | Laravel API         | The control plane               |
 | `agent.hostmesh.test` | Agent mTLS endpoint | Placeholder                     |
 
-The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane, a queue worker on the same image and a Node 24 service for the web workspace.
+The stack is a Docker Compose project with PostgreSQL 18, Redis 8, Caddy 2, a PHP 8.5 service for the control plane, a queue worker and a scheduler on the same image, and a Node 24 service for the web workspace.
 Caddy terminates HTTPS with certificates from its own local certificate authority (CA) and proxies `api.hostmesh.test` to PHP-FPM.
 A Node 24 service runs the commands of the web workspace (see decisions [0003](../../docs/decisions/0003-development-runtimes-in-containers.md) and [0007](../../docs/decisions/0007-node-24-pnpm-and-typescript-6-for-the-web-workspace.md)).
 Two test doubles run beside them: Pebble, an ACME test server, and its challenge test server, a mock DNS server (see "Test doubles").
@@ -43,18 +43,18 @@ The smoke test must end with `All checks passed`. Then open <https://admin.hostm
 
 Run them as `make -C infrastructure/development <target>`, or as `make <target>` from this directory.
 
-| Target    | What it does                                                                                                                                                                                                                                                                                                                  |
-|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `up`      | Creates `.env` from `.env.example` if it is missing, builds the images whose Dockerfile changed, starts the stack and waits until every service is healthy and reloads Caddy's configuration, so that a changed `Caddyfile` takes effect.                                                                                     |
-| `doubles` | Starts only `pebble` and `challtestsrv`, the ACME and DNS test doubles. Enough for `make -C agent test-doubles`.                                                                                                                                                                                                              |
-| `e2e-up`  | Builds both apps and switches the stack to end-to-end mode. See [End-to-end mode](#end-to-end-mode). `up` switches back.                                                                                                                                                                                                      |
-| `e2e`     | Seeds the end-to-end database and runs the Playwright suite. Needs `e2e-up` first. `ARGS="…"` is passed to Playwright.                                                                                                                                                                                                        |
-| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                                                                                                                          |
-| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                                                                                                                               |
-| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile and restarts the `node` service so that it serves both apps. Safe to repeat.                                             |
-| `smoke`   | Checks PostgreSQL, Redis, the app and agent hostnames over HTTPS, the API's health endpoint, that the queue worker runs a job dispatched to the application's queue, the `node` service's Node and pnpm versions, its pnpm store and its Chromium build, and the ACME and DNS test doubles. Exits non-zero if anything fails. |
-| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                                                                                                                              |
-| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                                                                                                                           |
+| Target    | What it does                                                                                                                                                                                                                                                                                                                                                                     |
+|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `up`      | Creates `.env` from `.env.example` if it is missing, builds the images whose Dockerfile changed, starts the stack and waits until every service is healthy and reloads Caddy's configuration, so that a changed `Caddyfile` takes effect.                                                                                                                                        |
+| `doubles` | Starts only `pebble` and `challtestsrv`, the ACME and DNS test doubles. Enough for `make -C agent test-doubles`.                                                                                                                                                                                                                                                                 |
+| `e2e-up`  | Builds both apps and switches the stack to end-to-end mode. See [End-to-end mode](#end-to-end-mode). `up` switches back.                                                                                                                                                                                                                                                         |
+| `e2e`     | Seeds the end-to-end database and runs the Playwright suite. Needs `e2e-up` first. `ARGS="…"` is passed to Playwright.                                                                                                                                                                                                                                                           |
+| `down`    | Stops the stack. The database, Redis data and the local CA are kept.                                                                                                                                                                                                                                                                                                             |
+| `reset`   | Stops the stack and deletes all its volumes: the database, Redis data and the local CA. After the next `up`, run `trust` again.                                                                                                                                                                                                                                                  |
+| `install` | Installs the control plane's Composer dependencies, creates its `.env` and application key if they are missing, runs its migrations, and installs the web workspace's dependencies from its lockfile and restarts the `node` service so that it serves both apps. Safe to repeat.                                                                                                |
+| `smoke`   | Checks PostgreSQL, Redis, the app and agent hostnames over HTTPS, the API's health endpoint, that the queue worker runs a job dispatched to the application's queue, that the scheduler runs the audit retention tasks, the `node` service's Node and pnpm versions, its pnpm store and its Chromium build, and the ACME and DNS test doubles. Exits non-zero if anything fails. |
+| `hosts`   | Adds the four hostnames to `/etc/hosts`. Does nothing if they are already there.                                                                                                                                                                                                                                                                                                 |
+| `trust`   | Installs the local CA's root certificate in the system trust store.                                                                                                                                                                                                                                                                                                              |
 
 ## What `hosts` and `trust` change on your machine
 
@@ -116,6 +116,16 @@ docker compose logs --follow worker
 ```
 A job that was dispatched but never ran shows as `pending` in the table `job_history`. The test suite does not use this worker: tests run jobs in their own process, on Redis database 15.
 
+### Scheduler
+
+The `scheduler` service runs `php artisan schedule:work`, which starts `schedule:run` in a fresh PHP process every minute, so it picks up code changes without a restart. The tasks are defined in `withSchedule` in `control-plane/bootstrap/app.php`. A task only dispatches a job; the `worker` runs it and its row appears in `job_history`. Like the worker, it waits for `make install` on a fresh checkout.
+
+```bash
+docker compose exec scheduler php artisan schedule:list               # the tasks and when they are due
+docker compose exec php php artisan schedule:test --name=prune_audit_events   # run one now
+docker compose logs --follow scheduler
+```
+
 ## Web workspace
 
 Node runs in the `node` service as your user, with `web/` mounted at `/workspace/web` and `contracts/` mounted read-only at `/workspace/contracts`. pnpm keeps its store in `web/node_modules/.pnpm-store`, on the same filesystem as the workspace, so packages are hard-linked instead of copied; deleting `web/node_modules` deletes the store too. The image sets it with `pnpm_config_store_dir`, so every directory of the workspace uses it; left to itself, pnpm made a second store in `web/.pnpm-store` when run from `web/packages/ui` (issue #146). The smoke test checks it. The service runs commands only; it serves nothing.
@@ -175,7 +185,7 @@ Pest runs inside the `php` service, which reaches both doubles by service name (
 
 ## End-to-end mode
 
-`make e2e-up` switches the stack to the mode the Playwright suite runs in (`web/README.md`, decision 0016): Caddy serves the built apps from `web/apps/*/dist` with the security headers of `infrastructure/nginx/hostmesh.conf.example` (`Caddyfile.e2e`), and the `php` and `worker` services run with `APP_ENV=e2e` on the database `hostmesh_e2e` and on Redis databases 2 and 3 (`compose.e2e.yaml`). Your development database is not touched. `make e2e` seeds and runs the suite; `make up` switches back. `composer check` works in either mode: `phpunit.xml` overrides those variables, so the control plane's tests always run as `testing` on `hostmesh_test` and Redis database 15.
+`make e2e-up` switches the stack to the mode the Playwright suite runs in (`web/README.md`, decision 0016): Caddy serves the built apps from `web/apps/*/dist` with the security headers of `infrastructure/nginx/hostmesh.conf.example` (`Caddyfile.e2e`), and the `php`, `worker` and `scheduler` services run with `APP_ENV=e2e` on the database `hostmesh_e2e` and on Redis databases 2 and 3 (`compose.e2e.yaml`). Your development database is not touched. `make e2e` seeds and runs the suite; `make up` switches back. `composer check` works in either mode: `phpunit.xml` overrides those variables, so the control plane's tests always run as `testing` on `hostmesh_test` and Redis database 15.
 
 The hostnames are the same in both modes, so only one runs at a time. While the stack is in end-to-end mode a browser on your machine sees the built apps and the seeded branding ("Hostmesh E2E"), and the accounts of "Logging in locally" do not exist there.
 
@@ -216,6 +226,8 @@ App\Domain\Identity\User::factory()->create(["name" => "Customer", "email" => "c
 **`make up` waits and then reports a service as unhealthy.** Run `docker compose ps` and `docker compose logs <service>` from this directory.
 
 **Smoke test: "Is the stack up?" or "Connection refused".** Run `make up`.
+
+**Smoke test: "The scheduler runs the audit retention tasks" fails.** The `scheduler` service is not running, or `php artisan schedule:list` in it does not list `prune_audit_events` and `clear_audit_addresses`. Check `docker compose logs scheduler`; on a fresh checkout run `make install` first.
 
 **Smoke test: "No worker ran the job".** The worker did not run a job dispatched to the application's queue within 15 seconds. Check `docker compose logs worker`: it must run `queue:listen` on the connection and queue the control plane dispatches to (`QUEUE_CONNECTION`, `REDIS_QUEUE`). The probe, `php artisan smoke:queue`, exists in development mode only, so this check also fails while the stack is in end-to-end mode; run `make up` first.
 

@@ -86,4 +86,16 @@ return [
         ],
         'recheck_delay' => (int) env('HOSTMESH_JOB_RECHECK_DELAY', 120),
     ],
+
+    // Audit log retention (spec section 21, decision 0013), applied by two
+    // jobs that run daily. Events are deleted after event_months; fewer
+    // than 12 count as 12, the floor the database enforces. ip_address and
+    // user_agent are cleared together after address_days, at least 1.
+    // These are engineering defaults, not legal findings.
+    'audit' => [
+        'retention' => [
+            'event_months' => (int) env('HOSTMESH_AUDIT_EVENT_RETENTION_MONTHS', 24),
+            'address_days' => (int) env('HOSTMESH_AUDIT_ADDRESS_RETENTION_DAYS', 90),
+        ],
+    ],
 ];

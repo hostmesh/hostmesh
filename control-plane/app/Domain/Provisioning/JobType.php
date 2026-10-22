@@ -14,4 +14,10 @@ enum JobType: string
 {
     /** Spec section 8: an administrator asks for a failed resource to be reconciled again. */
     case RetryReconcile = 'retry_reconcile';
+
+    /** Spec section 21: deletes audit events older than their retention. */
+    case PruneAuditEvents = 'prune_audit_events';
+
+    /** Spec section 21: clears `ip_address` and `user_agent` of older audit events. */
+    case ClearAuditAddresses = 'clear_audit_addresses';
 }

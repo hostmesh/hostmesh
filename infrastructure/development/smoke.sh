@@ -3,9 +3,9 @@
 #
 # Smoke test for the local development stack. Checks PostgreSQL, Redis, each
 # hostname over HTTPS, the API's health endpoint, that the worker runs a
-# dispatched job, the versions of the node service, its pnpm store and its
-# Chromium build, and the ACME and DNS test doubles, using the system
-# resolver and trust store.
+# dispatched job, that the scheduler runs the audit retention tasks, the
+# versions of the node service, its pnpm store and its Chromium build, and
+# the ACME and DNS test doubles, using the system resolver and trust store.
 # Runs every check and exits non-zero if any of them failed.
 
 set -u
@@ -95,6 +95,24 @@ check_worker() {
         pass "$name"
     else
         fail "$name" "No worker ran the job. Run: make install, then: docker compose logs worker"
+    fi
+}
+
+# Scheduled tasks run in the scheduler service (issue #147). Without it the
+# audit log's retention never runs. The schedule is read from the service
+# itself, so a scheduler on an old image or without .env fails here.
+check_scheduler() {
+    local name="The scheduler runs the audit retention tasks"
+    local schedule
+    if ! docker compose ps --status running --services 2>/dev/null | grep -qx scheduler; then
+        fail "$name" "Is the stack up? Run: make up"
+        return
+    fi
+    schedule=$(docker compose exec -T scheduler php artisan schedule:list 2>/dev/null)
+    if grep -q prune_audit_events <<<"$schedule" && grep -q clear_audit_addresses <<<"$schedule"; then
+        pass "$name"
+    else
+        fail "$name" "Run: make install, then: docker compose logs scheduler"
     fi
 }
 
@@ -205,6 +223,7 @@ for host in "${HOSTNAMES[@]}"; do
 done
 check_api_health
 check_worker
+check_scheduler
 check_node
 check_pnpm_store
 check_playwright
