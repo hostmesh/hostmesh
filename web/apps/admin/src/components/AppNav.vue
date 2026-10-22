@@ -7,6 +7,7 @@ import { RouterLink } from 'vue-router'
 const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/branding', label: 'Branding' },
+  { to: '/audit', label: 'Audit log' },
   { to: '/account', label: 'Account' },
 ]
 </script>

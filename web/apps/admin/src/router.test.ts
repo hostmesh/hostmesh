@@ -5,7 +5,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from './api'
 import { json, mockApi, noContent } from './test/api'
 import { mountApp } from './test/app'
-import { brandingBody, brandingResource, guestRoutes, loginBody, pending, signedInRoutes, unauthenticated } from './test/fixtures'
+import {
+  auditEvent,
+  auditEventsBody,
+  brandingBody,
+  brandingResource,
+  guestRoutes,
+  loginBody,
+  pending,
+  signedInRoutes,
+  unauthenticated,
+} from './test/fixtures'
 import { submitted } from './test/view'
 
 afterEach(() => {
@@ -107,6 +117,15 @@ describe('the guard', () => {
     expect(router.currentRoute.value.name).toBe('branding')
     expect(wrapper.get('main h1').text()).toBe('Branding')
     expect(wrapper.get('nav a[href="/branding"]').text()).toBe('Branding')
+  })
+
+  it('opens the audit log for a logged-in user', async () => {
+    mockApi({ ...signedInRoutes(), 'GET /admin/audit-events': json(auditEventsBody([auditEvent])) })
+    const { router, wrapper } = await mountApp('/audit')
+
+    expect(router.currentRoute.value.name).toBe('audit')
+    expect(wrapper.get('main h1').text()).toBe('Audit log')
+    expect(wrapper.get('nav a[href="/audit"]').text()).toBe('Audit log')
   })
 
   it('remembers the branding screen for a guest', async () => {

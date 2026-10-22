@@ -13,10 +13,11 @@ export interface paths {
         };
         /**
          * List audit events
-         * @description The audit log, newest first. Filter by actor, resource, action and time; `from` and `to` are inclusive.
-         *     A date without a time means midnight: `to=2026-10-08` leaves out the events of that day.
-         *     Pass `meta.next_cursor` as `cursor` for the next page. An event holds identifiers only: `actor.name` and
-         *     `resource.name` are looked up now and are null when the account no longer exists.
+         * @description The audit log, newest first; `sort=created_at` lists it oldest first. Filter by actor, resource, action and
+         *     time; `from` and `to` are inclusive. A date without a time means midnight: `to=2026-10-08` leaves out the
+         *     events of that day. Pass `meta.next_cursor` as `cursor` for the next page, with the same `sort`.
+         *     An event holds identifiers only: `actor.name` and `resource.name` are looked up now and are null when the
+         *     account no longer exists.
          *     Needs the `audit-event.view` permission.
          */
         get: operations["admin.audit-events.index"];
@@ -589,6 +590,12 @@ export interface components {
                 view: boolean;
             };
         };
+        /**
+         * AuditEventSort
+         * @description The orders the audit log is listed in, as the `sort` parameter names them (decision 0019): a field, with a leading `-` for descending.
+         * @enum {string}
+         */
+        AuditEventSort: "-created_at" | "created_at";
         /** BrandingResource */
         BrandingResource: {
             product_name: string;
@@ -774,6 +781,7 @@ export interface operations {
                  *     `after_or_equal:from` would refuse every `to`.
                  */
                 to?: string;
+                sort?: components["schemas"]["AuditEventSort"];
                 per_page?: number;
                 cursor?: string;
             };

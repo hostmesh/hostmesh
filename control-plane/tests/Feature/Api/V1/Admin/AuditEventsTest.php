@@ -195,7 +195,64 @@ it('rejects a filter it does not understand', function (string $query, string $f
     'to before from' => ['from=2030-01-02&to=2030-01-01', 'to'],
     'page size zero' => ['per_page=0', 'per_page'],
     'page size too large' => ['per_page=101', 'per_page'],
+    'sort by a field it does not offer' => ['sort=action', 'sort'],
+    'sort by the key' => ['sort=-id', 'sort'],
+    'sort with a plus' => ['sort=%2Bcreated_at', 'sort'],
 ]);
+
+// Issue #143, decision 0019: a list sorts by `sort=<field>` or
+// `sort=-<field>`, from the fields the endpoint offers. The audit log
+// offers its time. Events that share a second keep the order of writing.
+it('sorts by time, newest first unless asked otherwise', function (): void {
+    [$owner, $browser] = auditReader($this);
+
+    // Written out of order: the sort follows the time, not the writing.
+    recordAt($owner, AuditAction::TwoFactorDisabled, '2030-01-01 11:00:00');
+    recordAt($owner, AuditAction::LoggedOut, '2030-01-01 10:00:00');
+    recordAt($owner, AuditAction::RecoveryCodesRegenerated, '2030-01-01 12:00:00');
+
+    $actions = fn (string $query): array => $browser->get(Browser::ADMIN, AUDIT_EVENTS.$query)->assertOk()->json('data.*.action');
+
+    $newestFirst = [
+        'auth.two_factor.recovery_codes_regenerated',
+        'auth.two_factor.disabled',
+        'auth.logout',
+        'auth.two_factor.challenge_passed',
+        'auth.login.succeeded',
+    ];
+
+    expect($actions(''))->toBe($newestFirst)
+        ->and($actions('?sort=-created_at'))->toBe($newestFirst)
+        ->and($actions('?sort=created_at'))->toBe(array_reverse($newestFirst));
+});
+
+it('pages oldest first with a cursor, without gaps or repeats', function (): void {
+    [$owner, $browser] = auditReader($this);
+
+    recordAt($owner, AuditAction::LoggedOut, '2030-01-01 10:00:00');
+
+    // Three events in the reader's second, then one later on.
+    foreach ([AuditAction::LoggedOut, AuditAction::LoginSucceeded] as $action) {
+        recordFor($owner, $action);
+    }
+
+    $expected = AuditTrail::all()->sortBy([['created_at', 'asc'], ['id', 'asc']])->pluck('id')->values()->all();
+    $seen = [];
+    $cursor = null;
+    $pages = 0;
+
+    do {
+        $response = $browser->get(Browser::ADMIN, AUDIT_EVENTS.'?sort=created_at&per_page=2'.($cursor === null ? '' : '&cursor='.urlencode($cursor)))->assertOk();
+
+        $seen = [...$seen, ...$response->json('data.*.id')];
+        $cursor = $response->json('meta.next_cursor');
+        $pages++;
+    } while ($cursor !== null && $pages < 10);
+
+    expect($expected)->toHaveCount(5)
+        ->and($seen)->toBe($expected)
+        ->and($pages)->toBe(3);
+});
 
 it('pages through the log with a cursor, without gaps or repeats', function (): void {
     [$owner, $browser] = auditReader($this);
@@ -244,6 +301,8 @@ it('answers the first page for a cursor it did not issue', function (string $cur
     'no ID' => [base64_encode('{"created_at":"2030-01-01","_pointsToNextItems":true}')],
     'an ID that is no UUID' => [base64_encode('{"id":"1; DROP TABLE audit_events","_pointsToNextItems":true}')],
     'JSON that is no object' => [base64_encode('42')],
+    'an ID without a time' => [base64_encode('{"id":"0199c1d2-0000-7000-8000-000000000001","_pointsToNextItems":true}')],
+    'a time that is no time' => [base64_encode('{"created_at":"yesterday-ish","id":"0199c1d2-0000-7000-8000-000000000001","_pointsToNextItems":true}')],
 ]);
 
 it('still lists the events of an account that is gone, without a name', function (): void {

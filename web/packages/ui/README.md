@@ -25,7 +25,7 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`: the package re-ex
 | `src/styles/index.css`       | The stylesheet apps import: tokens, the Tailwind mapping, the base layer.                                           |
 | `src/styles/variants.css`    | Tailwind variants the components use, copied from shadcn-vue.                                                       |
 | `src/components/ui/`         | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                                            |
-| `src/components/data-table/` | The data-table pattern: `DataTable` and its column helper.                                                          |
+| `src/components/data-table/` | The data-table pattern: `DataTable`, driven by the API, and its column helper.                                      |
 | `src/components/form/`       | The form pattern: `FormField` and `toTypedSchema`.                                                                  |
 | `src/components/qr-code/`    | `QrCode`: a QR code as an inline SVG, in the scannable pair of tokens. Used by both apps for two-factor enrollment. |
 | `src/lib/utils.ts`           | `cn()`, from shadcn-vue.                                                                                            |
@@ -101,7 +101,30 @@ const columns = columnHelper.columns([
 <DataTable :columns="columns" :data="websites" />
 ```
 
-Only the core features are registered (`src/components/data-table/features.ts`). Sorting, filtering and pagination come with the first list that needs them, driven by the API. A full example is in `src/components/data-table/__fixtures__/ExampleTable.vue`; it exists for the tests and is not exported.
+A list from the API is sorted, filtered and paged by the API ([decision 0019](../../../docs/decisions/0019-list-endpoints.md)). `DataTable` shows that state and asks for the next one; it never reorders or filters the rows it has:
+
+```vue
+<DataTable
+  v-model:sorting="sorting"
+  :columns="columns"
+  :data="events"
+  :loading="loading"
+  :pagination="{ previous: prevCursor !== null, next: nextCursor !== null }"
+  @previous="showPage(prevCursor)"
+  @next="showPage(nextCursor)"
+>
+  <template #toolbar>
+    <form role="search">…the screen's filters…</form>
+  </template>
+</DataTable>
+```
+
+- **Sorting:** a column offers it when its definition says `enableSorting: true`, for a field the API sorts by. Its header is then a button and carries `aria-sort`. `v-model:sorting` (`DataTableSorting`, one entry) holds the order: the screen turns it into the API's `sort` parameter and starts again at the first page. A column, once sorted, toggles between ascending and descending; the API always has an order.
+- **Pages:** with `pagination`, a "Previous page" and a "Next page" button, enabled for the cursors the API returned, emit `previous` and `next`. Without it there is no pager.
+- **Filters:** the `toolbar` slot, above the table. Each screen builds its own form and maps it to the API's parameters. `NativeSelect` is the browser's select, for a filter by enum.
+- **Loading:** `loading` marks the table's region `aria-busy`, disables the pager and the sort buttons, and shows `Loading…` instead of the empty state.
+
+Only sorting is registered (`src/components/data-table/features.ts`). TanStack's filtering and pagination features work on the rows the table holds, which is one page. Hideable columns would register the column-visibility feature and switch to `getVisibleCells()`. Examples are in `src/components/data-table/__fixtures__/` (`ExampleTable.vue`, `ListTable.vue`); they exist for the tests and are not exported. The admin app's audit log (`apps/admin/src/views/audit/AuditView.vue`) is the first real list.
 
 ## Forms
 
@@ -159,6 +182,7 @@ Do not reformat the CLI's files. ESLint checks them for defects only.
 |----------------------------------------------------|-------------------------------------------------------------------------------------------------|
 | `src/components/ui/dialog/DialogOverlay.vue`       | `bg-black/10` is `bg-overlay/10`: the scrim reads the `--overlay` token (no hard-coded colors). |
 | `src/components/ui/dialog/DialogScrollContent.vue` | `bg-black/80` is `bg-overlay/80`, for the same reason.                                          |
+| `src/components/ui/native-select/*.vue`            | `cn` is imported from `#ui/lib/utils`. The CLI wrote `from 'cn'` and added an npm package `cn`. |
 
 ## Upstream quirks
 

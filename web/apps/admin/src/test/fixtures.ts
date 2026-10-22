@@ -66,3 +66,36 @@ export const brandingResource = {
   warnings: [{ mode: 'dark', color: 'primary_foreground', against: 'primary', ratio: 2.134, required: 4.5 }],
   abilities: { view: true, update: true },
 } satisfies components['schemas']['BrandingResource']
+
+type AuditEventsBody = paths['/admin/audit-events']['get']['responses'][200]['content']['application/json']
+type AuditEvent = components['schemas']['AuditEventResource']
+
+export const auditEvent = {
+  id: '0199f000-0000-7000-8000-000000000001',
+  action: 'branding.updated',
+  actor: { type: 'administrator', id: account.id, name: 'Ada Lovelace' },
+  resource: { type: 'branding', id: '00000000-0000-4000-8000-000000000001', name: null },
+  metadata: { product_name: 'changed' },
+  ip_address: '203.0.113.7',
+  user_agent: 'Mozilla/5.0',
+  request_id: '0199f000-0000-7000-8000-0000000000aa',
+  created_at: '2026-10-22T09:30:00+00:00',
+  abilities: { view: true },
+} satisfies AuditEvent
+
+/** One page of the audit log, with the cursors of the pages around it. */
+export function auditEventsBody(
+  events: AuditEvent[],
+  cursors: { next?: string; prev?: string } = {},
+): AuditEventsBody {
+  return {
+    data: events,
+    links: { first: null, last: null, prev: null, next: null },
+    meta: {
+      path: `${API}/admin/audit-events`,
+      per_page: 50,
+      next_cursor: cursors.next ?? null,
+      prev_cursor: cursors.prev ?? null,
+    },
+  }
+}

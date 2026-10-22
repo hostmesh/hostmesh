@@ -10,6 +10,7 @@ use App\Domain\Audit\ActorType;
 use App\Domain\Audit\AuditEventRecord;
 use App\Domain\Identity\Administrator;
 use App\Domain\Identity\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Pagination\Cursor;
 use Illuminate\Support\Collection;
@@ -27,16 +28,21 @@ final readonly class ListAuditEvents
     protected const string FIRST_PAGE = '';
 
     /**
-     * The audit log, newest first (decision 0013). The key is a UUIDv7
-     * generated on insert, so ordering by it is the order of writing.
-     * Display names are resolved here, at read time, and stay null for an
-     * account that is gone.
+     * The audit log by time, newest first unless asked otherwise
+     * (decision 0013, issue #143). `created_at` holds whole seconds, so
+     * events of one second follow their key, a UUIDv7 generated on
+     * insert: the order of writing. Display names are resolved here, at
+     * read time, and stay null for an account that is gone.
      *
-     * @param  string|null  $cursor  the `next_cursor` or `prev_cursor` of an earlier page
+     * @param  string|null  $cursor  the `next_cursor` or `prev_cursor` of an earlier page in the same order
      * @return CursorPaginator<int, AuditEventRecord>
      */
-    public function handle(AuditEventFilter $filter, int $perPage = self::DEFAULT_PER_PAGE, ?string $cursor = null): CursorPaginator
-    {
+    public function handle(
+        AuditEventFilter $filter,
+        int $perPage = self::DEFAULT_PER_PAGE,
+        ?string $cursor = null,
+        AuditEventSort $sort = AuditEventSort::NewestFirst,
+    ): CursorPaginator {
         $query = AuditEventRecord::query();
 
         if ($filter->actorType !== null) {
@@ -67,7 +73,10 @@ final readonly class ListAuditEvents
             $query->where('created_at', '<=', $filter->to);
         }
 
-        $page = $query->orderByDesc('id')->cursorPaginate($perPage, ['*'], 'cursor', $this->cursor($cursor) ?? self::FIRST_PAGE);
+        $page = $query
+            ->orderBy('created_at', $sort->direction())
+            ->orderBy('id', $sort->direction())
+            ->cursorPaginate($perPage, ['*'], 'cursor', $this->cursor($cursor) ?? self::FIRST_PAGE);
 
         $this->resolveNames($page->items());
 
@@ -87,8 +96,13 @@ final readonly class ListAuditEvents
         }
 
         $id = $cursor->toArray()['id'] ?? null;
+        $at = $cursor->toArray()['created_at'] ?? null;
 
-        return is_string($id) && Str::isUuid($id) ? $cursor : null;
+        // The time as the paginator writes it, so nothing else reaches PostgreSQL.
+        $valid = is_string($id) && Str::isUuid($id)
+            && is_string($at) && CarbonImmutable::canBeCreatedFromFormat($at, 'Y-m-d H:i:s');
+
+        return $valid ? $cursor : null;
     }
 
     /** @param  array<array-key, AuditEventRecord>  $records */
