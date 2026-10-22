@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property JobType $type
  * @property string $resource_type
  * @property string $resource_id
+ * @property string $dispatch_id the token of the job's latest dispatch; only the copy that carries it may run
  * @property int|null $generation
  * @property string|null $node_id
  * @property JobStatus $status
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  */
-#[Fillable('type', 'resource_type', 'resource_id', 'generation', 'node_id', 'status', 'attempts')]
+#[Fillable('type', 'resource_type', 'resource_id', 'dispatch_id', 'generation', 'node_id', 'status', 'attempts')]
 final class JobHistoryEntry extends Model
 {
     use HasUuids;

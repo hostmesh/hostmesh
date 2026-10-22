@@ -51,8 +51,12 @@ abstract class OneShotJob implements ShouldQueue
      */
     public int $backoff = 10;
 
+    /**
+     * @param  string  $dispatchId  the token of this dispatch; a copy whose token the row no longer holds does nothing
+     */
     final public function __construct(
         public readonly string $historyId,
+        public readonly string $dispatchId,
     ) {
         //
     }
@@ -74,7 +78,7 @@ abstract class OneShotJob implements ShouldQueue
     final public function handle(JobHistory $history, RetryPolicy $policy, Jitter $jitter): void
     {
         try {
-            $entry = $history->begin($this->historyId, $this->timeout);
+            $entry = $history->begin($this->historyId, $this->dispatchId, $this->timeout);
         } catch (JobStillRunning $running) {
             // Delivered twice while the first run may be alive. Not an attempt.
             $this->release($running->retryIn);
@@ -83,6 +87,7 @@ abstract class OneShotJob implements ShouldQueue
         }
 
         // Unknown or finished: delivered twice, or pushed again by hand.
+        // Another token: the sweep gave the row a new job (issue #155).
         if ($entry === null) {
             return;
         }

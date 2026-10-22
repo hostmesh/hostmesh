@@ -25,6 +25,7 @@ use App\Domain\Identity\TwoFactor\Totp;
 use App\Domain\Identity\User;
 use App\Domain\Provisioning\Jitter;
 use App\Domain\Provisioning\RetryPolicy;
+use App\Domain\Provisioning\SweepPolicy;
 use App\Http\Middleware\UseSessionRealm;
 use App\Infrastructure\Audit\DatabaseAuditLog;
 use App\Infrastructure\OpenApi\IncompleteOpenApiDocument;
@@ -107,6 +108,11 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(Jitter::class, RandomJitter::class);
+
+        $this->app->bind(
+            SweepPolicy::class,
+            fn (Application $app): SweepPolicy => new SweepPolicy($app->make(Repository::class)->integer('hostmesh.jobs.sweep_after')),
+        );
 
         // Spec section 21: both periods are configurable defaults. Built on
         // each use, like the retry policy.

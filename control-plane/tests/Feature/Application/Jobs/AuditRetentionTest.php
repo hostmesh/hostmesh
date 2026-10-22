@@ -14,6 +14,7 @@ use App\Domain\Audit\RetentionPolicy;
 use App\Domain\Provisioning\JobHistoryEntry;
 use App\Domain\Provisioning\JobStatus;
 use App\Domain\Provisioning\JobType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -203,12 +204,19 @@ describe('clear_audit_addresses', function (): void {
 });
 
 describe('the schedule', function (): void {
+    // The sweep of job_history (issue #155) runs every five minutes, at
+    // these times too.
+    function retentionRows(): Builder
+    {
+        return JobHistoryEntry::query()->where('type', '!=', JobType::SweepJobHistory);
+    }
+
     it('runs both jobs daily at 03:00 UTC', function (): void {
         $this->travelTo(now('UTC')->setTime(3, 0));
 
         $this->artisan('schedule:run')->assertSuccessful();
 
-        $types = JobHistoryEntry::query()->get()
+        $types = retentionRows()->get()
             ->map(fn (JobHistoryEntry $entry): array => [$entry->type, $entry->status, $entry->resource_id])
             ->all();
 
@@ -223,7 +231,7 @@ describe('the schedule', function (): void {
 
         $this->artisan('schedule:run')->assertSuccessful();
 
-        expect(JobHistoryEntry::query()->count())->toBe(0);
+        expect(retentionRows()->count())->toBe(0);
     });
 });
 
@@ -359,8 +367,8 @@ it('stops well inside the job timeout by default', function (): void {
 
     expect(config()->integer('hostmesh.audit.retention.batch_size'))->toBe(10000)
         ->and($runSeconds)->toBe(40)
-        ->and($runSeconds)->toBeLessThan((new PruneAuditEvents('unused'))->timeout)
-        ->and($runSeconds)->toBeLessThan((new ClearAuditAddresses('unused'))->timeout);
+        ->and($runSeconds)->toBeLessThan((new PruneAuditEvents('unused', 'unused'))->timeout)
+        ->and($runSeconds)->toBeLessThan((new ClearAuditAddresses('unused', 'unused'))->timeout);
 });
 
 // The clearing job looks for events that still hold an address. Without an
