@@ -1,5 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <script setup lang="ts">
+import { ColorModeSetting } from '@hostmesh/ui'
+
 import AppNav from '../../components/AppNav.vue'
 import AppLayout from '../../layouts/AppLayout.vue'
 import { useAuthStore } from '../../stores/auth'
@@ -46,6 +48,18 @@ const auth = useAuthStore()
             {{ auth.user?.email }}
           </dd>
         </dl>
+      </section>
+      <section
+        aria-labelledby="preferences-heading"
+        class="flex flex-col gap-4"
+      >
+        <h2
+          id="preferences-heading"
+          class="text-lg font-semibold"
+        >
+          Preferences
+        </h2>
+        <ColorModeSetting />
       </section>
       <TwoFactorSection v-if="auth.user?.abilities.manage_two_factor" />
     </div>

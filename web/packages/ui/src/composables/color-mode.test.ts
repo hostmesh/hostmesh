@@ -121,6 +121,24 @@ describe('useColorMode', () => {
     expect(root.classList.contains('dark')).toBe(false)
   })
 
+  // Issue #141: the setting on the account screen is one caller, the logo
+  // and the app's start are others. A choice must reach every one of them.
+  it('gives every caller the choice made by one of them', async () => {
+    stubSystem(false)
+    scope = effectScope()
+    const [setting, logo] = scope.run(() => [useColorMode(), useColorMode()]) ?? []
+    if (!setting || !logo) {
+      throw new Error('The effect scope did not run')
+    }
+
+    setting.preference.value = 'dark'
+    await nextTick()
+
+    expect(logo.preference.value).toBe('dark')
+    expect(logo.mode.value).toBe('dark')
+    expect(root.classList.contains('dark')).toBe(true)
+  })
+
   // Issue #95: the apps are served with `style-src 'self'`, which blocks
   // and reports a <style> element made by a script.
   it('adds no <style> element to the document when it applies a mode', async () => {

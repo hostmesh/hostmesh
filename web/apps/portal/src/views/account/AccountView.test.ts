@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { components } from '@hostmesh/api-client'
-import { QrCode } from '@hostmesh/ui'
+import { COLOR_MODE_STORAGE_KEY, ColorModeSetting, QrCode } from '@hostmesh/ui'
 import { flushPromises, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -15,6 +15,8 @@ import { submitted } from '../../test/view'
 afterEach(() => {
   vi.unstubAllGlobals()
   document.body.innerHTML = ''
+  localStorage.clear()
+  document.documentElement.classList.remove('light', 'dark')
 })
 
 const enrollment = {
@@ -87,6 +89,20 @@ async function click(scope: Found, name: string): Promise<void> {
 }
 
 describe('AccountView', () => {
+  // Issue #141: light, dark or the system's setting, for this browser only.
+  it('offers the appearance setting, and applies a choice at once', async () => {
+    const { wrapper } = await openAccount(false)
+
+    const preferences = wrapper.get('section[aria-labelledby="preferences-heading"]')
+    expect(preferences.get('h2').text()).toBe('Preferences')
+    expect(preferences.findComponent(ColorModeSetting).exists()).toBe(true)
+
+    await preferences.get('select').setValue('dark')
+
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(localStorage.getItem(COLOR_MODE_STORAGE_KEY)).toBe('dark')
+  })
+
   it('shows the name and the email of the customer', async () => {
     const { wrapper } = await openAccount(false)
 
