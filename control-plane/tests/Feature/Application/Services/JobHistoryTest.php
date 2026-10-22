@@ -24,6 +24,14 @@ beforeEach(function (): void {
     $this->travelTo(CarbonImmutable::parse('2026-10-08 12:00:00', 'UTC'));
 });
 
+/** Opens a row and starts its run, as the job it was opened for. */
+function beginNewRow(JobHistory $history): JobHistoryEntry
+{
+    $opened = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7());
+
+    return $history->begin($opened->id, $opened->dispatch_id, 60) ?? throw new LogicException('The row did not start.');
+}
+
 it('opens a row with the resource, the generation and the node', function (): void {
     $resource = (string) Str::uuid7();
     $node = (string) Str::uuid7();
@@ -66,12 +74,39 @@ it('opens a row without a generation and a node', function (): void {
         ->and($entry->node_id)->toBeNull();
 });
 
-it('records when a run starts, and keeps the first start', function (): void {
+// Issue #155: the token says which pushed copy of the job owns the row.
+it('gives every row a dispatch token of its own', function (): void {
+    $history = app(JobHistory::class);
+
+    $first = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7());
+    $second = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7());
+
+    expect(Str::isUuid($first->dispatch_id))->toBeTrue()
+        ->and(Str::isUuid($second->dispatch_id))->toBeTrue()
+        ->and($first->dispatch_id)->not->toBe($second->dispatch_id)
+        ->and(JobHistoryEntry::query()->findOrFail($first->id)->dispatch_id)->toBe($first->dispatch_id);
+});
+
+// The sweep gave the row a new job. The old copy must leave it alone.
+it('answers null for a copy whose token the row no longer holds', function (): void {
     $history = app(JobHistory::class);
     $id = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id;
 
+    expect($history->begin($id, (string) Str::uuid(), 60))->toBeNull();
+
+    $stored = JobHistoryEntry::query()->sole();
+
+    expect($stored->status)->toBe(JobStatus::Pending)
+        ->and($stored->started_at)->toBeNull();
+});
+
+it('records when a run starts, and keeps the first start', function (): void {
+    $history = app(JobHistory::class);
+    $opened = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7());
+    $id = $opened->id;
+
     $this->travel(5)->seconds();
-    $entry = $history->begin($id, 60);
+    $entry = $history->begin($id, $opened->dispatch_id, 60);
 
     expect($entry)->not->toBeNull()
         ->and($entry->status)->toBe(JobStatus::Running)
@@ -80,14 +115,14 @@ it('records when a run starts, and keeps the first start', function (): void {
 
     $history->waiting($entry, 'DNS not propagated');
     $this->travel(2)->minutes();
-    $again = $history->begin($id, 60);
+    $again = $history->begin($id, $opened->dispatch_id, 60);
 
     expect($again->started_at->equalTo('2026-10-08 12:00:05 UTC'))->toBeTrue();
 });
 
 it('records a success with the time it finished', function (): void {
     $history = app(JobHistory::class);
-    $entry = $history->begin($history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id, 60);
+    $entry = beginNewRow($history);
 
     $this->travel(3)->seconds();
     $history->succeeded($entry);
@@ -102,7 +137,7 @@ it('records a success with the time it finished', function (): void {
 
 it('counts a retryable failure and keeps its message', function (): void {
     $history = app(JobHistory::class);
-    $entry = $history->begin($history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id, 60);
+    $entry = beginNewRow($history);
 
     $attempts = $history->retrying($entry, 'service timeout');
 
@@ -118,7 +153,7 @@ it('counts a retryable failure and keeps its message', function (): void {
 
 it('does not count a wait as an attempt', function (): void {
     $history = app(JobHistory::class);
-    $entry = $history->begin($history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id, 60);
+    $entry = beginNewRow($history);
 
     $history->waiting($entry, 'DNS not propagated');
 
@@ -133,7 +168,7 @@ it('does not count a wait as an attempt', function (): void {
 
 it('records a failure with its class, its message and the time it finished', function (): void {
     $history = app(JobHistory::class);
-    $entry = $history->begin($history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id, 60);
+    $entry = beginNewRow($history);
 
     $this->travel(1)->seconds();
     $history->failed($entry, FailureClass::Terminal, 'unsupported PHP version');
@@ -151,11 +186,12 @@ it('records a failure with its class, its message and the time it finished', fun
 // run died: a killed worker, a timeout.
 it('counts an interrupted run as one retryable attempt', function (): void {
     $history = app(JobHistory::class);
-    $id = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id;
+    $opened = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7());
+    $id = $opened->id;
 
-    $history->begin($id, 60);
+    $history->begin($id, $opened->dispatch_id, 60);
     $this->travel(60)->seconds();
-    $entry = $history->begin($id, 60);
+    $entry = $history->begin($id, $opened->dispatch_id, 60);
 
     expect($entry->attempts)->toBe(1)
         ->and($entry->status)->toBe(JobStatus::Running)
@@ -167,12 +203,13 @@ it('counts an interrupted run as one retryable attempt', function (): void {
 // Until the first run has had its time, nobody can say that it died.
 it('refuses a row whose run may still be alive', function (): void {
     $history = app(JobHistory::class);
-    $id = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id;
+    $opened = $history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7());
+    $id = $opened->id;
 
-    $history->begin($id, 60);
+    $history->begin($id, $opened->dispatch_id, 60);
     $this->travel(45)->seconds();
 
-    expect(fn () => $history->begin($id, 60))
+    expect(fn () => $history->begin($id, $opened->dispatch_id, 60))
         ->toThrow(fn (JobStillRunning $e) => expect($e->retryIn)->toBe(15));
 
     $stored = JobHistoryEntry::query()->sole();
@@ -184,7 +221,7 @@ it('refuses a row whose run may still be alive', function (): void {
 
 it('answers null for a row it cannot run', function (string $state): void {
     $history = app(JobHistory::class);
-    $entry = $history->begin($history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id, 60);
+    $entry = beginNewRow($history);
 
     $id = match ($state) {
         'succeeded' => tap($entry->id, fn () => $history->succeeded($entry)),
@@ -193,7 +230,7 @@ it('answers null for a row it cannot run', function (string $state): void {
         'malformed' => 'not-a-uuid',
     };
 
-    expect($history->begin($id, 60))->toBeNull();
+    expect($history->begin($id, $entry->dispatch_id, 60))->toBeNull();
 
     // A malformed UUID must not have broken the transaction.
     expect(JobHistoryEntry::query()->count())->toBe(1);
@@ -201,7 +238,7 @@ it('answers null for a row it cannot run', function (string $state): void {
 
 it('cuts a message to 1000 characters, never inside a character', function (): void {
     $history = app(JobHistory::class);
-    $entry = $history->begin($history->open(JobType::RetryReconcile, 'website', (string) Str::uuid7())->id, 60);
+    $entry = beginNewRow($history);
 
     $history->retrying($entry, str_repeat('ü', 1500));
 

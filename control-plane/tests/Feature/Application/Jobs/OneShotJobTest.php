@@ -43,11 +43,17 @@ afterEach(function (): void {
 /** Opens a history row and pushes a ScriptedJob for it. Returns the row's ID. */
 function pushScriptedJob(QueueRunner $runner): string
 {
-    $id = app(JobHistory::class)->open(JobType::RetryReconcile, 'website', (string) Str::uuid7(), 3)->id;
+    $opened = app(JobHistory::class)->open(JobType::RetryReconcile, 'website', (string) Str::uuid7(), 3);
 
-    $runner->push(new ScriptedJob($id));
+    $runner->push(new ScriptedJob($opened->id, $opened->dispatch_id));
 
-    return $id;
+    return $opened->id;
+}
+
+/** The dispatch token the row holds now. */
+function dispatchTokenOf(string $id): string
+{
+    return JobHistoryEntry::query()->findOrFail($id)->dispatch_id;
 }
 
 it('records a success and leaves the queue', function (): void {
@@ -272,7 +278,7 @@ it('does not report a failure the job classified itself', function (): void {
 // A run that died leaves the row running: a killed worker, a timeout.
 it('counts an interrupted run and carries on', function (): void {
     $id = pushScriptedJob($this->runner);
-    app(JobHistory::class)->begin($id, 60);
+    app(JobHistory::class)->begin($id, dispatchTokenOf($id), 60);
     $this->travel(60)->seconds();
 
     $this->runner->runNext();
@@ -346,7 +352,7 @@ it('runs a waiting job whose attempts are beyond a lowered limit', function (): 
 // while the first run is inside its timeout.
 it('leaves a run that may still be alive alone, and comes back when its time is up', function (): void {
     $id = pushScriptedJob($this->runner);
-    app(JobHistory::class)->begin($id, 60);
+    app(JobHistory::class)->begin($id, dispatchTokenOf($id), 60);
 
     $this->runner->runNext();
 
@@ -376,7 +382,7 @@ it('leaves a run that may still be alive alone, and comes back when its time is 
 it('drops the second delivery when the first run finished meanwhile', function (): void {
     $id = pushScriptedJob($this->runner);
     $history = app(JobHistory::class);
-    $entry = $history->begin($id, 60);
+    $entry = $history->begin($id, dispatchTokenOf($id), 60);
 
     $this->runner->runNext();
     $history->succeeded($entry);
@@ -419,7 +425,7 @@ it('pauses before the queue redelivers a job that could not start', function ():
 // Redis delivers at least once, and an operator can re-push a failed job.
 it('does not run again for a row that is finished', function (): void {
     $id = pushScriptedJob($this->runner);
-    $this->runner->push(new ScriptedJob($id));
+    $this->runner->push(new ScriptedJob($id, dispatchTokenOf($id)));
 
     $this->runner->runNext();
     $this->runner->runNext();
@@ -428,8 +434,24 @@ it('does not run again for a row that is finished', function (): void {
         ->and($this->runner->size())->toBe(0);
 });
 
+// Issue #155: the sweep gave the row a new job and a new token, and Redis
+// still held the old copy.
+it('drops a copy whose token the row no longer holds', function (): void {
+    $id = pushScriptedJob($this->runner);
+    JobHistoryEntry::query()->whereKey($id)->update(['dispatch_id' => (string) Str::uuid()]);
+
+    $this->runner->runNext();
+
+    $entry = JobHistoryEntry::query()->findOrFail($id);
+
+    expect(ScriptedJob::$runs)->toBe(0)
+        ->and($entry->status)->toBe(JobStatus::Pending)
+        ->and($entry->started_at)->toBeNull()
+        ->and($this->runner->size())->toBe(0);
+});
+
 it('drops a job whose row does not exist', function (string $id): void {
-    $this->runner->push(new ScriptedJob($id));
+    $this->runner->push(new ScriptedJob($id, (string) Str::uuid()));
 
     $this->runner->runNext();
 
@@ -443,7 +465,7 @@ it('drops a job whose row does not exist', function (string $id): void {
 // Laravel must not count: 0 means no limit. And one run must end before
 // Redis hands the job to a second worker.
 it('leaves the counting to the history row and ends before the queue redelivers', function (): void {
-    $job = new ScriptedJob((string) Str::uuid7());
+    $job = new ScriptedJob((string) Str::uuid7(), (string) Str::uuid());
 
     expect($job->tries)->toBe(0)
         ->and($job->backoff)->toBeGreaterThan(0)

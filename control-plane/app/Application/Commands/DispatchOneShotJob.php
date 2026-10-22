@@ -49,7 +49,7 @@ final readonly class DispatchOneShotJob
         return $this->connection->transaction(function () use ($job, $resourceType, $resourceId, $generation, $nodeId): JobHistoryEntry {
             $entry = $this->history->open($job::type(), $resourceType, $resourceId, $generation, $nodeId);
 
-            $this->bus->dispatch((new $job($entry->id))->afterCommit());
+            $this->bus->dispatch((new $job($entry->id, $entry->dispatch_id))->afterCommit());
 
             return $entry;
         });

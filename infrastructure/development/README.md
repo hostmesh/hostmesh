@@ -114,7 +114,7 @@ The `worker` service runs `php artisan queue:listen redis`. It starts a fresh PH
 ```bash
 docker compose logs --follow worker
 ```
-A job that was dispatched but never ran shows as `pending` in the table `job_history`. The test suite does not use this worker: tests run jobs in their own process, on Redis database 15.
+A job that was dispatched but never ran shows as `pending` in the table `job_history`, until the scheduled sweep gives it a new job after 15 minutes. The test suite does not use this worker: tests run jobs in their own process, on Redis database 15.
 
 ### Scheduler
 

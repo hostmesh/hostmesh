@@ -189,7 +189,7 @@ The audit log records the same address.
 
 Desired state is authoritative; a job is a one-shot action that is not state (spec section 6). Jobs run on the Redis queue, and each one leaves a row in the PostgreSQL table `job_history` ([decision 0014](../docs/decisions/0014-job-history-and-retry-policy.md)).
 
-- **The row is the authority.** It holds `type`, `resource_type` and `resource_id`, `generation`, `node_id`, `status` (`pending`, `running`, `waiting`, `retrying`, `succeeded`, `failed`), `failure_class`, the last `message`, `attempts`, and `started_at` and `finished_at`. Redis only carries the work.
+- **The row is the authority.** It holds `type`, `resource_type` and `resource_id`, `dispatch_id`, `generation`, `node_id`, `status` (`pending`, `running`, `waiting`, `retrying`, `succeeded`, `failed`), `failure_class`, the last `message`, `attempts`, and `started_at` and `finished_at`. Redis only carries the work.
 - **Failure classes** (spec section 8). A job throws `App\Application\Exceptions\JobFailure`:
 
   | Thrown                      | What happens                                                                                              |
@@ -200,13 +200,13 @@ Desired state is authoritative; a job is a one-shot action that is not state (sp
   | anything else               | reported to the exception handler and treated as retryable. The row stores the class name only            |
 
   A delay is shortened by a random share of up to half. A run that was interrupted (worker killed, timeout) counts as one attempt. A job that is delivered a second time while its first run is inside the timeout waits for the timeout and counts nothing. The numbers are defaults: see `jobs` in `config/hostmesh.php`.
-- **A row with no job behind it.** If Redis loses a push or its data, the row stays `pending`, `running`, `waiting` or `retrying`. It shows, and nothing repairs it yet.
+- **A row with no job behind it.** If Redis loses a push or its data, the row stays `pending`, `running`, `waiting` or `retrying`. The job `sweep_job_history` (every five minutes, "Scheduled jobs") gives each unfinished row that nobody touched for `HOSTMESH_JOB_SWEEP_AFTER` seconds (default 900, above every delay) a new `dispatch_id` and a new job, at most 1,000 rows a run, oldest first. A job carries the token it was pushed with and does nothing when the row holds another, so a copy that Redis kept after all never runs beside the new one. The sweep never fails a row: a row that was `running` counts the lost run as an attempt when its new job starts (issue #155).
 - **A failed job** is also stored in `failed_jobs`. Pushing it again does nothing, because its row is finished. A new attempt is a new job and a new row.
 - **Redis is never used for correctness.** No lock, unique job, overlap guard or cache-backed counter: `tests/Arch/RedisTest.php` reads the sources and fails for one.
 
 Rules for a new one-shot job:
 
-- Add a case to `App\Domain\Provisioning\JobType`. A value is stored: never rename one.
+- Add a case to `App\Domain\Provisioning\JobType`. A value is stored: never rename one. Name its job in `App\Application\Jobs\OneShotJobs`, so the sweep can push it again; Larastan fails until you do.
 - Extend `App\Application\Jobs\OneShotJob`. Implement `type()` and `perform()`, and nothing else: the base class owns `handle()`, the tries and the outcome.
 - Make `perform()` safe to run twice. Redis delivers at least once.
 - Keep one run under the job's `timeout` (60 seconds), which must stay below `retry_after` of the queue connection (90 seconds).
@@ -226,8 +226,9 @@ Scheduled tasks are defined in `withSchedule` in `bootstrap/app.php`. A task dis
 |--------------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `prune_audit_events`     | daily, 03:00 UTC | Deletes audit events older than `HOSTMESH_AUDIT_EVENT_RETENTION_MONTHS` (default 24). Fewer than 12 count as 12, the floor the database trigger enforces |
 | `clear_audit_addresses`  | daily, 03:00 UTC | Clears `ip_address` and `user_agent` of audit events older than `HOSTMESH_AUDIT_ADDRESS_RETENTION_DAYS` (default 90, at least 1)                         |
+| `sweep_job_history`      | every 5 minutes  | Gives a new job to unfinished `job_history` rows whose job Redis probably lost ("A row with no job behind it" above). Its rows name `job_history`        |
 
-Both read `audit.retention` in `config/hostmesh.php` and cut off at PostgreSQL's `now()`, taken once at the start of a run, the clock the trigger checks. The periods are engineering defaults (decision 0013): a data-protection adviser should confirm them before the beta gate.
+The two retention jobs read `audit.retention` in `config/hostmesh.php` and cut off at PostgreSQL's `now()`, taken once at the start of a run, the clock the trigger checks. The periods are engineering defaults (decision 0013): a data-protection adviser should confirm them before the beta gate.
 
 They work in batches, oldest first: each batch is one statement and its own transaction, of at most `HOSTMESH_AUDIT_RETENTION_BATCH_SIZE` events (default 10,000). A run starts no new batch after `HOSTMESH_AUDIT_RETENTION_RUN_SECONDS` (default 40, well below a job's `timeout` of 60) and then dispatches a new run, with a row of its own, for the rest. A long backlog therefore shows as a chain of `succeeded` rows. Each batch that changed anything also writes one audit event in its transaction; when that event cannot be written, the batch is rolled back and the job fails as retryable. Measured on 4 million events (issue #238), a run deletes about 6 million events or clears about 500,000. Clearing finds its events through the partial index `audit_events_addresses_created_at_index`; keep the condition in `AuditRetention` the same as the index's.
 

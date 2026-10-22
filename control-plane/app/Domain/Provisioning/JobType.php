@@ -20,4 +20,7 @@ enum JobType: string
 
     /** Spec section 21: clears `ip_address` and `user_agent` of older audit events. */
     case ClearAuditAddresses = 'clear_audit_addresses';
+
+    /** Issue #155: gives a new job to unfinished rows whose job was probably lost. */
+    case SweepJobHistory = 'sweep_job_history';
 }

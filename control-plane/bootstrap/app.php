@@ -6,7 +6,9 @@
 use App\Application\Commands\DispatchOneShotJob;
 use App\Application\Jobs\ClearAuditAddresses;
 use App\Application\Jobs\PruneAuditEvents;
+use App\Application\Jobs\SweepJobHistory;
 use App\Domain\Audit\RetentionPolicy;
+use App\Domain\Provisioning\SweepPolicy;
 use App\Http\Middleware\CaptureRequestContext;
 use App\Http\Middleware\RequireSecondFactor;
 use App\Http\Middleware\UseSessionRealm;
@@ -58,6 +60,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 RetentionPolicy::RESOURCE_ID,
             ))->name($job::type()->value)->dailyAt('03:00');
         }
+
+        // Issue #155: gives a new job to rows whose job Redis lost.
+        $schedule->call(fn (DispatchOneShotJob $dispatch) => $dispatch->handle(
+            SweepJobHistory::class,
+            SweepPolicy::RESOURCE_TYPE,
+            SweepPolicy::RESOURCE_ID,
+        ))->name(SweepJobHistory::type()->value)->everyFiveMinutes();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

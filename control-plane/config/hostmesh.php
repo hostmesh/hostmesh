@@ -85,6 +85,11 @@ return [
             'jitter' => (float) env('HOSTMESH_JOB_RETRY_JITTER', 0.5),
         ],
         'recheck_delay' => (int) env('HOSTMESH_JOB_RECHECK_DELAY', 120),
+        // Issue #155: an unfinished row that nobody touched for this many
+        // seconds has probably lost its job in Redis, and the sweep gives
+        // it a new one. Keep it above max_delay and recheck_delay, or a job
+        // runs before its delay is over.
+        'sweep_after' => (int) env('HOSTMESH_JOB_SWEEP_AFTER', 900),
     ],
 
     // Audit log retention (spec section 21, decision 0013), applied by two
