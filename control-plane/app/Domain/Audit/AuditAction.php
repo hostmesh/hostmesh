@@ -28,4 +28,6 @@ enum AuditAction: string
     case BrandingUpdated = 'branding.updated';
     case BrandingImageReplaced = 'branding.image_replaced';
     case BrandingImageRemoved = 'branding.image_removed';
+    case AuditEventsDeleted = 'audit_log.events_deleted';
+    case AuditAddressesCleared = 'audit_log.addresses_cleared';
 }

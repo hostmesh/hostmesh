@@ -87,3 +87,11 @@ Found while batching the retention jobs. Approved by the owner on 2026-10-22.
 
 - **A fourth index.** `audit_events_addresses_created_at_index` on `created_at`, partial: `WHERE ip_address IS NOT NULL OR user_agent IS NOT NULL`. The job that clears addresses looks for expired events that still hold one. Through the index on `created_at` alone, every batch read past all the events cleared before it: on 4 million events, picking a batch of 10,000 took 1.2 s after 820,000 were cleared, and kept growing. A daily run would read through every event between 90 days and 24 months old to find one day's worth. With the partial index the same pick took 40 ms. The index holds only the events of about the last 90 days, and each new event costs one more index entry.
 - **The retention jobs work in batches** of at most 10,000 events, each its own transaction, and a run that has used its time (40 s) dispatches a new run for the rest (`control-plane/README.md`, "Scheduled jobs").
+
+## Amendment, 2026-10-22 (issue #239)
+
+Decided by the owner on 2026-10-22.
+
+- **Retention writes audit events.** Without them a gap in the log is unexplained: an auditor cannot tell retention from loss. Every batch of the retention jobs that deleted or cleared anything records one event, actor `system`, resource `audit_log` with the fixed ID of decision 0014's amendment of 2026-10-22, action `audit_log.events_deleted` or `audit_log.addresses_cleared`, and `count` and `cutoff` in `metadata`. It holds no address and no personal data.
+- **Per batch, not per run**, because a batch is its own transaction and a change and its event commit together. In steady state that is about two events a day; a backlog writes one per batch of 10,000. The events expire like any other.
+- Recording the count in the `job_history` row instead was rejected: the audit screen does not show it, and a succeeded row keeps no message.

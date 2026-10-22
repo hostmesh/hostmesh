@@ -1924,7 +1924,9 @@
                     "administrator.two_factor_reset",
                     "branding.updated",
                     "branding.image_replaced",
-                    "branding.image_removed"
+                    "branding.image_removed",
+                    "audit_log.events_deleted",
+                    "audit_log.addresses_cleared"
                 ],
                 "title": "AuditAction"
             },
