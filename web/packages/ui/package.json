@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles/index.css"
+    "./styles.css": "./src/styles/index.css",
+    "./vite": "./src/vite/color-mode.ts"
   },
   "imports": {
     "#ui/lib/*": "./src/lib/*.ts",

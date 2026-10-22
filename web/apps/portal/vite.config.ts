@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { colorModeEarly } from '@hostmesh/ui/vite'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
@@ -7,6 +8,8 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
+    // Light or dark before the first paint (issue #142).
+    colorModeEarly(),
   ],
   // The development stack: Caddy proxies https://app.hostmesh.test here
   // (infrastructure/development/Caddyfile). Vite refuses other Host headers.
