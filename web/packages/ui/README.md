@@ -27,6 +27,7 @@ Apps import only `@hostmesh/ui` and `@hostmesh/ui/styles.css`: the package re-ex
 | `src/components/ui/`         | What the shadcn-vue CLI wrote, and nothing else. MIT, see its `LICENSE`.                                            |
 | `src/components/data-table/` | The data-table pattern: `DataTable`, driven by the API, and its column helper.                                      |
 | `src/components/form/`       | The form pattern: `FormField` and `toTypedSchema`.                                                                  |
+| `src/components/color-mode/` | `ColorModeSetting`: the appearance setting (System, Light, Dark) of the account screens.                            |
 | `src/components/qr-code/`    | `QrCode`: a QR code as an inline SVG, in the scannable pair of tokens. Used by both apps for two-factor enrollment. |
 | `src/lib/utils.ts`           | `cn()`, from shadcn-vue.                                                                                            |
 | `src/composables/`           | `useColorMode()`.                                                                                                   |
@@ -92,6 +93,8 @@ export default defineConfig({ plugins: [vue(), tailwindcss(), colorModeEarly()] 
 ```
 
 When `useColorMode()` changes how it stores or applies the mode, change `src/vite/color-mode.ts` with it.
+
+`ColorModeSetting` is the setting itself: an "Appearance" select with System, Light and Dark, bound to `preference`. Both apps show it on their account screen, under "Preferences". A choice applies at once to every caller of `useColorMode()`, is remembered in this browser only, and the early script applies it before the first paint of the next load.
 
 ## Data tables
 
