@@ -25,6 +25,7 @@ enum AuditAction: string
     case AdministratorRoleAssigned = 'administrator.role_assigned';
     case AdministratorRoleRevoked = 'administrator.role_revoked';
     case AdministratorTwoFactorReset = 'administrator.two_factor_reset';
+    case UserCreated = 'user.created';
     case BrandingUpdated = 'branding.updated';
     case BrandingImageReplaced = 'branding.image_replaced';
     case BrandingImageRemoved = 'branding.image_removed';

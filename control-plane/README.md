@@ -262,6 +262,17 @@ They work in batches, oldest first: each batch is one statement and its own tran
 
 The command is `app/Console/Commands/CreateAdministratorCommand.php`, thin like a controller; the work is in `App\Application\Commands\CreateAdministrator`.
 
+## Creating a customer
+
+`php artisan customer:create <email> --name=<name>` creates a customer's account, the login of the portal ([decision 0022](../docs/decisions/0022-creating-customer-accounts.md)). Until registration comes with checkout (#256) and the admin app gets a customers screen (#257), it is how a customer gets an account: run it with shell access to the control plane.
+
+- The password is generated (40 random characters) and printed once. It is never an argument, so it reaches no shell history, and it is in no log and no audit event.
+- Two-factor is off. The customer turns it on from the account screen of the portal.
+- The command refuses an address that is not one and an address another customer has, and changes nothing then. An administrator's address is not taken: the realms are separate.
+- It writes one audit event with the system as actor: `user.created`.
+
+The command is `app/Console/Commands/CreateCustomerCommand.php`; the work is in `App\Application\Commands\CreateCustomer`.
+
 ## Resetting an administrator's second factor
 
 `php artisan administrator:reset-two-factor <email>` is for an administrator who lost both the authenticator and the recovery codes (spec section 28). Two-factor is required in the admin realm, so without it the account is locked out. Run it with shell access to the control plane, after you have made sure the request really comes from that administrator.

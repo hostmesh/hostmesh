@@ -1929,6 +1929,7 @@
                     "administrator.role_assigned",
                     "administrator.role_revoked",
                     "administrator.two_factor_reset",
+                    "user.created",
                     "branding.updated",
                     "branding.image_replaced",
                     "branding.image_removed",
