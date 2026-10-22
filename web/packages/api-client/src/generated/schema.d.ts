@@ -96,6 +96,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the password
+         * @description Needs the current password, and a valid code where two-factor is on (always in admin). The new password has
+         *     15 characters to 72 bytes and must not be known from breaches. The account's other sessions end; this one goes
+         *     on. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["admin.auth.password.change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/auth/two-factor": {
         parameters: {
             query?: never;
@@ -389,6 +411,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customer/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the password
+         * @description Needs the current password, and a valid code where two-factor is on (always in admin). The new password has
+         *     15 characters to 72 bytes and must not be known from breaches. The account's other sessions end; this one goes
+         *     on. Limited to 5 attempts per minute for one account.
+         */
+        post: operations["customer.auth.password.change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customer/auth/two-factor": {
         parameters: {
             query?: never;
@@ -557,6 +601,7 @@ export interface components {
                 view: boolean;
                 update: boolean;
                 manage_two_factor: boolean;
+                change_password: boolean;
             };
         };
         /**
@@ -564,7 +609,7 @@ export interface components {
          * @description What happened. A value is stored forever: add cases, never rename one.
          * @enum {string}
          */
-        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "administrator.created" | "administrator.role_assigned" | "administrator.role_revoked" | "administrator.two_factor_reset" | "user.created" | "branding.updated" | "branding.image_replaced" | "branding.image_removed" | "audit_log.events_deleted" | "audit_log.addresses_cleared";
+        AuditAction: "auth.login.succeeded" | "auth.login.failed" | "auth.logout" | "auth.two_factor.enrollment_started" | "auth.two_factor.confirmed" | "auth.two_factor.disabled" | "auth.two_factor.challenge_passed" | "auth.two_factor.challenge_failed" | "auth.two_factor.recovery_code_used" | "auth.two_factor.recovery_codes_regenerated" | "auth.password_changed" | "administrator.created" | "administrator.role_assigned" | "administrator.role_revoked" | "administrator.two_factor_reset" | "administrator.password_reset" | "user.created" | "user.password_reset" | "branding.updated" | "branding.image_replaced" | "branding.image_removed" | "audit_log.events_deleted" | "audit_log.addresses_cleared";
         /** AuditEventResource */
         AuditEventResource: {
             id: string;
@@ -636,6 +681,13 @@ export interface components {
             code?: string;
             recovery_code?: string;
         };
+        /** ChangePasswordRequest */
+        ChangePasswordRequest: {
+            current_password: string;
+            new_password: string;
+            /** @description Required where two-factor is on; the application command decides. */
+            code?: string | null;
+        };
         /** CodeRequest */
         CodeRequest: {
             code: string;
@@ -703,6 +755,7 @@ export interface components {
                 view: boolean;
                 update: boolean;
                 manage_two_factor: boolean;
+                change_password: boolean;
             };
         };
     };
@@ -921,6 +974,47 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "admin.auth.password.change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description The password is changed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "admin.auth.two-factor.enroll": {
@@ -1473,6 +1567,47 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "customer.auth.password.change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description The password is changed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests. Retry after the seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds until the limit lets a request through again. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "customer.auth.two-factor.enroll": {

@@ -46,12 +46,15 @@ use Dedoc\Scramble\Support\Generator\Types\UnknownType;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Encryption\Encrypter;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\NotPwnedVerifier;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -108,6 +111,16 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(Jitter::class, RandomJitter::class);
+
+        // Decision 0023: the breach check of a new password. Laravel waits
+        // 30 seconds before it gives up and accepts the password; a password
+        // change should not hang that long on a third party. Extended rather
+        // than bound: Laravel's validation provider is deferred, and its
+        // binding would replace this one when it loads.
+        $this->app->extend(
+            UncompromisedVerifier::class,
+            fn (UncompromisedVerifier $verifier, Application $app): NotPwnedVerifier => new NotPwnedVerifier($app->make(HttpFactory::class), 5),
+        );
 
         $this->app->bind(
             SweepPolicy::class,
@@ -254,6 +267,22 @@ class AppServiceProvider extends ServiceProvider
         // client address. Generous: a login page loads the branding and an
         // image or two, and many people may share one address
         // (control-plane/README.md, "Rate limits").
+        // Decision 0023: changing a password, like the two-factor actions,
+        // per account and per address, and on its own budget.
+        RateLimiter::for('password', function (Request $request): array {
+            $realm = $request->attributes->get(UseSessionRealm::ATTRIBUTE);
+            $scope = $realm instanceof Realm ? $realm->name : 'none';
+
+            $identifier = $request->user()?->getAuthIdentifier();
+            $account = is_string($identifier) ? $identifier : '';
+            $address = (string) $request->ip();
+
+            return [
+                Limit::perMinute(5)->by("password|$scope|$account"),
+                Limit::perMinute(20)->by("password-address|$scope|$address"),
+            ];
+        });
+
         RateLimiter::for('branding', fn (Request $request): Limit => Limit::perMinute(300)->by('branding|'.$request->ip()));
 
         // Issue #32: the seed command of the Playwright suite exists only

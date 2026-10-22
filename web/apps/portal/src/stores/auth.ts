@@ -30,6 +30,9 @@ export interface PasswordAndCode {
   code: string
 }
 
+/** What changing the password asks for (decision 0023). `code` where two-factor is on. */
+export type PasswordChange = components['schemas']['ChangePasswordRequest']
+
 const done: Result = { ok: true, value: undefined }
 
 // A call that got no response throws; every action reports it the same way.
@@ -130,6 +133,17 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  /**
+   * The session goes on; the account's other sessions end on the server.
+   * Nothing to fetch again: the account looks the same.
+   */
+  function changePassword(input: PasswordChange): Promise<Result> {
+    return attempt(async () => {
+      const { error, response } = await api.POST('/customer/auth/password', { body: input })
+      return response.ok ? done : failure(response, error)
+    })
+  }
+
   function logout(): Promise<Result> {
     return attempt(async () => {
       const { error, response } = await api.POST('/customer/auth/logout')
@@ -152,6 +166,7 @@ export const useAuthStore = defineStore('auth', () => {
     confirmEnrollment,
     regenerateRecoveryCodes,
     disableTwoFactor,
+    changePassword,
     logout,
     expire,
   }

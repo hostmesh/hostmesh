@@ -218,6 +218,8 @@ Create a customer the same way. The password is generated and shown once too; lo
 docker compose exec php php artisan customer:create customer@hostmesh.test --name="Customer"
 ```
 
+Change a password on the account screen of either app. A forgotten one is replaced from the command line: `administrator:reset-password <email>` or `customer:reset-password <email>` prints a new one, once.
+
 ## Troubleshooting
 
 **`make up` fails with "address already in use" or "port is already allocated".** Something else holds port 80 or 443 on `127.0.0.1`. Find it with `sudo ss -ltnp | grep -E ':(80|443)\s'` and stop it.

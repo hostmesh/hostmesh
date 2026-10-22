@@ -33,4 +33,10 @@ final class AdministratorPolicy
     {
         return $actor instanceof Administrator && $actor->is($administrator);
     }
+
+    /** One's own password, whatever the role (decision 0023). */
+    public function changePassword(Administrator|User $actor, Administrator $administrator): bool
+    {
+        return $actor instanceof Administrator && $actor->is($administrator);
+    }
 }

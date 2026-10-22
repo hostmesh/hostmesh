@@ -118,7 +118,8 @@ describe('AccountView', () => {
     })
 
     expect(wrapper.find('[data-test="two-factor"]').exists()).toBe(false)
-    expect(wrapper.find('form').exists()).toBe(false)
+    // The password form is the only one left.
+    expect(wrapper.findAll('form').map((candidate) => candidate.get('h3').text())).toEqual(['Change password'])
   })
 
   it('says that two-factor is on and required', async () => {
@@ -225,5 +226,75 @@ describe('turning two-factor off', () => {
     expect(wrapper.text()).toContain('Enter your password.')
     expect(wrapper.text()).toContain('Enter the code from your authenticator app.')
     expect(api.requests.filter((request) => request.method === 'POST')).toHaveLength(0)
+  })
+})
+
+// Issue #133, decision 0023: an account changes its own password with the
+// current one, and a code where two-factor is on. The API decides what a
+// valid new password is; the form only says what it asks for.
+describe('changing the password', () => {
+  const NEW = 'a correct horse battery staple'
+
+  async function change(scope: DOMWrapper<HTMLFormElement>, values: { current?: string, next?: string, code?: string }): Promise<void> {
+    if (values.current !== undefined) {
+      await field(scope, 'Current password').setValue(values.current)
+    }
+    if (values.next !== undefined) {
+      await field(scope, 'New password').setValue(values.next)
+    }
+    if (values.code !== undefined) {
+      await field(scope, 'Authentication code').setValue(values.code)
+    }
+    await scope.trigger('submit')
+    await submitted()
+  }
+
+  it('sends the current password, the new one and a code, and says what happened', async () => {
+    const { wrapper, api } = await openAccount({ 'POST /admin/auth/password': noContent() })
+    const scope = form(wrapper, 'Change password')
+
+    expect(scope.text()).toContain('At least 15 characters')
+
+    await change(scope, { current: 'correct-password', next: NEW, code: '123 456' })
+
+    expect(await api.sent('POST /admin/auth/password')[0]?.json()).toEqual({
+      current_password: 'correct-password',
+      new_password: NEW,
+      code: '123 456',
+    })
+    expect(scope.get('[role="status"]').text()).toBe('Your password was changed. Your other sessions were signed out.')
+    // No password stays in the page.
+    expect(field(scope, 'Current password').element.value).toBe('')
+    expect(field(scope, 'New password').element.value).toBe('')
+  })
+
+  it('shows what the API refused on its field', async () => {
+    const errors = { new_password: ['The new password field must be at least 15 characters.'] }
+    const { wrapper } = await openAccount({
+      'POST /admin/auth/password': json({ message: errors.new_password[0], errors }, 422),
+    })
+    const scope = form(wrapper, 'Change password')
+
+    await change(scope, { current: 'correct-password', next: 'too short', code: '123456' })
+
+    expect(scope.text()).toContain('The new password field must be at least 15 characters.')
+    expect(document.activeElement).toBe(field(scope, 'New password').element)
+    expect(scope.find('[role="status"]').exists()).toBe(false)
+  })
+
+  it('asks for every field before it sends anything', async () => {
+    const { wrapper, api } = await openAccount({ 'POST /admin/auth/password': noContent() })
+
+    await change(form(wrapper, 'Change password'), {})
+
+    expect(api.sent('POST /admin/auth/password')).toHaveLength(0)
+  })
+
+  it('has no password form without the ability', async () => {
+    const { wrapper } = await openAccount({
+      'GET /admin/auth/user': user({ abilities: { ...account.abilities, change_password: false } }),
+    })
+
+    expect(wrapper.find('section[aria-labelledby="password-heading"]').exists()).toBe(false)
   })
 })

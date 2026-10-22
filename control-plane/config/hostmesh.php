@@ -92,6 +92,16 @@ return [
         'sweep_after' => (int) env('HOSTMESH_JOB_SWEEP_AFTER', 900),
     ],
 
+    // Passwords an account chooses (decision 0023): 15 characters to 72
+    // bytes, and none that Pwned Passwords knows from breaches. The check
+    // sends the first five characters of the password's SHA-1 to
+    // api.pwnedpasswords.com and accepts the password when the service
+    // cannot be reached. Switch it off where the control plane has no
+    // outbound access.
+    'passwords' => [
+        'breach_check' => (bool) env('HOSTMESH_PASSWORD_BREACH_CHECK', true),
+    ],
+
     // Audit log retention (spec section 21, decision 0013), applied by two
     // jobs that run daily. Events are deleted after event_months; fewer
     // than 12 count as 12, the floor the database enforces. ip_address and
