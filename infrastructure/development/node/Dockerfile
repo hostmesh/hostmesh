@@ -8,7 +8,7 @@
 # The Node and pnpm versions must equal web/.nvmrc and the packageManager
 # fields of web/package.json. The smoke test compares them.
 
-FROM node:24.21.0-trixie
+FROM node:24.22.1-trixie
 
 RUN npm install --global pnpm@12.8.1 \
     && npm cache clean --force
